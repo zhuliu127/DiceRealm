@@ -1,0 +1,6366 @@
+{
+ "source": "qa_p4_fresh_oracle.js（复核现造对照，非工程师 fixture）",
+ "cases": [
+  {
+   "name": "F:0#11",
+   "fn": "hostScript",
+   "args": {
+    "meta": {
+     "code": "abcd"
+    },
+    "snapshotEvery": 1,
+    "logCap": 3,
+    "ops": [
+     {
+      "op": "attach",
+      "m": {
+       "seat": "p1",
+       "nickname": "甲",
+       "at": 1
+      }
+     },
+     {
+      "op": "attach",
+      "m": {
+       "seat": "p2",
+       "nickname": "乙",
+       "at": 2
+      }
+     },
+     {
+      "op": "attach",
+      "m": {
+       "seat": "p3",
+       "nickname": "丙",
+       "at": 3
+      }
+     },
+     {
+      "op": "detach",
+      "seat": "p2"
+     },
+     {
+      "op": "emit",
+      "t": "dice",
+      "vis": "public",
+      "to": null,
+      "p": {
+       "seat": "p1",
+       "nickname": "甲",
+       "expr": "1D100",
+       "rolls": [
+        8
+       ],
+       "total": 72,
+       "level": 5,
+       "levelText": "成功",
+       "label": "",
+       "at": 1
+      }
+     },
+     {
+      "op": "emit",
+      "t": "chat",
+      "vis": "public",
+      "to": null,
+      "p": {
+       "seat": "host",
+       "nickname": "甲",
+       "text": "c2",
+       "at": 2,
+       "kind": "user"
+      },
+      "plan": true
+     },
+     {
+      "op": "emit",
+      "t": "log",
+      "vis": "public",
+      "to": null,
+      "p": {
+       "seat": "",
+       "text": "l3",
+       "at": 3,
+       "kind": "state"
+      }
+     },
+     {
+      "op": "emit",
+      "t": "log",
+      "vis": "public",
+      "to": null,
+      "p": {
+       "seat": "",
+       "text": "l4",
+       "at": 4,
+       "kind": "sys"
+      }
+     },
+     {
+      "op": "emit",
+      "t": "dice",
+      "vis": "public",
+      "to": null,
+      "p": {
+       "seat": "p1",
+       "nickname": "甲",
+       "expr": "1D100",
+       "rolls": [
+        52
+       ],
+       "total": 65,
+       "level": 2,
+       "levelText": "成功",
+       "label": "",
+       "at": 5
+      }
+     },
+     {
+      "op": "emit",
+      "t": "status",
+      "vis": "public",
+      "to": null,
+      "p": {
+       "status": "IN_GAME",
+       "mode": "COMBAT"
+      }
+     },
+     {
+      "op": "emit",
+      "t": "turnalert",
+      "vis": "public",
+      "to": null,
+      "p": {
+       "kind": "turn",
+       "round": 1,
+       "turn": 0,
+       "name": "甲",
+       "seat": "p1",
+       "at": 7
+      }
+     },
+     {
+      "op": "emit",
+      "t": "dice",
+      "vis": "public",
+      "to": null,
+      "p": {
+       "seat": "p1",
+       "nickname": "甲",
+       "expr": "1D100",
+       "rolls": [
+        13
+       ],
+       "total": 74,
+       "level": 4,
+       "levelText": "成功",
+       "label": "",
+       "at": 8
+      }
+     },
+     {
+      "op": "emit",
+      "t": "chat",
+      "vis": "public",
+      "to": null,
+      "p": {
+       "seat": "p1",
+       "nickname": "甲",
+       "text": "c9",
+       "at": 9,
+       "kind": "user"
+      },
+      "plan": true
+     },
+     {
+      "op": "emit",
+      "t": "request",
+      "vis": "public",
+      "to": null,
+      "p": {
+       "self": true,
+       "done": false,
+       "id": "r10",
+       "op": "sheet.damage",
+       "payload": {
+        "amount": 1
+       },
+       "from": "KP",
+       "reason": "r",
+       "at": 10
+      }
+     },
+     {
+      "op": "emit",
+      "t": "chat",
+      "vis": "public",
+      "to": null,
+      "p": {
+       "seat": "p2",
+       "nickname": "甲",
+       "text": "c11",
+       "at": 11,
+       "kind": "user"
+      },
+      "plan": false
+     },
+     {
+      "op": "emit",
+      "t": "board",
+      "vis": "public",
+      "to": null,
+      "p": {
+       "seat": "p1",
+       "at": 12,
+       "strokes": [
+        {
+         "p": 1
+        }
+       ],
+       "thumb": "t",
+       "self": true
+      }
+     },
+     {
+      "op": "emit",
+      "t": "asset",
+      "vis": "public",
+      "to": null,
+      "p": {
+       "assets": [
+        {
+         "id": "a13",
+         "kind": "map",
+         "name": "素材",
+         "data": "",
+         "revealed": true,
+         "at": 13
+        }
+       ]
+      }
+     },
+     {
+      "op": "rollback",
+      "before": 1
+     },
+     {
+      "op": "setStatus",
+      "s": "SUSPENDED"
+     },
+     {
+      "op": "closeRoom"
+     },
+     {
+      "op": "save"
+     }
+    ]
+   },
+   "seed": 11,
+   "expect": {
+    "steps": [
+     {
+      "seat": "p1",
+      "rejected": false,
+      "blocked": false,
+      "member": {
+       "seat": "p1",
+       "role": "player",
+       "nickname": "甲",
+       "online": true,
+       "ready": false,
+       "charId": null,
+       "charName": "",
+       "spec": false,
+       "joinedAt": 1,
+       "cid": ""
+      },
+      "out": [
+       {
+        "to": "*",
+        "msg": {
+         "k": "evt",
+         "seq": 1,
+         "t": "members",
+         "p": {
+          "members": [
+           {
+            "seat": "p1",
+            "role": "player",
+            "nickname": "甲",
+            "online": true,
+            "ready": false,
+            "charId": null,
+            "charName": "",
+            "spec": false,
+            "joinedAt": 1,
+            "cid": ""
+           }
+          ]
+         }
+        }
+       },
+       {
+        "to": "p1",
+        "msg": {
+         "k": "sync",
+         "seq": 1,
+         "state": {
+          "meta": {
+           "code": "abcd",
+           "name": "",
+           "rules": "coc7",
+           "kpName": "",
+           "maxPlayers": 4,
+           "allowSpectate": false,
+           "status": "RECRUITING",
+           "mode": "EXPLORATION",
+           "round": 0,
+           "critThreshold": 1,
+           "fumbleThreshold": 100,
+           "hpWeek": {},
+           "psychoRound": {}
+          },
+          "members": [
+           {
+            "seat": "p1",
+            "role": "player",
+            "nickname": "甲",
+            "online": true,
+            "ready": false,
+            "charId": null,
+            "charName": "",
+            "spec": false,
+            "joinedAt": 1,
+            "cid": ""
+           }
+          ],
+          "chats": [],
+          "logs": [],
+          "dice": [],
+          "scene": null,
+          "combat": null,
+          "privates": [],
+          "rewind": null,
+          "requests": [],
+          "board": null,
+          "seq": 1,
+          "version": 1
+         }
+        }
+       }
+      ]
+     },
+     {
+      "seat": "p2",
+      "rejected": false,
+      "blocked": false,
+      "member": {
+       "seat": "p2",
+       "role": "player",
+       "nickname": "乙",
+       "online": false,
+       "ready": false,
+       "charId": null,
+       "charName": "",
+       "spec": false,
+       "joinedAt": 2,
+       "cid": ""
+      },
+      "out": [
+       {
+        "to": "*",
+        "msg": {
+         "k": "evt",
+         "seq": 2,
+         "t": "members",
+         "p": {
+          "members": [
+           {
+            "seat": "p1",
+            "role": "player",
+            "nickname": "甲",
+            "online": true,
+            "ready": false,
+            "charId": null,
+            "charName": "",
+            "spec": false,
+            "joinedAt": 1,
+            "cid": ""
+           },
+           {
+            "seat": "p2",
+            "role": "player",
+            "nickname": "乙",
+            "online": true,
+            "ready": false,
+            "charId": null,
+            "charName": "",
+            "spec": false,
+            "joinedAt": 2,
+            "cid": ""
+           }
+          ]
+         }
+        }
+       },
+       {
+        "to": "p2",
+        "msg": {
+         "k": "sync",
+         "seq": 2,
+         "state": {
+          "meta": {
+           "code": "abcd",
+           "name": "",
+           "rules": "coc7",
+           "kpName": "",
+           "maxPlayers": 4,
+           "allowSpectate": false,
+           "status": "RECRUITING",
+           "mode": "EXPLORATION",
+           "round": 0,
+           "critThreshold": 1,
+           "fumbleThreshold": 100,
+           "hpWeek": {},
+           "psychoRound": {}
+          },
+          "members": [
+           {
+            "seat": "p1",
+            "role": "player",
+            "nickname": "甲",
+            "online": true,
+            "ready": false,
+            "charId": null,
+            "charName": "",
+            "spec": false,
+            "joinedAt": 1,
+            "cid": ""
+           },
+           {
+            "seat": "p2",
+            "role": "player",
+            "nickname": "乙",
+            "online": true,
+            "ready": false,
+            "charId": null,
+            "charName": "",
+            "spec": false,
+            "joinedAt": 2,
+            "cid": ""
+           }
+          ],
+          "chats": [],
+          "logs": [],
+          "dice": [],
+          "scene": null,
+          "combat": null,
+          "privates": [],
+          "rewind": null,
+          "requests": [],
+          "board": null,
+          "seq": 2,
+          "version": 1
+         }
+        }
+       }
+      ]
+     },
+     {
+      "seat": "p3",
+      "rejected": false,
+      "blocked": false,
+      "member": {
+       "seat": "p3",
+       "role": "player",
+       "nickname": "丙",
+       "online": true,
+       "ready": false,
+       "charId": null,
+       "charName": "",
+       "spec": false,
+       "joinedAt": 3,
+       "cid": ""
+      },
+      "out": [
+       {
+        "to": "*",
+        "msg": {
+         "k": "evt",
+         "seq": 3,
+         "t": "members",
+         "p": {
+          "members": [
+           {
+            "seat": "p1",
+            "role": "player",
+            "nickname": "甲",
+            "online": true,
+            "ready": false,
+            "charId": null,
+            "charName": "",
+            "spec": false,
+            "joinedAt": 1,
+            "cid": ""
+           },
+           {
+            "seat": "p2",
+            "role": "player",
+            "nickname": "乙",
+            "online": true,
+            "ready": false,
+            "charId": null,
+            "charName": "",
+            "spec": false,
+            "joinedAt": 2,
+            "cid": ""
+           },
+           {
+            "seat": "p3",
+            "role": "player",
+            "nickname": "丙",
+            "online": true,
+            "ready": false,
+            "charId": null,
+            "charName": "",
+            "spec": false,
+            "joinedAt": 3,
+            "cid": ""
+           }
+          ]
+         }
+        }
+       },
+       {
+        "to": "p3",
+        "msg": {
+         "k": "sync",
+         "seq": 3,
+         "state": {
+          "meta": {
+           "code": "abcd",
+           "name": "",
+           "rules": "coc7",
+           "kpName": "",
+           "maxPlayers": 4,
+           "allowSpectate": false,
+           "status": "RECRUITING",
+           "mode": "EXPLORATION",
+           "round": 0,
+           "critThreshold": 1,
+           "fumbleThreshold": 100,
+           "hpWeek": {},
+           "psychoRound": {}
+          },
+          "members": [
+           {
+            "seat": "p1",
+            "role": "player",
+            "nickname": "甲",
+            "online": true,
+            "ready": false,
+            "charId": null,
+            "charName": "",
+            "spec": false,
+            "joinedAt": 1,
+            "cid": ""
+           },
+           {
+            "seat": "p2",
+            "role": "player",
+            "nickname": "乙",
+            "online": true,
+            "ready": false,
+            "charId": null,
+            "charName": "",
+            "spec": false,
+            "joinedAt": 2,
+            "cid": ""
+           },
+           {
+            "seat": "p3",
+            "role": "player",
+            "nickname": "丙",
+            "online": true,
+            "ready": false,
+            "charId": null,
+            "charName": "",
+            "spec": false,
+            "joinedAt": 3,
+            "cid": ""
+           }
+          ],
+          "chats": [],
+          "logs": [],
+          "dice": [],
+          "scene": null,
+          "combat": null,
+          "privates": [],
+          "rewind": null,
+          "requests": [],
+          "board": null,
+          "seq": 3,
+          "version": 1
+         }
+        }
+       }
+      ]
+     },
+     [
+      {
+       "to": "*",
+       "msg": {
+        "k": "evt",
+        "seq": 4,
+        "t": "members",
+        "p": {
+         "members": [
+          {
+           "seat": "p1",
+           "role": "player",
+           "nickname": "甲",
+           "online": true,
+           "ready": false,
+           "charId": null,
+           "charName": "",
+           "spec": false,
+           "joinedAt": 1,
+           "cid": ""
+          },
+          {
+           "seat": "p2",
+           "role": "player",
+           "nickname": "乙",
+           "online": false,
+           "ready": false,
+           "charId": null,
+           "charName": "",
+           "spec": false,
+           "joinedAt": 2,
+           "cid": ""
+          },
+          {
+           "seat": "p3",
+           "role": "player",
+           "nickname": "丙",
+           "online": true,
+           "ready": false,
+           "charId": null,
+           "charName": "",
+           "spec": false,
+           "joinedAt": 3,
+           "cid": ""
+          }
+         ]
+        }
+       }
+      }
+     ],
+     {
+      "seq": 5,
+      "plan": null
+     },
+     {
+      "seq": 6,
+      "plan": [
+       {
+        "to": "*",
+        "msg": {
+         "k": "evt",
+         "seq": 6,
+         "t": "chat",
+         "p": {
+          "seat": "host",
+          "nickname": "甲",
+          "text": "c2",
+          "at": 2,
+          "kind": "user"
+         }
+        }
+       }
+      ]
+     },
+     {
+      "seq": 7,
+      "plan": null
+     },
+     {
+      "seq": 8,
+      "plan": null
+     },
+     {
+      "seq": 9,
+      "plan": null
+     },
+     {
+      "seq": 10,
+      "plan": null
+     },
+     {
+      "seq": 11,
+      "plan": null
+     },
+     {
+      "seq": 12,
+      "plan": null
+     },
+     {
+      "seq": 13,
+      "plan": [
+       {
+        "to": "*",
+        "msg": {
+         "k": "evt",
+         "seq": 13,
+         "t": "chat",
+         "p": {
+          "seat": "p1",
+          "nickname": "甲",
+          "text": "c9",
+          "at": 9,
+          "kind": "user"
+         }
+        }
+       }
+      ]
+     },
+     {
+      "seq": 14,
+      "plan": null
+     },
+     {
+      "seq": 15,
+      "plan": null
+     },
+     {
+      "seq": 16,
+      "plan": null
+     },
+     {
+      "seq": 17,
+      "plan": null
+     },
+     {
+      "dropped": 3,
+      "seq": 0,
+      "from": 0
+     },
+     [
+      {
+       "to": "*",
+       "msg": {
+        "k": "evt",
+        "seq": 1,
+        "t": "status",
+        "p": {
+         "status": "SUSPENDED"
+        }
+       }
+      }
+     ],
+     [
+      {
+       "to": "*",
+       "msg": {
+        "k": "evt",
+        "seq": 2,
+        "t": "closed",
+        "p": {
+         "at": 1700000000000
+        }
+       }
+      }
+     ],
+     null
+    ],
+    "state": {
+     "meta": {
+      "code": "abcd",
+      "name": "",
+      "rules": "coc7",
+      "kpName": "",
+      "maxPlayers": 4,
+      "allowSpectate": false,
+      "status": "CLOSED",
+      "mode": "EXPLORATION",
+      "round": 0,
+      "critThreshold": 1,
+      "fumbleThreshold": 100,
+      "hpWeek": {},
+      "psychoRound": {}
+     },
+     "members": [
+      {
+       "seat": "p1",
+       "role": "player",
+       "nickname": "甲",
+       "online": true,
+       "ready": false,
+       "charId": null,
+       "charName": "",
+       "spec": false,
+       "joinedAt": 1,
+       "cid": ""
+      },
+      {
+       "seat": "p2",
+       "role": "player",
+       "nickname": "乙",
+       "online": false,
+       "ready": false,
+       "charId": null,
+       "charName": "",
+       "spec": false,
+       "joinedAt": 2,
+       "cid": ""
+      },
+      {
+       "seat": "p3",
+       "role": "player",
+       "nickname": "丙",
+       "online": true,
+       "ready": false,
+       "charId": null,
+       "charName": "",
+       "spec": false,
+       "joinedAt": 3,
+       "cid": ""
+      }
+     ],
+     "chats": [],
+     "logs": [],
+     "dice": [],
+     "scene": null,
+     "combat": null,
+     "privates": [],
+     "rewind": null,
+     "requests": [],
+     "board": null,
+     "sceneCheck": null,
+     "archive": null,
+     "lastState": null,
+     "alert": null,
+     "opposed": null,
+     "seq": 2,
+     "version": 1
+    },
+    "logSeq": 2,
+    "log": [
+     {
+      "seq": 1,
+      "t": "status",
+      "vis": "public",
+      "to": null
+     },
+     {
+      "seq": 2,
+      "t": "closed",
+      "vis": "public",
+      "to": null
+     }
+    ],
+    "warnings": [],
+    "snapshotSeqs": [
+     0,
+     1,
+     2
+    ],
+    "roundStarts": [],
+    "save": {
+     "v": 2,
+     "code": "abcd",
+     "rules": "coc7",
+     "savedAt": 1700000000000,
+     "seq": 2,
+     "stateSeq": 0,
+     "meta": {
+      "code": "abcd",
+      "name": "",
+      "rules": "coc7",
+      "kpName": "",
+      "maxPlayers": 4,
+      "allowSpectate": false,
+      "status": "CLOSED",
+      "mode": "EXPLORATION",
+      "round": 0,
+      "critThreshold": 1,
+      "fumbleThreshold": 100,
+      "hpWeek": {},
+      "psychoRound": {}
+     },
+     "members": [
+      {
+       "seat": "p1",
+       "role": "player",
+       "nickname": "甲",
+       "online": true,
+       "ready": false,
+       "charId": null,
+       "charName": "",
+       "spec": false,
+       "joinedAt": 1,
+       "cid": ""
+      },
+      {
+       "seat": "p2",
+       "role": "player",
+       "nickname": "乙",
+       "online": false,
+       "ready": false,
+       "charId": null,
+       "charName": "",
+       "spec": false,
+       "joinedAt": 2,
+       "cid": ""
+      },
+      {
+       "seat": "p3",
+       "role": "player",
+       "nickname": "丙",
+       "online": true,
+       "ready": false,
+       "charId": null,
+       "charName": "",
+       "spec": false,
+       "joinedAt": 3,
+       "cid": ""
+      }
+     ],
+     "chats": [],
+     "logs": [],
+     "dice": [],
+     "scene": null,
+     "combat": null,
+     "sceneCheck": null,
+     "roundStarts": [],
+     "privateBySeat": {},
+     "requestsBySeat": {},
+     "boardBySeat": {},
+     "localAssets": [],
+     "localActors": []
+    },
+    "saveKeys": [
+     "v",
+     "code",
+     "rules",
+     "savedAt",
+     "seq",
+     "stateSeq",
+     "meta",
+     "members",
+     "chats",
+     "logs",
+     "dice",
+     "scene",
+     "combat",
+     "sceneCheck",
+     "roundStarts",
+     "privateBySeat",
+     "requestsBySeat",
+     "boardBySeat",
+     "localAssets",
+     "localActors"
+    ]
+   },
+   "randUsed": 0,
+   "tag": "F:random",
+   "error": null
+  },
+  {
+   "name": "F:1#2024",
+   "fn": "hostScript",
+   "args": {
+    "meta": {},
+    "snapshotEvery": 2,
+    "logCap": 8,
+    "ops": [
+     {
+      "op": "attach",
+      "m": {
+       "seat": "p1",
+       "nickname": "甲",
+       "at": 1
+      }
+     },
+     {
+      "op": "attach",
+      "m": {
+       "seat": "p2",
+       "nickname": "乙",
+       "at": 2
+      }
+     },
+     {
+      "op": "attach",
+      "m": {
+       "seat": "p3",
+       "nickname": "丙",
+       "at": 3
+      }
+     },
+     {
+      "op": "emit",
+      "t": "turnalert",
+      "vis": "public",
+      "to": null,
+      "p": {
+       "kind": "turn",
+       "round": 1,
+       "turn": 0,
+       "name": "甲",
+       "seat": "p1",
+       "at": 1
+      }
+     },
+     {
+      "op": "emit",
+      "t": "archive",
+      "vis": "public",
+      "to": null,
+      "p": {
+       "seq": 2,
+       "savedAt": 2,
+       "ok": true
+      }
+     },
+     {
+      "op": "emit",
+      "t": "dice",
+      "vis": "public",
+      "to": null,
+      "p": {
+       "seat": "p1",
+       "nickname": "甲",
+       "expr": "1D100",
+       "rolls": [
+        99
+       ],
+       "total": 77,
+       "level": 5,
+       "levelText": "成功",
+       "label": "",
+       "at": 3
+      }
+     },
+     {
+      "op": "emit",
+      "t": "chat",
+      "vis": "public",
+      "to": null,
+      "p": {
+       "seat": "host",
+       "nickname": "甲",
+       "text": "c4",
+       "at": 4,
+       "kind": "user"
+      },
+      "plan": true
+     },
+     {
+      "op": "emit",
+      "t": "board",
+      "vis": "public",
+      "to": null,
+      "p": {
+       "seat": "p1",
+       "at": 5,
+       "strokes": [
+        {
+         "p": 1
+        }
+       ],
+       "thumb": "t",
+       "self": true
+      }
+     },
+     {
+      "op": "emit",
+      "t": "board",
+      "vis": "public",
+      "to": null,
+      "p": {
+       "seat": "p1",
+       "at": 6,
+       "strokes": [
+        {
+         "p": 1
+        }
+       ],
+       "thumb": "t",
+       "self": true
+      }
+     },
+     {
+      "op": "emit",
+      "t": "dice",
+      "vis": "public",
+      "to": null,
+      "p": {
+       "seat": "p1",
+       "nickname": "甲",
+       "expr": "1D100",
+       "rolls": [
+        14
+       ],
+       "total": 90,
+       "level": 4,
+       "levelText": "成功",
+       "label": "",
+       "at": 7
+      }
+     },
+     {
+      "op": "emit",
+      "t": "chat",
+      "vis": "public",
+      "to": null,
+      "p": {
+       "seat": "host",
+       "nickname": "甲",
+       "text": "c8",
+       "at": 8,
+       "kind": "user"
+      },
+      "plan": true
+     },
+     {
+      "op": "emit",
+      "t": "log",
+      "vis": "public",
+      "to": null,
+      "p": {
+       "seat": "",
+       "text": "l9",
+       "at": 9,
+       "kind": "state"
+      }
+     },
+     {
+      "op": "rollback",
+      "before": 4
+     },
+     {
+      "op": "emit",
+      "t": "archive",
+      "vis": "public",
+      "to": null,
+      "p": {
+       "seq": 11,
+       "savedAt": 11,
+       "ok": true
+      }
+     },
+     {
+      "op": "emit",
+      "t": "status",
+      "vis": "public",
+      "to": null,
+      "p": {
+       "status": "IN_GAME",
+       "mode": "COMBAT"
+      }
+     },
+     {
+      "op": "emit",
+      "t": "chat",
+      "vis": "public",
+      "to": null,
+      "p": {
+       "seat": "p1",
+       "nickname": "甲",
+       "text": "c13",
+       "at": 13,
+       "kind": "user"
+      },
+      "plan": false
+     },
+     {
+      "op": "emit",
+      "t": "request",
+      "vis": "public",
+      "to": null,
+      "p": {
+       "self": true,
+       "done": false,
+       "id": "r14",
+       "op": "sheet.damage",
+       "payload": {
+        "amount": 1
+       },
+       "from": "KP",
+       "reason": "r",
+       "at": 14
+      }
+     },
+     {
+      "op": "closeRoom"
+     },
+     {
+      "op": "save"
+     }
+    ]
+   },
+   "seed": 2024,
+   "expect": {
+    "steps": [
+     {
+      "seat": "p1",
+      "rejected": false,
+      "blocked": false,
+      "member": {
+       "seat": "p1",
+       "role": "player",
+       "nickname": "甲",
+       "online": true,
+       "ready": false,
+       "charId": null,
+       "charName": "",
+       "spec": false,
+       "joinedAt": 1,
+       "cid": ""
+      },
+      "out": [
+       {
+        "to": "*",
+        "msg": {
+         "k": "evt",
+         "seq": 1,
+         "t": "members",
+         "p": {
+          "members": [
+           {
+            "seat": "p1",
+            "role": "player",
+            "nickname": "甲",
+            "online": true,
+            "ready": false,
+            "charId": null,
+            "charName": "",
+            "spec": false,
+            "joinedAt": 1,
+            "cid": ""
+           }
+          ]
+         }
+        }
+       },
+       {
+        "to": "p1",
+        "msg": {
+         "k": "sync",
+         "seq": 1,
+         "state": {
+          "meta": {
+           "code": "",
+           "name": "",
+           "rules": "coc7",
+           "kpName": "",
+           "maxPlayers": 4,
+           "allowSpectate": false,
+           "status": "RECRUITING",
+           "mode": "EXPLORATION",
+           "round": 0,
+           "critThreshold": 1,
+           "fumbleThreshold": 100,
+           "hpWeek": {},
+           "psychoRound": {}
+          },
+          "members": [
+           {
+            "seat": "p1",
+            "role": "player",
+            "nickname": "甲",
+            "online": true,
+            "ready": false,
+            "charId": null,
+            "charName": "",
+            "spec": false,
+            "joinedAt": 1,
+            "cid": ""
+           }
+          ],
+          "chats": [],
+          "logs": [],
+          "dice": [],
+          "scene": null,
+          "combat": null,
+          "privates": [],
+          "rewind": null,
+          "requests": [],
+          "board": null,
+          "seq": 1,
+          "version": 1
+         }
+        }
+       }
+      ]
+     },
+     {
+      "seat": "p2",
+      "rejected": false,
+      "blocked": false,
+      "member": {
+       "seat": "p2",
+       "role": "player",
+       "nickname": "乙",
+       "online": true,
+       "ready": false,
+       "charId": null,
+       "charName": "",
+       "spec": false,
+       "joinedAt": 2,
+       "cid": ""
+      },
+      "out": [
+       {
+        "to": "*",
+        "msg": {
+         "k": "evt",
+         "seq": 2,
+         "t": "members",
+         "p": {
+          "members": [
+           {
+            "seat": "p1",
+            "role": "player",
+            "nickname": "甲",
+            "online": true,
+            "ready": false,
+            "charId": null,
+            "charName": "",
+            "spec": false,
+            "joinedAt": 1,
+            "cid": ""
+           },
+           {
+            "seat": "p2",
+            "role": "player",
+            "nickname": "乙",
+            "online": true,
+            "ready": false,
+            "charId": null,
+            "charName": "",
+            "spec": false,
+            "joinedAt": 2,
+            "cid": ""
+           }
+          ]
+         }
+        }
+       },
+       {
+        "to": "p2",
+        "msg": {
+         "k": "sync",
+         "seq": 2,
+         "state": {
+          "meta": {
+           "code": "",
+           "name": "",
+           "rules": "coc7",
+           "kpName": "",
+           "maxPlayers": 4,
+           "allowSpectate": false,
+           "status": "RECRUITING",
+           "mode": "EXPLORATION",
+           "round": 0,
+           "critThreshold": 1,
+           "fumbleThreshold": 100,
+           "hpWeek": {},
+           "psychoRound": {}
+          },
+          "members": [
+           {
+            "seat": "p1",
+            "role": "player",
+            "nickname": "甲",
+            "online": true,
+            "ready": false,
+            "charId": null,
+            "charName": "",
+            "spec": false,
+            "joinedAt": 1,
+            "cid": ""
+           },
+           {
+            "seat": "p2",
+            "role": "player",
+            "nickname": "乙",
+            "online": true,
+            "ready": false,
+            "charId": null,
+            "charName": "",
+            "spec": false,
+            "joinedAt": 2,
+            "cid": ""
+           }
+          ],
+          "chats": [],
+          "logs": [],
+          "dice": [],
+          "scene": null,
+          "combat": null,
+          "privates": [],
+          "rewind": null,
+          "requests": [],
+          "board": null,
+          "seq": 2,
+          "version": 1
+         }
+        }
+       }
+      ]
+     },
+     {
+      "seat": "p3",
+      "rejected": false,
+      "blocked": false,
+      "member": {
+       "seat": "p3",
+       "role": "player",
+       "nickname": "丙",
+       "online": true,
+       "ready": false,
+       "charId": null,
+       "charName": "",
+       "spec": false,
+       "joinedAt": 3,
+       "cid": ""
+      },
+      "out": [
+       {
+        "to": "*",
+        "msg": {
+         "k": "evt",
+         "seq": 3,
+         "t": "members",
+         "p": {
+          "members": [
+           {
+            "seat": "p1",
+            "role": "player",
+            "nickname": "甲",
+            "online": true,
+            "ready": false,
+            "charId": null,
+            "charName": "",
+            "spec": false,
+            "joinedAt": 1,
+            "cid": ""
+           },
+           {
+            "seat": "p2",
+            "role": "player",
+            "nickname": "乙",
+            "online": true,
+            "ready": false,
+            "charId": null,
+            "charName": "",
+            "spec": false,
+            "joinedAt": 2,
+            "cid": ""
+           },
+           {
+            "seat": "p3",
+            "role": "player",
+            "nickname": "丙",
+            "online": true,
+            "ready": false,
+            "charId": null,
+            "charName": "",
+            "spec": false,
+            "joinedAt": 3,
+            "cid": ""
+           }
+          ]
+         }
+        }
+       },
+       {
+        "to": "p3",
+        "msg": {
+         "k": "sync",
+         "seq": 3,
+         "state": {
+          "meta": {
+           "code": "",
+           "name": "",
+           "rules": "coc7",
+           "kpName": "",
+           "maxPlayers": 4,
+           "allowSpectate": false,
+           "status": "RECRUITING",
+           "mode": "EXPLORATION",
+           "round": 0,
+           "critThreshold": 1,
+           "fumbleThreshold": 100,
+           "hpWeek": {},
+           "psychoRound": {}
+          },
+          "members": [
+           {
+            "seat": "p1",
+            "role": "player",
+            "nickname": "甲",
+            "online": true,
+            "ready": false,
+            "charId": null,
+            "charName": "",
+            "spec": false,
+            "joinedAt": 1,
+            "cid": ""
+           },
+           {
+            "seat": "p2",
+            "role": "player",
+            "nickname": "乙",
+            "online": true,
+            "ready": false,
+            "charId": null,
+            "charName": "",
+            "spec": false,
+            "joinedAt": 2,
+            "cid": ""
+           },
+           {
+            "seat": "p3",
+            "role": "player",
+            "nickname": "丙",
+            "online": true,
+            "ready": false,
+            "charId": null,
+            "charName": "",
+            "spec": false,
+            "joinedAt": 3,
+            "cid": ""
+           }
+          ],
+          "chats": [],
+          "logs": [],
+          "dice": [],
+          "scene": null,
+          "combat": null,
+          "privates": [],
+          "rewind": null,
+          "requests": [],
+          "board": null,
+          "seq": 3,
+          "version": 1
+         }
+        }
+       }
+      ]
+     },
+     {
+      "seq": 4,
+      "plan": null
+     },
+     {
+      "seq": 5,
+      "plan": null
+     },
+     {
+      "seq": 6,
+      "plan": null
+     },
+     {
+      "seq": 7,
+      "plan": [
+       {
+        "to": "*",
+        "msg": {
+         "k": "evt",
+         "seq": 7,
+         "t": "chat",
+         "p": {
+          "seat": "host",
+          "nickname": "甲",
+          "text": "c4",
+          "at": 4,
+          "kind": "user"
+         }
+        }
+       }
+      ]
+     },
+     {
+      "seq": 8,
+      "plan": null
+     },
+     {
+      "seq": 9,
+      "plan": null
+     },
+     {
+      "seq": 10,
+      "plan": null
+     },
+     {
+      "seq": 11,
+      "plan": [
+       {
+        "to": "*",
+        "msg": {
+         "k": "evt",
+         "seq": 11,
+         "t": "chat",
+         "p": {
+          "seat": "host",
+          "nickname": "甲",
+          "text": "c8",
+          "at": 8,
+          "kind": "user"
+         }
+        }
+       }
+      ]
+     },
+     {
+      "seq": 12,
+      "plan": null
+     },
+     {
+      "dropped": 8,
+      "seq": 3,
+      "from": 2
+     },
+     {
+      "seq": 4,
+      "plan": null
+     },
+     {
+      "seq": 5,
+      "plan": null
+     },
+     {
+      "seq": 6,
+      "plan": null
+     },
+     {
+      "seq": 7,
+      "plan": null
+     },
+     [
+      {
+       "to": "*",
+       "msg": {
+        "k": "evt",
+        "seq": 8,
+        "t": "closed",
+        "p": {
+         "at": 1700000000000
+        }
+       }
+      }
+     ],
+     null
+    ],
+    "state": {
+     "meta": {
+      "code": "",
+      "name": "",
+      "rules": "coc7",
+      "kpName": "",
+      "maxPlayers": 4,
+      "allowSpectate": false,
+      "status": "CLOSED",
+      "mode": "COMBAT",
+      "round": 0,
+      "critThreshold": 1,
+      "fumbleThreshold": 100,
+      "hpWeek": {},
+      "psychoRound": {}
+     },
+     "members": [
+      {
+       "seat": "p1",
+       "role": "player",
+       "nickname": "甲",
+       "online": true,
+       "ready": false,
+       "charId": null,
+       "charName": "",
+       "spec": false,
+       "joinedAt": 1,
+       "cid": ""
+      },
+      {
+       "seat": "p2",
+       "role": "player",
+       "nickname": "乙",
+       "online": true,
+       "ready": false,
+       "charId": null,
+       "charName": "",
+       "spec": false,
+       "joinedAt": 2,
+       "cid": ""
+      },
+      {
+       "seat": "p3",
+       "role": "player",
+       "nickname": "丙",
+       "online": true,
+       "ready": false,
+       "charId": null,
+       "charName": "",
+       "spec": false,
+       "joinedAt": 3,
+       "cid": ""
+      }
+     ],
+     "chats": [
+      {
+       "seq": 6,
+       "seat": "p1",
+       "nickname": "甲",
+       "text": "c13",
+       "at": 13,
+       "kind": "user"
+      }
+     ],
+     "logs": [],
+     "dice": [],
+     "scene": null,
+     "combat": null,
+     "privates": [],
+     "rewind": null,
+     "requests": [
+      {
+       "id": "r14",
+       "op": "sheet.damage",
+       "p": {
+        "amount": 1
+       },
+       "from": "KP",
+       "reason": "r",
+       "at": 14
+      }
+     ],
+     "board": null,
+     "sceneCheck": null,
+     "archive": {
+      "seq": 11,
+      "savedAt": 11,
+      "ok": true
+     },
+     "lastState": null,
+     "alert": null,
+     "opposed": null,
+     "seq": 8,
+     "version": 1
+    },
+    "logSeq": 8,
+    "log": [
+     {
+      "seq": 4,
+      "t": "archive",
+      "vis": "public",
+      "to": null
+     },
+     {
+      "seq": 5,
+      "t": "status",
+      "vis": "public",
+      "to": null
+     },
+     {
+      "seq": 6,
+      "t": "chat",
+      "vis": "public",
+      "to": null
+     },
+     {
+      "seq": 7,
+      "t": "request",
+      "vis": "public",
+      "to": null
+     },
+     {
+      "seq": 8,
+      "t": "closed",
+      "vis": "public",
+      "to": null
+     }
+    ],
+    "warnings": [],
+    "snapshotSeqs": [
+     0,
+     2,
+     4,
+     6,
+     8
+    ],
+    "roundStarts": [],
+    "save": {
+     "v": 2,
+     "code": "",
+     "rules": "coc7",
+     "savedAt": 1700000000000,
+     "seq": 8,
+     "stateSeq": 0,
+     "meta": {
+      "code": "",
+      "name": "",
+      "rules": "coc7",
+      "kpName": "",
+      "maxPlayers": 4,
+      "allowSpectate": false,
+      "status": "CLOSED",
+      "mode": "COMBAT",
+      "round": 0,
+      "critThreshold": 1,
+      "fumbleThreshold": 100,
+      "hpWeek": {},
+      "psychoRound": {}
+     },
+     "members": [
+      {
+       "seat": "p1",
+       "role": "player",
+       "nickname": "甲",
+       "online": true,
+       "ready": false,
+       "charId": null,
+       "charName": "",
+       "spec": false,
+       "joinedAt": 1,
+       "cid": ""
+      },
+      {
+       "seat": "p2",
+       "role": "player",
+       "nickname": "乙",
+       "online": true,
+       "ready": false,
+       "charId": null,
+       "charName": "",
+       "spec": false,
+       "joinedAt": 2,
+       "cid": ""
+      },
+      {
+       "seat": "p3",
+       "role": "player",
+       "nickname": "丙",
+       "online": true,
+       "ready": false,
+       "charId": null,
+       "charName": "",
+       "spec": false,
+       "joinedAt": 3,
+       "cid": ""
+      }
+     ],
+     "chats": [
+      {
+       "seq": 6,
+       "seat": "p1",
+       "nickname": "甲",
+       "text": "c13",
+       "at": 13,
+       "kind": "user"
+      }
+     ],
+     "logs": [],
+     "dice": [],
+     "scene": null,
+     "combat": null,
+     "sceneCheck": null,
+     "roundStarts": [],
+     "privateBySeat": {},
+     "requestsBySeat": {},
+     "boardBySeat": {},
+     "localAssets": [],
+     "localActors": []
+    },
+    "saveKeys": [
+     "v",
+     "code",
+     "rules",
+     "savedAt",
+     "seq",
+     "stateSeq",
+     "meta",
+     "members",
+     "chats",
+     "logs",
+     "dice",
+     "scene",
+     "combat",
+     "sceneCheck",
+     "roundStarts",
+     "privateBySeat",
+     "requestsBySeat",
+     "boardBySeat",
+     "localAssets",
+     "localActors"
+    ]
+   },
+   "randUsed": 0,
+   "tag": "F:random",
+   "error": null
+  },
+  {
+   "name": "F:2#77777",
+   "fn": "hostScript",
+   "args": {
+    "meta": {
+     "code": "abcd"
+    },
+    "snapshotEvery": 3,
+    "logCap": 400,
+    "ops": [
+     {
+      "op": "attach",
+      "m": {
+       "seat": "p1",
+       "nickname": "甲",
+       "at": 1
+      }
+     },
+     {
+      "op": "attach",
+      "m": {
+       "seat": "p2",
+       "nickname": "乙",
+       "at": 2
+      }
+     },
+     {
+      "op": "attach",
+      "m": {
+       "seat": "p3",
+       "nickname": "丙",
+       "at": 3
+      }
+     },
+     {
+      "op": "emit",
+      "t": "dice",
+      "vis": "public",
+      "to": null,
+      "p": {
+       "seat": "p1",
+       "nickname": "甲",
+       "expr": "1D100",
+       "rolls": [
+        69
+       ],
+       "total": 14,
+       "level": 1,
+       "levelText": "成功",
+       "label": "",
+       "at": 1
+      }
+     },
+     {
+      "op": "emit",
+      "t": "chat",
+      "vis": "public",
+      "to": null,
+      "p": {
+       "seat": "p1",
+       "nickname": "甲",
+       "text": "c2",
+       "at": 2,
+       "kind": "user"
+      },
+      "plan": false
+     },
+     {
+      "op": "emit",
+      "t": "asset",
+      "vis": "public",
+      "to": null,
+      "p": {
+       "assets": [
+        {
+         "id": "a3",
+         "kind": "map",
+         "name": "素材",
+         "data": "",
+         "revealed": true,
+         "at": 3
+        }
+       ]
+      }
+     },
+     {
+      "op": "emit",
+      "t": "log",
+      "vis": "public",
+      "to": null,
+      "p": {
+       "seat": "",
+       "text": "l4",
+       "at": 4,
+       "kind": "sys"
+      }
+     },
+     {
+      "op": "rollback",
+      "before": 4
+     },
+     {
+      "op": "emit",
+      "t": "request",
+      "vis": "public",
+      "to": null,
+      "p": {
+       "self": true,
+       "done": false,
+       "id": "r6",
+       "op": "sheet.damage",
+       "payload": {
+        "amount": 1
+       },
+       "from": "KP",
+       "reason": "r",
+       "at": 6
+      }
+     },
+     {
+      "op": "emit",
+      "t": "chat",
+      "vis": "public",
+      "to": null,
+      "p": {
+       "seat": "p2",
+       "nickname": "甲",
+       "text": "c7",
+       "at": 7,
+       "kind": "user"
+      },
+      "plan": false
+     },
+     {
+      "op": "emit",
+      "t": "dice",
+      "vis": "public",
+      "to": null,
+      "p": {
+       "seat": "p1",
+       "nickname": "甲",
+       "expr": "1D100",
+       "rolls": [
+        79
+       ],
+       "total": 20,
+       "level": 4,
+       "levelText": "成功",
+       "label": "",
+       "at": 8
+      }
+     },
+     {
+      "op": "emit",
+      "t": "chat",
+      "vis": "public",
+      "to": null,
+      "p": {
+       "seat": "p2",
+       "nickname": "甲",
+       "text": "c9",
+       "at": 9,
+       "kind": "user"
+      },
+      "plan": false
+     },
+     {
+      "op": "emit",
+      "t": "chat",
+      "vis": "public",
+      "to": null,
+      "p": {
+       "seat": "host",
+       "nickname": "甲",
+       "text": "c10",
+       "at": 10,
+       "kind": "user"
+      },
+      "plan": true
+     },
+     {
+      "op": "emit",
+      "t": "dice",
+      "vis": "public",
+      "to": null,
+      "p": {
+       "seat": "p1",
+       "nickname": "甲",
+       "expr": "1D100",
+       "rolls": [
+        83
+       ],
+       "total": 41,
+       "level": 5,
+       "levelText": "成功",
+       "label": "",
+       "at": 11
+      }
+     },
+     {
+      "op": "intent",
+      "seat": "host",
+      "msg": {
+       "op": "sync",
+       "p": {
+        "lastSeq": 1
+       }
+      }
+     },
+     {
+      "op": "emit",
+      "t": "dice",
+      "vis": "public",
+      "to": null,
+      "p": {
+       "seat": "p1",
+       "nickname": "甲",
+       "expr": "1D100",
+       "rolls": [
+        98
+       ],
+       "total": 48,
+       "level": 1,
+       "levelText": "成功",
+       "label": "",
+       "at": 13
+      }
+     },
+     {
+      "op": "rollback",
+      "before": 7
+     },
+     {
+      "op": "setStatus",
+      "s": "SUSPENDED"
+     },
+     {
+      "op": "kick",
+      "seat": "p2"
+     },
+     {
+      "op": "closeRoom"
+     },
+     {
+      "op": "save"
+     }
+    ]
+   },
+   "seed": 77777,
+   "expect": {
+    "steps": [
+     {
+      "seat": "p1",
+      "rejected": false,
+      "blocked": false,
+      "member": {
+       "seat": "p1",
+       "role": "player",
+       "nickname": "甲",
+       "online": true,
+       "ready": false,
+       "charId": null,
+       "charName": "",
+       "spec": false,
+       "joinedAt": 1,
+       "cid": ""
+      },
+      "out": [
+       {
+        "to": "*",
+        "msg": {
+         "k": "evt",
+         "seq": 1,
+         "t": "members",
+         "p": {
+          "members": [
+           {
+            "seat": "p1",
+            "role": "player",
+            "nickname": "甲",
+            "online": true,
+            "ready": false,
+            "charId": null,
+            "charName": "",
+            "spec": false,
+            "joinedAt": 1,
+            "cid": ""
+           }
+          ]
+         }
+        }
+       },
+       {
+        "to": "p1",
+        "msg": {
+         "k": "sync",
+         "seq": 1,
+         "state": {
+          "meta": {
+           "code": "abcd",
+           "name": "",
+           "rules": "coc7",
+           "kpName": "",
+           "maxPlayers": 4,
+           "allowSpectate": false,
+           "status": "RECRUITING",
+           "mode": "EXPLORATION",
+           "round": 0,
+           "critThreshold": 1,
+           "fumbleThreshold": 100,
+           "hpWeek": {},
+           "psychoRound": {}
+          },
+          "members": [
+           {
+            "seat": "p1",
+            "role": "player",
+            "nickname": "甲",
+            "online": true,
+            "ready": false,
+            "charId": null,
+            "charName": "",
+            "spec": false,
+            "joinedAt": 1,
+            "cid": ""
+           }
+          ],
+          "chats": [],
+          "logs": [],
+          "dice": [],
+          "scene": null,
+          "combat": null,
+          "privates": [],
+          "rewind": null,
+          "requests": [],
+          "board": null,
+          "seq": 1,
+          "version": 1
+         }
+        }
+       }
+      ]
+     },
+     {
+      "seat": "p2",
+      "rejected": false,
+      "blocked": false,
+      "member": {
+       "seat": "p2",
+       "role": "player",
+       "nickname": "乙",
+       "online": true,
+       "ready": false,
+       "charId": null,
+       "charName": "",
+       "spec": false,
+       "joinedAt": 2,
+       "cid": ""
+      },
+      "out": [
+       {
+        "to": "*",
+        "msg": {
+         "k": "evt",
+         "seq": 2,
+         "t": "members",
+         "p": {
+          "members": [
+           {
+            "seat": "p1",
+            "role": "player",
+            "nickname": "甲",
+            "online": true,
+            "ready": false,
+            "charId": null,
+            "charName": "",
+            "spec": false,
+            "joinedAt": 1,
+            "cid": ""
+           },
+           {
+            "seat": "p2",
+            "role": "player",
+            "nickname": "乙",
+            "online": true,
+            "ready": false,
+            "charId": null,
+            "charName": "",
+            "spec": false,
+            "joinedAt": 2,
+            "cid": ""
+           }
+          ]
+         }
+        }
+       },
+       {
+        "to": "p2",
+        "msg": {
+         "k": "sync",
+         "seq": 2,
+         "state": {
+          "meta": {
+           "code": "abcd",
+           "name": "",
+           "rules": "coc7",
+           "kpName": "",
+           "maxPlayers": 4,
+           "allowSpectate": false,
+           "status": "RECRUITING",
+           "mode": "EXPLORATION",
+           "round": 0,
+           "critThreshold": 1,
+           "fumbleThreshold": 100,
+           "hpWeek": {},
+           "psychoRound": {}
+          },
+          "members": [
+           {
+            "seat": "p1",
+            "role": "player",
+            "nickname": "甲",
+            "online": true,
+            "ready": false,
+            "charId": null,
+            "charName": "",
+            "spec": false,
+            "joinedAt": 1,
+            "cid": ""
+           },
+           {
+            "seat": "p2",
+            "role": "player",
+            "nickname": "乙",
+            "online": true,
+            "ready": false,
+            "charId": null,
+            "charName": "",
+            "spec": false,
+            "joinedAt": 2,
+            "cid": ""
+           }
+          ],
+          "chats": [],
+          "logs": [],
+          "dice": [],
+          "scene": null,
+          "combat": null,
+          "privates": [],
+          "rewind": null,
+          "requests": [],
+          "board": null,
+          "seq": 2,
+          "version": 1
+         }
+        }
+       }
+      ]
+     },
+     {
+      "seat": "p3",
+      "rejected": false,
+      "blocked": false,
+      "member": {
+       "seat": "p3",
+       "role": "player",
+       "nickname": "丙",
+       "online": true,
+       "ready": false,
+       "charId": null,
+       "charName": "",
+       "spec": false,
+       "joinedAt": 3,
+       "cid": ""
+      },
+      "out": [
+       {
+        "to": "*",
+        "msg": {
+         "k": "evt",
+         "seq": 3,
+         "t": "members",
+         "p": {
+          "members": [
+           {
+            "seat": "p1",
+            "role": "player",
+            "nickname": "甲",
+            "online": true,
+            "ready": false,
+            "charId": null,
+            "charName": "",
+            "spec": false,
+            "joinedAt": 1,
+            "cid": ""
+           },
+           {
+            "seat": "p2",
+            "role": "player",
+            "nickname": "乙",
+            "online": true,
+            "ready": false,
+            "charId": null,
+            "charName": "",
+            "spec": false,
+            "joinedAt": 2,
+            "cid": ""
+           },
+           {
+            "seat": "p3",
+            "role": "player",
+            "nickname": "丙",
+            "online": true,
+            "ready": false,
+            "charId": null,
+            "charName": "",
+            "spec": false,
+            "joinedAt": 3,
+            "cid": ""
+           }
+          ]
+         }
+        }
+       },
+       {
+        "to": "p3",
+        "msg": {
+         "k": "sync",
+         "seq": 3,
+         "state": {
+          "meta": {
+           "code": "abcd",
+           "name": "",
+           "rules": "coc7",
+           "kpName": "",
+           "maxPlayers": 4,
+           "allowSpectate": false,
+           "status": "RECRUITING",
+           "mode": "EXPLORATION",
+           "round": 0,
+           "critThreshold": 1,
+           "fumbleThreshold": 100,
+           "hpWeek": {},
+           "psychoRound": {}
+          },
+          "members": [
+           {
+            "seat": "p1",
+            "role": "player",
+            "nickname": "甲",
+            "online": true,
+            "ready": false,
+            "charId": null,
+            "charName": "",
+            "spec": false,
+            "joinedAt": 1,
+            "cid": ""
+           },
+           {
+            "seat": "p2",
+            "role": "player",
+            "nickname": "乙",
+            "online": true,
+            "ready": false,
+            "charId": null,
+            "charName": "",
+            "spec": false,
+            "joinedAt": 2,
+            "cid": ""
+           },
+           {
+            "seat": "p3",
+            "role": "player",
+            "nickname": "丙",
+            "online": true,
+            "ready": false,
+            "charId": null,
+            "charName": "",
+            "spec": false,
+            "joinedAt": 3,
+            "cid": ""
+           }
+          ],
+          "chats": [],
+          "logs": [],
+          "dice": [],
+          "scene": null,
+          "combat": null,
+          "privates": [],
+          "rewind": null,
+          "requests": [],
+          "board": null,
+          "seq": 3,
+          "version": 1
+         }
+        }
+       }
+      ]
+     },
+     {
+      "seq": 4,
+      "plan": null
+     },
+     {
+      "seq": 5,
+      "plan": null
+     },
+     {
+      "seq": 6,
+      "plan": null
+     },
+     {
+      "seq": 7,
+      "plan": null
+     },
+     {
+      "dropped": 4,
+      "seq": 3,
+      "from": 3
+     },
+     {
+      "seq": 4,
+      "plan": null
+     },
+     {
+      "seq": 5,
+      "plan": null
+     },
+     {
+      "seq": 6,
+      "plan": null
+     },
+     {
+      "seq": 7,
+      "plan": null
+     },
+     {
+      "seq": 8,
+      "plan": [
+       {
+        "to": "*",
+        "msg": {
+         "k": "evt",
+         "seq": 8,
+         "t": "chat",
+         "p": {
+          "seat": "host",
+          "nickname": "甲",
+          "text": "c10",
+          "at": 10,
+          "kind": "user"
+         }
+        }
+       }
+      ]
+     },
+     {
+      "seq": 9,
+      "plan": null
+     },
+     [
+      {
+       "to": "host",
+       "msg": {
+        "k": "evt",
+        "seq": 2,
+        "t": "members",
+        "p": {
+         "members": [
+          {
+           "seat": "p1",
+           "role": "player",
+           "nickname": "甲",
+           "online": true,
+           "ready": false,
+           "charId": null,
+           "charName": "",
+           "spec": false,
+           "joinedAt": 1,
+           "cid": ""
+          },
+          {
+           "seat": "p2",
+           "role": "player",
+           "nickname": "乙",
+           "online": true,
+           "ready": false,
+           "charId": null,
+           "charName": "",
+           "spec": false,
+           "joinedAt": 2,
+           "cid": ""
+          }
+         ]
+        }
+       }
+      },
+      {
+       "to": "host",
+       "msg": {
+        "k": "evt",
+        "seq": 3,
+        "t": "members",
+        "p": {
+         "members": [
+          {
+           "seat": "p1",
+           "role": "player",
+           "nickname": "甲",
+           "online": true,
+           "ready": false,
+           "charId": null,
+           "charName": "",
+           "spec": false,
+           "joinedAt": 1,
+           "cid": ""
+          },
+          {
+           "seat": "p2",
+           "role": "player",
+           "nickname": "乙",
+           "online": true,
+           "ready": false,
+           "charId": null,
+           "charName": "",
+           "spec": false,
+           "joinedAt": 2,
+           "cid": ""
+          },
+          {
+           "seat": "p3",
+           "role": "player",
+           "nickname": "丙",
+           "online": true,
+           "ready": false,
+           "charId": null,
+           "charName": "",
+           "spec": false,
+           "joinedAt": 3,
+           "cid": ""
+          }
+         ]
+        }
+       }
+      },
+      {
+       "to": "host",
+       "msg": {
+        "k": "evt",
+        "seq": 4,
+        "t": "request",
+        "p": {
+         "self": true,
+         "done": false,
+         "id": "r6",
+         "op": "sheet.damage",
+         "payload": {
+          "amount": 1
+         },
+         "from": "KP",
+         "reason": "r",
+         "at": 6
+        }
+       }
+      },
+      {
+       "to": "host",
+       "msg": {
+        "k": "evt",
+        "seq": 5,
+        "t": "chat",
+        "p": {
+         "seat": "p2",
+         "nickname": "甲",
+         "text": "c7",
+         "at": 7,
+         "kind": "user"
+        }
+       }
+      },
+      {
+       "to": "host",
+       "msg": {
+        "k": "evt",
+        "seq": 6,
+        "t": "dice",
+        "p": {
+         "seat": "p1",
+         "nickname": "甲",
+         "expr": "1D100",
+         "rolls": [
+          79
+         ],
+         "total": 20,
+         "level": 4,
+         "levelText": "成功",
+         "label": "",
+         "at": 8
+        }
+       }
+      },
+      {
+       "to": "host",
+       "msg": {
+        "k": "evt",
+        "seq": 7,
+        "t": "chat",
+        "p": {
+         "seat": "p2",
+         "nickname": "甲",
+         "text": "c9",
+         "at": 9,
+         "kind": "user"
+        }
+       }
+      },
+      {
+       "to": "host",
+       "msg": {
+        "k": "evt",
+        "seq": 8,
+        "t": "chat",
+        "p": {
+         "seat": "host",
+         "nickname": "甲",
+         "text": "c10",
+         "at": 10,
+         "kind": "user"
+        }
+       }
+      },
+      {
+       "to": "host",
+       "msg": {
+        "k": "evt",
+        "seq": 9,
+        "t": "dice",
+        "p": {
+         "seat": "p1",
+         "nickname": "甲",
+         "expr": "1D100",
+         "rolls": [
+          83
+         ],
+         "total": 41,
+         "level": 5,
+         "levelText": "成功",
+         "label": "",
+         "at": 11
+        }
+       }
+      }
+     ],
+     {
+      "seq": 10,
+      "plan": null
+     },
+     {
+      "dropped": 4,
+      "seq": 6,
+      "from": 6
+     },
+     [
+      {
+       "to": "*",
+       "msg": {
+        "k": "evt",
+        "seq": 7,
+        "t": "status",
+        "p": {
+         "status": "SUSPENDED"
+        }
+       }
+      }
+     ],
+     [
+      {
+       "to": "p2",
+       "msg": {
+        "k": "evt",
+        "seq": 8,
+        "t": "kick",
+        "p": {
+         "reason": "你已被房主移出房间"
+        }
+       }
+      },
+      {
+       "to": "p1",
+       "msg": {
+        "k": "skip",
+        "seq": 8
+       }
+      },
+      {
+       "to": "p3",
+       "msg": {
+        "k": "skip",
+        "seq": 8
+       }
+      },
+      {
+       "to": "*",
+       "msg": {
+        "k": "evt",
+        "seq": 9,
+        "t": "members",
+        "p": {
+         "members": [
+          {
+           "seat": "p1",
+           "role": "player",
+           "nickname": "甲",
+           "online": true,
+           "ready": false,
+           "charId": null,
+           "charName": "",
+           "spec": false,
+           "joinedAt": 1,
+           "cid": ""
+          },
+          {
+           "seat": "p3",
+           "role": "player",
+           "nickname": "丙",
+           "online": true,
+           "ready": false,
+           "charId": null,
+           "charName": "",
+           "spec": false,
+           "joinedAt": 3,
+           "cid": ""
+          }
+         ]
+        }
+       }
+      },
+      {
+       "to": "*",
+       "msg": {
+        "k": "evt",
+        "seq": 10,
+        "t": "log",
+        "p": {
+         "seat": "",
+         "text": "乙 已离开房间",
+         "at": 1700000000000,
+         "kind": "sys"
+        }
+       }
+      }
+     ],
+     [
+      {
+       "to": "*",
+       "msg": {
+        "k": "evt",
+        "seq": 11,
+        "t": "closed",
+        "p": {
+         "at": 1700000000000
+        }
+       }
+      }
+     ],
+     null
+    ],
+    "state": {
+     "meta": {
+      "code": "abcd",
+      "name": "",
+      "rules": "coc7",
+      "kpName": "",
+      "maxPlayers": 4,
+      "allowSpectate": false,
+      "status": "CLOSED",
+      "mode": "EXPLORATION",
+      "round": 0,
+      "critThreshold": 1,
+      "fumbleThreshold": 100,
+      "hpWeek": {},
+      "psychoRound": {}
+     },
+     "members": [
+      {
+       "seat": "p1",
+       "role": "player",
+       "nickname": "甲",
+       "online": true,
+       "ready": false,
+       "charId": null,
+       "charName": "",
+       "spec": false,
+       "joinedAt": 1,
+       "cid": ""
+      },
+      {
+       "seat": "p3",
+       "role": "player",
+       "nickname": "丙",
+       "online": true,
+       "ready": false,
+       "charId": null,
+       "charName": "",
+       "spec": false,
+       "joinedAt": 3,
+       "cid": ""
+      }
+     ],
+     "chats": [
+      {
+       "seq": 5,
+       "seat": "p2",
+       "nickname": "甲",
+       "text": "c7",
+       "at": 7,
+       "kind": "user"
+      }
+     ],
+     "logs": [
+      {
+       "seq": 10,
+       "seat": "",
+       "text": "乙 已离开房间",
+       "at": 1700000000000,
+       "kind": "sys"
+      }
+     ],
+     "dice": [
+      {
+       "seq": 6,
+       "seat": "p1",
+       "nickname": "甲",
+       "expr": "1D100",
+       "rolls": [
+        79
+       ],
+       "total": 20,
+       "level": 4,
+       "levelText": "成功",
+       "label": "",
+       "at": 8
+      }
+     ],
+     "scene": null,
+     "combat": null,
+     "privates": [],
+     "rewind": null,
+     "requests": [
+      {
+       "id": "r6",
+       "op": "sheet.damage",
+       "p": {
+        "amount": 1
+       },
+       "from": "KP",
+       "reason": "r",
+       "at": 6
+      }
+     ],
+     "board": null,
+     "sceneCheck": null,
+     "archive": null,
+     "lastState": null,
+     "alert": null,
+     "opposed": null,
+     "seq": 11,
+     "version": 1
+    },
+    "logSeq": 11,
+    "log": [
+     {
+      "seq": 1,
+      "t": "members",
+      "vis": "public",
+      "to": null
+     },
+     {
+      "seq": 2,
+      "t": "members",
+      "vis": "public",
+      "to": null
+     },
+     {
+      "seq": 3,
+      "t": "members",
+      "vis": "public",
+      "to": null
+     },
+     {
+      "seq": 4,
+      "t": "request",
+      "vis": "public",
+      "to": null
+     },
+     {
+      "seq": 5,
+      "t": "chat",
+      "vis": "public",
+      "to": null
+     },
+     {
+      "seq": 6,
+      "t": "dice",
+      "vis": "public",
+      "to": null
+     },
+     {
+      "seq": 7,
+      "t": "status",
+      "vis": "public",
+      "to": null
+     },
+     {
+      "seq": 8,
+      "t": "kick",
+      "vis": "seat",
+      "to": "p2"
+     },
+     {
+      "seq": 9,
+      "t": "members",
+      "vis": "public",
+      "to": null
+     },
+     {
+      "seq": 10,
+      "t": "log",
+      "vis": "public",
+      "to": null
+     },
+     {
+      "seq": 11,
+      "t": "closed",
+      "vis": "public",
+      "to": null
+     }
+    ],
+    "warnings": [],
+    "snapshotSeqs": [
+     0,
+     3,
+     6,
+     9
+    ],
+    "roundStarts": [],
+    "save": {
+     "v": 2,
+     "code": "abcd",
+     "rules": "coc7",
+     "savedAt": 1700000000000,
+     "seq": 11,
+     "stateSeq": 0,
+     "meta": {
+      "code": "abcd",
+      "name": "",
+      "rules": "coc7",
+      "kpName": "",
+      "maxPlayers": 4,
+      "allowSpectate": false,
+      "status": "CLOSED",
+      "mode": "EXPLORATION",
+      "round": 0,
+      "critThreshold": 1,
+      "fumbleThreshold": 100,
+      "hpWeek": {},
+      "psychoRound": {}
+     },
+     "members": [
+      {
+       "seat": "p1",
+       "role": "player",
+       "nickname": "甲",
+       "online": true,
+       "ready": false,
+       "charId": null,
+       "charName": "",
+       "spec": false,
+       "joinedAt": 1,
+       "cid": ""
+      },
+      {
+       "seat": "p3",
+       "role": "player",
+       "nickname": "丙",
+       "online": true,
+       "ready": false,
+       "charId": null,
+       "charName": "",
+       "spec": false,
+       "joinedAt": 3,
+       "cid": ""
+      }
+     ],
+     "chats": [
+      {
+       "seq": 5,
+       "seat": "p2",
+       "nickname": "甲",
+       "text": "c7",
+       "at": 7,
+       "kind": "user"
+      }
+     ],
+     "logs": [
+      {
+       "seq": 10,
+       "seat": "",
+       "text": "乙 已离开房间",
+       "at": 1700000000000,
+       "kind": "sys"
+      }
+     ],
+     "dice": [
+      {
+       "seq": 6,
+       "seat": "p1",
+       "nickname": "甲",
+       "expr": "1D100",
+       "rolls": [
+        79
+       ],
+       "total": 20,
+       "level": 4,
+       "levelText": "成功",
+       "label": "",
+       "at": 8
+      }
+     ],
+     "scene": null,
+     "combat": null,
+     "sceneCheck": null,
+     "roundStarts": [],
+     "privateBySeat": {},
+     "requestsBySeat": {},
+     "boardBySeat": {},
+     "localAssets": [],
+     "localActors": []
+    },
+    "saveKeys": [
+     "v",
+     "code",
+     "rules",
+     "savedAt",
+     "seq",
+     "stateSeq",
+     "meta",
+     "members",
+     "chats",
+     "logs",
+     "dice",
+     "scene",
+     "combat",
+     "sceneCheck",
+     "roundStarts",
+     "privateBySeat",
+     "requestsBySeat",
+     "boardBySeat",
+     "localAssets",
+     "localActors"
+    ]
+   },
+   "randUsed": 0,
+   "tag": "F:random",
+   "error": null
+  },
+  {
+   "name": "F:3#424242",
+   "fn": "hostScript",
+   "args": {
+    "meta": {},
+    "snapshotEvery": 20,
+    "logCap": 3,
+    "ops": [
+     {
+      "op": "attach",
+      "m": {
+       "seat": "p1",
+       "nickname": "甲",
+       "at": 1
+      }
+     },
+     {
+      "op": "attach",
+      "m": {
+       "seat": "p2",
+       "nickname": "乙",
+       "at": 2
+      }
+     },
+     {
+      "op": "syncFor",
+      "seat": "p3"
+     },
+     {
+      "op": "emit",
+      "t": "dice",
+      "vis": "public",
+      "to": null,
+      "p": {
+       "seat": "p1",
+       "nickname": "甲",
+       "expr": "1D100",
+       "rolls": [
+        98
+       ],
+       "total": 36,
+       "level": 1,
+       "levelText": "成功",
+       "label": "",
+       "at": 2
+      }
+     },
+     {
+      "op": "syncFor",
+      "seat": "host"
+     },
+     {
+      "op": "emit",
+      "t": "log",
+      "vis": "public",
+      "to": null,
+      "p": {
+       "seat": "",
+       "text": "l4",
+       "at": 4,
+       "kind": "state"
+      }
+     },
+     {
+      "op": "emit",
+      "t": "log",
+      "vis": "public",
+      "to": null,
+      "p": {
+       "seat": "",
+       "text": "l5",
+       "at": 5,
+       "kind": "state"
+      }
+     },
+     {
+      "op": "emit",
+      "t": "board",
+      "vis": "public",
+      "to": null,
+      "p": {
+       "seat": "p1",
+       "at": 6,
+       "strokes": [
+        {
+         "p": 1
+        }
+       ],
+       "thumb": "t",
+       "self": true
+      }
+     },
+     {
+      "op": "emit",
+      "t": "turnalert",
+      "vis": "public",
+      "to": null,
+      "p": {
+       "kind": "turn",
+       "round": 1,
+       "turn": 0,
+       "name": "甲",
+       "seat": "p1",
+       "at": 7
+      }
+     },
+     {
+      "op": "emit",
+      "t": "chat",
+      "vis": "public",
+      "to": null,
+      "p": {
+       "seat": "host",
+       "nickname": "甲",
+       "text": "c8",
+       "at": 8,
+       "kind": "user"
+      },
+      "plan": true
+     },
+     {
+      "op": "emit",
+      "t": "log",
+      "vis": "public",
+      "to": null,
+      "p": {
+       "seat": "",
+       "text": "l9",
+       "at": 9,
+       "kind": "sys"
+      }
+     },
+     {
+      "op": "emit",
+      "t": "log",
+      "vis": "public",
+      "to": null,
+      "p": {
+       "seat": "",
+       "text": "l10",
+       "at": 10,
+       "kind": "info"
+      }
+     },
+     {
+      "op": "emit",
+      "t": "dice",
+      "vis": "public",
+      "to": null,
+      "p": {
+       "seat": "p1",
+       "nickname": "甲",
+       "expr": "1D100",
+       "rolls": [
+        6
+       ],
+       "total": 9,
+       "level": 4,
+       "levelText": "成功",
+       "label": "",
+       "at": 11
+      }
+     },
+     {
+      "op": "emit",
+      "t": "chat",
+      "vis": "public",
+      "to": null,
+      "p": {
+       "seat": "p1",
+       "nickname": "甲",
+       "text": "c12",
+       "at": 12,
+       "kind": "user"
+      },
+      "plan": false
+     },
+     {
+      "op": "emit",
+      "t": "request",
+      "vis": "public",
+      "to": null,
+      "p": {
+       "self": true,
+       "done": false,
+       "id": "r13",
+       "op": "sheet.damage",
+       "payload": {
+        "amount": 1
+       },
+       "from": "KP",
+       "reason": "r",
+       "at": 13
+      }
+     },
+     {
+      "op": "emit",
+      "t": "round",
+      "vis": "public",
+      "to": null,
+      "p": {
+       "round": 3
+      }
+     },
+     {
+      "op": "save"
+     }
+    ]
+   },
+   "seed": 424242,
+   "expect": {
+    "steps": [
+     {
+      "seat": "p1",
+      "rejected": false,
+      "blocked": false,
+      "member": {
+       "seat": "p1",
+       "role": "player",
+       "nickname": "甲",
+       "online": true,
+       "ready": false,
+       "charId": null,
+       "charName": "",
+       "spec": false,
+       "joinedAt": 1,
+       "cid": ""
+      },
+      "out": [
+       {
+        "to": "*",
+        "msg": {
+         "k": "evt",
+         "seq": 1,
+         "t": "members",
+         "p": {
+          "members": [
+           {
+            "seat": "p1",
+            "role": "player",
+            "nickname": "甲",
+            "online": true,
+            "ready": false,
+            "charId": null,
+            "charName": "",
+            "spec": false,
+            "joinedAt": 1,
+            "cid": ""
+           }
+          ]
+         }
+        }
+       },
+       {
+        "to": "p1",
+        "msg": {
+         "k": "sync",
+         "seq": 1,
+         "state": {
+          "meta": {
+           "code": "",
+           "name": "",
+           "rules": "coc7",
+           "kpName": "",
+           "maxPlayers": 4,
+           "allowSpectate": false,
+           "status": "RECRUITING",
+           "mode": "EXPLORATION",
+           "round": 0,
+           "critThreshold": 1,
+           "fumbleThreshold": 100,
+           "hpWeek": {},
+           "psychoRound": {}
+          },
+          "members": [
+           {
+            "seat": "p1",
+            "role": "player",
+            "nickname": "甲",
+            "online": true,
+            "ready": false,
+            "charId": null,
+            "charName": "",
+            "spec": false,
+            "joinedAt": 1,
+            "cid": ""
+           }
+          ],
+          "chats": [],
+          "logs": [],
+          "dice": [],
+          "scene": null,
+          "combat": null,
+          "privates": [],
+          "rewind": null,
+          "requests": [],
+          "board": null,
+          "seq": 1,
+          "version": 1
+         }
+        }
+       }
+      ]
+     },
+     {
+      "seat": "p2",
+      "rejected": false,
+      "blocked": false,
+      "member": {
+       "seat": "p2",
+       "role": "player",
+       "nickname": "乙",
+       "online": true,
+       "ready": false,
+       "charId": null,
+       "charName": "",
+       "spec": false,
+       "joinedAt": 2,
+       "cid": ""
+      },
+      "out": [
+       {
+        "to": "*",
+        "msg": {
+         "k": "evt",
+         "seq": 2,
+         "t": "members",
+         "p": {
+          "members": [
+           {
+            "seat": "p1",
+            "role": "player",
+            "nickname": "甲",
+            "online": true,
+            "ready": false,
+            "charId": null,
+            "charName": "",
+            "spec": false,
+            "joinedAt": 1,
+            "cid": ""
+           },
+           {
+            "seat": "p2",
+            "role": "player",
+            "nickname": "乙",
+            "online": true,
+            "ready": false,
+            "charId": null,
+            "charName": "",
+            "spec": false,
+            "joinedAt": 2,
+            "cid": ""
+           }
+          ]
+         }
+        }
+       },
+       {
+        "to": "p2",
+        "msg": {
+         "k": "sync",
+         "seq": 2,
+         "state": {
+          "meta": {
+           "code": "",
+           "name": "",
+           "rules": "coc7",
+           "kpName": "",
+           "maxPlayers": 4,
+           "allowSpectate": false,
+           "status": "RECRUITING",
+           "mode": "EXPLORATION",
+           "round": 0,
+           "critThreshold": 1,
+           "fumbleThreshold": 100,
+           "hpWeek": {},
+           "psychoRound": {}
+          },
+          "members": [
+           {
+            "seat": "p1",
+            "role": "player",
+            "nickname": "甲",
+            "online": true,
+            "ready": false,
+            "charId": null,
+            "charName": "",
+            "spec": false,
+            "joinedAt": 1,
+            "cid": ""
+           },
+           {
+            "seat": "p2",
+            "role": "player",
+            "nickname": "乙",
+            "online": true,
+            "ready": false,
+            "charId": null,
+            "charName": "",
+            "spec": false,
+            "joinedAt": 2,
+            "cid": ""
+           }
+          ],
+          "chats": [],
+          "logs": [],
+          "dice": [],
+          "scene": null,
+          "combat": null,
+          "privates": [],
+          "rewind": null,
+          "requests": [],
+          "board": null,
+          "seq": 2,
+          "version": 1
+         }
+        }
+       }
+      ]
+     },
+     {
+      "k": "sync",
+      "seq": 2,
+      "state": {
+       "meta": {
+        "code": "",
+        "name": "",
+        "rules": "coc7",
+        "kpName": "",
+        "maxPlayers": 4,
+        "allowSpectate": false,
+        "status": "RECRUITING",
+        "mode": "EXPLORATION",
+        "round": 0,
+        "critThreshold": 1,
+        "fumbleThreshold": 100,
+        "hpWeek": {},
+        "psychoRound": {}
+       },
+       "members": [
+        {
+         "seat": "p1",
+         "role": "player",
+         "nickname": "甲",
+         "online": true,
+         "ready": false,
+         "charId": null,
+         "charName": "",
+         "spec": false,
+         "joinedAt": 1,
+         "cid": ""
+        },
+        {
+         "seat": "p2",
+         "role": "player",
+         "nickname": "乙",
+         "online": true,
+         "ready": false,
+         "charId": null,
+         "charName": "",
+         "spec": false,
+         "joinedAt": 2,
+         "cid": ""
+        }
+       ],
+       "chats": [],
+       "logs": [],
+       "dice": [],
+       "scene": null,
+       "combat": null,
+       "privates": [],
+       "rewind": null,
+       "requests": [],
+       "board": null,
+       "seq": 2,
+       "version": 1
+      }
+     },
+     {
+      "seq": 3,
+      "plan": null
+     },
+     {
+      "k": "sync",
+      "seq": 3,
+      "state": {
+       "meta": {
+        "code": "",
+        "name": "",
+        "rules": "coc7",
+        "kpName": "",
+        "maxPlayers": 4,
+        "allowSpectate": false,
+        "status": "RECRUITING",
+        "mode": "EXPLORATION",
+        "round": 0,
+        "critThreshold": 1,
+        "fumbleThreshold": 100,
+        "hpWeek": {},
+        "psychoRound": {}
+       },
+       "members": [
+        {
+         "seat": "p1",
+         "role": "player",
+         "nickname": "甲",
+         "online": true,
+         "ready": false,
+         "charId": null,
+         "charName": "",
+         "spec": false,
+         "joinedAt": 1,
+         "cid": ""
+        },
+        {
+         "seat": "p2",
+         "role": "player",
+         "nickname": "乙",
+         "online": true,
+         "ready": false,
+         "charId": null,
+         "charName": "",
+         "spec": false,
+         "joinedAt": 2,
+         "cid": ""
+        }
+       ],
+       "chats": [],
+       "logs": [],
+       "dice": [
+        {
+         "seq": 3,
+         "seat": "p1",
+         "nickname": "甲",
+         "expr": "1D100",
+         "rolls": [
+          98
+         ],
+         "total": 36,
+         "level": 1,
+         "levelText": "成功",
+         "label": "",
+         "at": 2
+        }
+       ],
+       "scene": null,
+       "combat": null,
+       "privates": [],
+       "rewind": null,
+       "requests": [],
+       "board": null,
+       "seq": 3,
+       "version": 1
+      }
+     },
+     {
+      "seq": 4,
+      "plan": null
+     },
+     {
+      "seq": 5,
+      "plan": null
+     },
+     {
+      "seq": 6,
+      "plan": null
+     },
+     {
+      "seq": 7,
+      "plan": null
+     },
+     {
+      "seq": 8,
+      "plan": [
+       {
+        "to": "*",
+        "msg": {
+         "k": "evt",
+         "seq": 8,
+         "t": "chat",
+         "p": {
+          "seat": "host",
+          "nickname": "甲",
+          "text": "c8",
+          "at": 8,
+          "kind": "user"
+         }
+        }
+       }
+      ]
+     },
+     {
+      "seq": 9,
+      "plan": null
+     },
+     {
+      "seq": 10,
+      "plan": null
+     },
+     {
+      "seq": 11,
+      "plan": null
+     },
+     {
+      "seq": 12,
+      "plan": null
+     },
+     {
+      "seq": 13,
+      "plan": null
+     },
+     {
+      "seq": 14,
+      "plan": null
+     },
+     null
+    ],
+    "state": {
+     "meta": {
+      "code": "",
+      "name": "",
+      "rules": "coc7",
+      "kpName": "",
+      "maxPlayers": 4,
+      "allowSpectate": false,
+      "status": "RECRUITING",
+      "mode": "EXPLORATION",
+      "round": 3,
+      "critThreshold": 1,
+      "fumbleThreshold": 100,
+      "hpWeek": {},
+      "psychoRound": {}
+     },
+     "members": [
+      {
+       "seat": "p1",
+       "role": "player",
+       "nickname": "甲",
+       "online": true,
+       "ready": false,
+       "charId": null,
+       "charName": "",
+       "spec": false,
+       "joinedAt": 1,
+       "cid": ""
+      },
+      {
+       "seat": "p2",
+       "role": "player",
+       "nickname": "乙",
+       "online": true,
+       "ready": false,
+       "charId": null,
+       "charName": "",
+       "spec": false,
+       "joinedAt": 2,
+       "cid": ""
+      }
+     ],
+     "chats": [
+      {
+       "seq": 8,
+       "seat": "host",
+       "nickname": "甲",
+       "text": "c8",
+       "at": 8,
+       "kind": "user"
+      },
+      {
+       "seq": 12,
+       "seat": "p1",
+       "nickname": "甲",
+       "text": "c12",
+       "at": 12,
+       "kind": "user"
+      }
+     ],
+     "logs": [
+      {
+       "seq": 4,
+       "seat": "",
+       "text": "l4",
+       "at": 4,
+       "kind": "state"
+      },
+      {
+       "seq": 5,
+       "seat": "",
+       "text": "l5",
+       "at": 5,
+       "kind": "state"
+      },
+      {
+       "seq": 9,
+       "seat": "",
+       "text": "l9",
+       "at": 9,
+       "kind": "sys"
+      },
+      {
+       "seq": 10,
+       "seat": "",
+       "text": "l10",
+       "at": 10,
+       "kind": "info"
+      }
+     ],
+     "dice": [
+      {
+       "seq": 3,
+       "seat": "p1",
+       "nickname": "甲",
+       "expr": "1D100",
+       "rolls": [
+        98
+       ],
+       "total": 36,
+       "level": 1,
+       "levelText": "成功",
+       "label": "",
+       "at": 2
+      },
+      {
+       "seq": 11,
+       "seat": "p1",
+       "nickname": "甲",
+       "expr": "1D100",
+       "rolls": [
+        6
+       ],
+       "total": 9,
+       "level": 4,
+       "levelText": "成功",
+       "label": "",
+       "at": 11
+      }
+     ],
+     "scene": {
+      "title": "",
+      "image": "",
+      "assets": [],
+      "marks": [],
+      "strokes": [],
+      "boards": {
+       "p1": {
+        "at": 6,
+        "count": 1,
+        "thumb": "t"
+       }
+      }
+     },
+     "combat": null,
+     "privates": [],
+     "rewind": null,
+     "requests": [
+      {
+       "id": "r13",
+       "op": "sheet.damage",
+       "p": {
+        "amount": 1
+       },
+       "from": "KP",
+       "reason": "r",
+       "at": 13
+      }
+     ],
+     "board": {
+      "strokes": [
+       {
+        "p": 1
+       }
+      ],
+      "at": 6
+     },
+     "sceneCheck": null,
+     "archive": null,
+     "lastState": null,
+     "alert": {
+      "kind": "turn",
+      "round": 1,
+      "turn": 0,
+      "name": "甲",
+      "seat": "p1",
+      "at": 7
+     },
+     "opposed": null,
+     "seq": 14,
+     "version": 1
+    },
+    "logSeq": 14,
+    "log": [
+     {
+      "seq": 12,
+      "t": "chat",
+      "vis": "public",
+      "to": null
+     },
+     {
+      "seq": 13,
+      "t": "request",
+      "vis": "public",
+      "to": null
+     },
+     {
+      "seq": 14,
+      "t": "round",
+      "vis": "public",
+      "to": null
+     }
+    ],
+    "warnings": [],
+    "snapshotSeqs": [
+     0
+    ],
+    "roundStarts": [
+     {
+      "round": 3,
+      "seq": 14
+     }
+    ],
+    "save": {
+     "v": 2,
+     "code": "",
+     "rules": "coc7",
+     "savedAt": 1700000000000,
+     "seq": 14,
+     "stateSeq": 0,
+     "meta": {
+      "code": "",
+      "name": "",
+      "rules": "coc7",
+      "kpName": "",
+      "maxPlayers": 4,
+      "allowSpectate": false,
+      "status": "RECRUITING",
+      "mode": "EXPLORATION",
+      "round": 3,
+      "critThreshold": 1,
+      "fumbleThreshold": 100,
+      "hpWeek": {},
+      "psychoRound": {}
+     },
+     "members": [
+      {
+       "seat": "p1",
+       "role": "player",
+       "nickname": "甲",
+       "online": true,
+       "ready": false,
+       "charId": null,
+       "charName": "",
+       "spec": false,
+       "joinedAt": 1,
+       "cid": ""
+      },
+      {
+       "seat": "p2",
+       "role": "player",
+       "nickname": "乙",
+       "online": true,
+       "ready": false,
+       "charId": null,
+       "charName": "",
+       "spec": false,
+       "joinedAt": 2,
+       "cid": ""
+      }
+     ],
+     "chats": [
+      {
+       "seq": 8,
+       "seat": "host",
+       "nickname": "甲",
+       "text": "c8",
+       "at": 8,
+       "kind": "user"
+      },
+      {
+       "seq": 12,
+       "seat": "p1",
+       "nickname": "甲",
+       "text": "c12",
+       "at": 12,
+       "kind": "user"
+      }
+     ],
+     "logs": [
+      {
+       "seq": 4,
+       "seat": "",
+       "text": "l4",
+       "at": 4,
+       "kind": "state"
+      },
+      {
+       "seq": 5,
+       "seat": "",
+       "text": "l5",
+       "at": 5,
+       "kind": "state"
+      },
+      {
+       "seq": 9,
+       "seat": "",
+       "text": "l9",
+       "at": 9,
+       "kind": "sys"
+      },
+      {
+       "seq": 10,
+       "seat": "",
+       "text": "l10",
+       "at": 10,
+       "kind": "info"
+      }
+     ],
+     "dice": [
+      {
+       "seq": 3,
+       "seat": "p1",
+       "nickname": "甲",
+       "expr": "1D100",
+       "rolls": [
+        98
+       ],
+       "total": 36,
+       "level": 1,
+       "levelText": "成功",
+       "label": "",
+       "at": 2
+      },
+      {
+       "seq": 11,
+       "seat": "p1",
+       "nickname": "甲",
+       "expr": "1D100",
+       "rolls": [
+        6
+       ],
+       "total": 9,
+       "level": 4,
+       "levelText": "成功",
+       "label": "",
+       "at": 11
+      }
+     ],
+     "scene": {
+      "title": "",
+      "image": "",
+      "assets": [],
+      "marks": [],
+      "strokes": [],
+      "boards": {
+       "p1": {
+        "at": 6,
+        "count": 1,
+        "thumb": "t"
+       }
+      }
+     },
+     "combat": null,
+     "sceneCheck": null,
+     "roundStarts": [
+      {
+       "round": 3,
+       "seq": 14
+      }
+     ],
+     "privateBySeat": {},
+     "requestsBySeat": {},
+     "boardBySeat": {},
+     "localAssets": [],
+     "localActors": []
+    },
+    "saveKeys": [
+     "v",
+     "code",
+     "rules",
+     "savedAt",
+     "seq",
+     "stateSeq",
+     "meta",
+     "members",
+     "chats",
+     "logs",
+     "dice",
+     "scene",
+     "combat",
+     "sceneCheck",
+     "roundStarts",
+     "privateBySeat",
+     "requestsBySeat",
+     "boardBySeat",
+     "localAssets",
+     "localActors"
+    ]
+   },
+   "randUsed": 0,
+   "tag": "F:random",
+   "error": null
+  },
+  {
+   "name": "F:4#900001",
+   "fn": "hostScript",
+   "args": {
+    "meta": {
+     "code": "abcd"
+    },
+    "snapshotEvery": 1,
+    "logCap": 8,
+    "ops": [
+     {
+      "op": "attach",
+      "m": {
+       "seat": "p1",
+       "nickname": "甲",
+       "at": 1
+      }
+     },
+     {
+      "op": "attach",
+      "m": {
+       "seat": "p2",
+       "nickname": "乙",
+       "at": 2
+      }
+     },
+     {
+      "op": "attach",
+      "m": {
+       "seat": "p3",
+       "nickname": "丙",
+       "at": 3
+      }
+     },
+     {
+      "op": "rollback",
+      "before": 4
+     },
+     {
+      "op": "emit",
+      "t": "turnalert",
+      "vis": "public",
+      "to": null,
+      "p": {
+       "kind": "turn",
+       "round": 1,
+       "turn": 0,
+       "name": "甲",
+       "seat": "p1",
+       "at": 2
+      }
+     },
+     {
+      "op": "emit",
+      "t": "chat",
+      "vis": "public",
+      "to": null,
+      "p": {
+       "seat": "p1",
+       "nickname": "甲",
+       "text": "c3",
+       "at": 3,
+       "kind": "user"
+      },
+      "plan": true
+     },
+     {
+      "op": "emit",
+      "t": "archive",
+      "vis": "public",
+      "to": null,
+      "p": {
+       "seq": 4,
+       "savedAt": 4,
+       "ok": true
+      }
+     },
+     {
+      "op": "emit",
+      "t": "log",
+      "vis": "public",
+      "to": null,
+      "p": {
+       "seat": "",
+       "text": "l5",
+       "at": 5,
+       "kind": "sys"
+      }
+     },
+     {
+      "op": "emit",
+      "t": "dice",
+      "vis": "public",
+      "to": null,
+      "p": {
+       "seat": "p1",
+       "nickname": "甲",
+       "expr": "1D100",
+       "rolls": [
+        71
+       ],
+       "total": 70,
+       "level": 1,
+       "levelText": "成功",
+       "label": "",
+       "at": 6
+      }
+     },
+     {
+      "op": "emit",
+      "t": "turnalert",
+      "vis": "public",
+      "to": null,
+      "p": {
+       "kind": "turn",
+       "round": 1,
+       "turn": 0,
+       "name": "甲",
+       "seat": "p1",
+       "at": 7
+      }
+     },
+     {
+      "op": "emit",
+      "t": "turnalert",
+      "vis": "public",
+      "to": null,
+      "p": {
+       "kind": "turn",
+       "round": 1,
+       "turn": 0,
+       "name": "甲",
+       "seat": "p1",
+       "at": 8
+      }
+     },
+     {
+      "op": "emit",
+      "t": "archive",
+      "vis": "public",
+      "to": null,
+      "p": {
+       "seq": 9,
+       "savedAt": 9,
+       "ok": true
+      }
+     },
+     {
+      "op": "emit",
+      "t": "status",
+      "vis": "public",
+      "to": null,
+      "p": {
+       "status": "IN_GAME",
+       "mode": "COMBAT"
+      }
+     },
+     {
+      "op": "emit",
+      "t": "log",
+      "vis": "public",
+      "to": null,
+      "p": {
+       "seat": "",
+       "text": "l11",
+       "at": 11,
+       "kind": "sys"
+      }
+     },
+     {
+      "op": "emit",
+      "t": "chat",
+      "vis": "public",
+      "to": null,
+      "p": {
+       "seat": "p2",
+       "nickname": "甲",
+       "text": "c12",
+       "at": 12,
+       "kind": "user"
+      },
+      "plan": false
+     },
+     {
+      "op": "emit",
+      "t": "chat",
+      "vis": "public",
+      "to": null,
+      "p": {
+       "seat": "host",
+       "nickname": "甲",
+       "text": "c13",
+       "at": 13,
+       "kind": "user"
+      },
+      "plan": false
+     },
+     {
+      "op": "emit",
+      "t": "chat",
+      "vis": "public",
+      "to": null,
+      "p": {
+       "seat": "host",
+       "nickname": "甲",
+       "text": "c14",
+       "at": 14,
+       "kind": "user"
+      },
+      "plan": false
+     },
+     {
+      "op": "setStatus",
+      "s": "SUSPENDED"
+     },
+     {
+      "op": "kick",
+      "seat": "p2"
+     },
+     {
+      "op": "endSession"
+     },
+     {
+      "op": "save"
+     }
+    ]
+   },
+   "seed": 900001,
+   "expect": {
+    "steps": [
+     {
+      "seat": "p1",
+      "rejected": false,
+      "blocked": false,
+      "member": {
+       "seat": "p1",
+       "role": "player",
+       "nickname": "甲",
+       "online": true,
+       "ready": false,
+       "charId": null,
+       "charName": "",
+       "spec": false,
+       "joinedAt": 1,
+       "cid": ""
+      },
+      "out": [
+       {
+        "to": "*",
+        "msg": {
+         "k": "evt",
+         "seq": 1,
+         "t": "members",
+         "p": {
+          "members": [
+           {
+            "seat": "p1",
+            "role": "player",
+            "nickname": "甲",
+            "online": true,
+            "ready": false,
+            "charId": null,
+            "charName": "",
+            "spec": false,
+            "joinedAt": 1,
+            "cid": ""
+           }
+          ]
+         }
+        }
+       },
+       {
+        "to": "p1",
+        "msg": {
+         "k": "sync",
+         "seq": 1,
+         "state": {
+          "meta": {
+           "code": "abcd",
+           "name": "",
+           "rules": "coc7",
+           "kpName": "",
+           "maxPlayers": 4,
+           "allowSpectate": false,
+           "status": "RECRUITING",
+           "mode": "EXPLORATION",
+           "round": 0,
+           "critThreshold": 1,
+           "fumbleThreshold": 100,
+           "hpWeek": {},
+           "psychoRound": {}
+          },
+          "members": [
+           {
+            "seat": "p1",
+            "role": "player",
+            "nickname": "甲",
+            "online": true,
+            "ready": false,
+            "charId": null,
+            "charName": "",
+            "spec": false,
+            "joinedAt": 1,
+            "cid": ""
+           }
+          ],
+          "chats": [],
+          "logs": [],
+          "dice": [],
+          "scene": null,
+          "combat": null,
+          "privates": [],
+          "rewind": null,
+          "requests": [],
+          "board": null,
+          "seq": 1,
+          "version": 1
+         }
+        }
+       }
+      ]
+     },
+     {
+      "seat": "p2",
+      "rejected": false,
+      "blocked": false,
+      "member": {
+       "seat": "p2",
+       "role": "player",
+       "nickname": "乙",
+       "online": true,
+       "ready": false,
+       "charId": null,
+       "charName": "",
+       "spec": false,
+       "joinedAt": 2,
+       "cid": ""
+      },
+      "out": [
+       {
+        "to": "*",
+        "msg": {
+         "k": "evt",
+         "seq": 2,
+         "t": "members",
+         "p": {
+          "members": [
+           {
+            "seat": "p1",
+            "role": "player",
+            "nickname": "甲",
+            "online": true,
+            "ready": false,
+            "charId": null,
+            "charName": "",
+            "spec": false,
+            "joinedAt": 1,
+            "cid": ""
+           },
+           {
+            "seat": "p2",
+            "role": "player",
+            "nickname": "乙",
+            "online": true,
+            "ready": false,
+            "charId": null,
+            "charName": "",
+            "spec": false,
+            "joinedAt": 2,
+            "cid": ""
+           }
+          ]
+         }
+        }
+       },
+       {
+        "to": "p2",
+        "msg": {
+         "k": "sync",
+         "seq": 2,
+         "state": {
+          "meta": {
+           "code": "abcd",
+           "name": "",
+           "rules": "coc7",
+           "kpName": "",
+           "maxPlayers": 4,
+           "allowSpectate": false,
+           "status": "RECRUITING",
+           "mode": "EXPLORATION",
+           "round": 0,
+           "critThreshold": 1,
+           "fumbleThreshold": 100,
+           "hpWeek": {},
+           "psychoRound": {}
+          },
+          "members": [
+           {
+            "seat": "p1",
+            "role": "player",
+            "nickname": "甲",
+            "online": true,
+            "ready": false,
+            "charId": null,
+            "charName": "",
+            "spec": false,
+            "joinedAt": 1,
+            "cid": ""
+           },
+           {
+            "seat": "p2",
+            "role": "player",
+            "nickname": "乙",
+            "online": true,
+            "ready": false,
+            "charId": null,
+            "charName": "",
+            "spec": false,
+            "joinedAt": 2,
+            "cid": ""
+           }
+          ],
+          "chats": [],
+          "logs": [],
+          "dice": [],
+          "scene": null,
+          "combat": null,
+          "privates": [],
+          "rewind": null,
+          "requests": [],
+          "board": null,
+          "seq": 2,
+          "version": 1
+         }
+        }
+       }
+      ]
+     },
+     {
+      "seat": "p3",
+      "rejected": false,
+      "blocked": false,
+      "member": {
+       "seat": "p3",
+       "role": "player",
+       "nickname": "丙",
+       "online": true,
+       "ready": false,
+       "charId": null,
+       "charName": "",
+       "spec": false,
+       "joinedAt": 3,
+       "cid": ""
+      },
+      "out": [
+       {
+        "to": "*",
+        "msg": {
+         "k": "evt",
+         "seq": 3,
+         "t": "members",
+         "p": {
+          "members": [
+           {
+            "seat": "p1",
+            "role": "player",
+            "nickname": "甲",
+            "online": true,
+            "ready": false,
+            "charId": null,
+            "charName": "",
+            "spec": false,
+            "joinedAt": 1,
+            "cid": ""
+           },
+           {
+            "seat": "p2",
+            "role": "player",
+            "nickname": "乙",
+            "online": true,
+            "ready": false,
+            "charId": null,
+            "charName": "",
+            "spec": false,
+            "joinedAt": 2,
+            "cid": ""
+           },
+           {
+            "seat": "p3",
+            "role": "player",
+            "nickname": "丙",
+            "online": true,
+            "ready": false,
+            "charId": null,
+            "charName": "",
+            "spec": false,
+            "joinedAt": 3,
+            "cid": ""
+           }
+          ]
+         }
+        }
+       },
+       {
+        "to": "p3",
+        "msg": {
+         "k": "sync",
+         "seq": 3,
+         "state": {
+          "meta": {
+           "code": "abcd",
+           "name": "",
+           "rules": "coc7",
+           "kpName": "",
+           "maxPlayers": 4,
+           "allowSpectate": false,
+           "status": "RECRUITING",
+           "mode": "EXPLORATION",
+           "round": 0,
+           "critThreshold": 1,
+           "fumbleThreshold": 100,
+           "hpWeek": {},
+           "psychoRound": {}
+          },
+          "members": [
+           {
+            "seat": "p1",
+            "role": "player",
+            "nickname": "甲",
+            "online": true,
+            "ready": false,
+            "charId": null,
+            "charName": "",
+            "spec": false,
+            "joinedAt": 1,
+            "cid": ""
+           },
+           {
+            "seat": "p2",
+            "role": "player",
+            "nickname": "乙",
+            "online": true,
+            "ready": false,
+            "charId": null,
+            "charName": "",
+            "spec": false,
+            "joinedAt": 2,
+            "cid": ""
+           },
+           {
+            "seat": "p3",
+            "role": "player",
+            "nickname": "丙",
+            "online": true,
+            "ready": false,
+            "charId": null,
+            "charName": "",
+            "spec": false,
+            "joinedAt": 3,
+            "cid": ""
+           }
+          ],
+          "chats": [],
+          "logs": [],
+          "dice": [],
+          "scene": null,
+          "combat": null,
+          "privates": [],
+          "rewind": null,
+          "requests": [],
+          "board": null,
+          "seq": 3,
+          "version": 1
+         }
+        }
+       }
+      ]
+     },
+     {
+      "dropped": 0,
+      "seq": 3,
+      "from": 3
+     },
+     {
+      "seq": 4,
+      "plan": null
+     },
+     {
+      "seq": 5,
+      "plan": [
+       {
+        "to": "*",
+        "msg": {
+         "k": "evt",
+         "seq": 5,
+         "t": "chat",
+         "p": {
+          "seat": "p1",
+          "nickname": "甲",
+          "text": "c3",
+          "at": 3,
+          "kind": "user"
+         }
+        }
+       }
+      ]
+     },
+     {
+      "seq": 6,
+      "plan": null
+     },
+     {
+      "seq": 7,
+      "plan": null
+     },
+     {
+      "seq": 8,
+      "plan": null
+     },
+     {
+      "seq": 9,
+      "plan": null
+     },
+     {
+      "seq": 10,
+      "plan": null
+     },
+     {
+      "seq": 11,
+      "plan": null
+     },
+     {
+      "seq": 12,
+      "plan": null
+     },
+     {
+      "seq": 13,
+      "plan": null
+     },
+     {
+      "seq": 14,
+      "plan": null
+     },
+     {
+      "seq": 15,
+      "plan": null
+     },
+     {
+      "seq": 16,
+      "plan": null
+     },
+     [
+      {
+       "to": "*",
+       "msg": {
+        "k": "evt",
+        "seq": 17,
+        "t": "status",
+        "p": {
+         "status": "SUSPENDED"
+        }
+       }
+      }
+     ],
+     [
+      {
+       "to": "p2",
+       "msg": {
+        "k": "evt",
+        "seq": 18,
+        "t": "kick",
+        "p": {
+         "reason": "你已被房主移出房间"
+        }
+       }
+      },
+      {
+       "to": "p1",
+       "msg": {
+        "k": "skip",
+        "seq": 18
+       }
+      },
+      {
+       "to": "p3",
+       "msg": {
+        "k": "skip",
+        "seq": 18
+       }
+      },
+      {
+       "to": "*",
+       "msg": {
+        "k": "evt",
+        "seq": 19,
+        "t": "members",
+        "p": {
+         "members": [
+          {
+           "seat": "p1",
+           "role": "player",
+           "nickname": "甲",
+           "online": true,
+           "ready": false,
+           "charId": null,
+           "charName": "",
+           "spec": false,
+           "joinedAt": 1,
+           "cid": ""
+          },
+          {
+           "seat": "p3",
+           "role": "player",
+           "nickname": "丙",
+           "online": true,
+           "ready": false,
+           "charId": null,
+           "charName": "",
+           "spec": false,
+           "joinedAt": 3,
+           "cid": ""
+          }
+         ]
+        }
+       }
+      },
+      {
+       "to": "*",
+       "msg": {
+        "k": "evt",
+        "seq": 20,
+        "t": "log",
+        "p": {
+         "seat": "",
+         "text": "乙 已离开房间",
+         "at": 1700000000000,
+         "kind": "sys"
+        }
+       }
+      }
+     ],
+     [
+      {
+       "to": "*",
+       "msg": {
+        "k": "evt",
+        "seq": 21,
+        "t": "ended",
+        "p": {
+         "at": 1700000000000
+        }
+       }
+      }
+     ],
+     null
+    ],
+    "state": {
+     "meta": {
+      "code": "abcd",
+      "name": "",
+      "rules": "coc7",
+      "kpName": "",
+      "maxPlayers": 4,
+      "allowSpectate": false,
+      "status": "CLOSED",
+      "mode": "COMBAT",
+      "round": 0,
+      "critThreshold": 1,
+      "fumbleThreshold": 100,
+      "hpWeek": {},
+      "psychoRound": {},
+      "ended": true
+     },
+     "members": [
+      {
+       "seat": "p1",
+       "role": "player",
+       "nickname": "甲",
+       "online": true,
+       "ready": false,
+       "charId": null,
+       "charName": "",
+       "spec": false,
+       "joinedAt": 1,
+       "cid": ""
+      },
+      {
+       "seat": "p3",
+       "role": "player",
+       "nickname": "丙",
+       "online": true,
+       "ready": false,
+       "charId": null,
+       "charName": "",
+       "spec": false,
+       "joinedAt": 3,
+       "cid": ""
+      }
+     ],
+     "chats": [
+      {
+       "seq": 5,
+       "seat": "p1",
+       "nickname": "甲",
+       "text": "c3",
+       "at": 3,
+       "kind": "user"
+      },
+      {
+       "seq": 14,
+       "seat": "p2",
+       "nickname": "甲",
+       "text": "c12",
+       "at": 12,
+       "kind": "user"
+      },
+      {
+       "seq": 15,
+       "seat": "host",
+       "nickname": "甲",
+       "text": "c13",
+       "at": 13,
+       "kind": "user"
+      },
+      {
+       "seq": 16,
+       "seat": "host",
+       "nickname": "甲",
+       "text": "c14",
+       "at": 14,
+       "kind": "user"
+      }
+     ],
+     "logs": [
+      {
+       "seq": 7,
+       "seat": "",
+       "text": "l5",
+       "at": 5,
+       "kind": "sys"
+      },
+      {
+       "seq": 13,
+       "seat": "",
+       "text": "l11",
+       "at": 11,
+       "kind": "sys"
+      },
+      {
+       "seq": 20,
+       "seat": "",
+       "text": "乙 已离开房间",
+       "at": 1700000000000,
+       "kind": "sys"
+      }
+     ],
+     "dice": [
+      {
+       "seq": 8,
+       "seat": "p1",
+       "nickname": "甲",
+       "expr": "1D100",
+       "rolls": [
+        71
+       ],
+       "total": 70,
+       "level": 1,
+       "levelText": "成功",
+       "label": "",
+       "at": 6
+      }
+     ],
+     "scene": null,
+     "combat": null,
+     "privates": [],
+     "rewind": null,
+     "requests": [],
+     "board": null,
+     "sceneCheck": null,
+     "archive": {
+      "seq": 9,
+      "savedAt": 9,
+      "ok": true
+     },
+     "lastState": null,
+     "alert": {
+      "kind": "turn",
+      "round": 1,
+      "turn": 0,
+      "name": "甲",
+      "seat": "p1",
+      "at": 8
+     },
+     "opposed": null,
+     "seq": 21,
+     "version": 1
+    },
+    "logSeq": 21,
+    "log": [
+     {
+      "seq": 14,
+      "t": "chat",
+      "vis": "public",
+      "to": null
+     },
+     {
+      "seq": 15,
+      "t": "chat",
+      "vis": "public",
+      "to": null
+     },
+     {
+      "seq": 16,
+      "t": "chat",
+      "vis": "public",
+      "to": null
+     },
+     {
+      "seq": 17,
+      "t": "status",
+      "vis": "public",
+      "to": null
+     },
+     {
+      "seq": 18,
+      "t": "kick",
+      "vis": "seat",
+      "to": "p2"
+     },
+     {
+      "seq": 19,
+      "t": "members",
+      "vis": "public",
+      "to": null
+     },
+     {
+      "seq": 20,
+      "t": "log",
+      "vis": "public",
+      "to": null
+     },
+     {
+      "seq": 21,
+      "t": "ended",
+      "vis": "public",
+      "to": null
+     }
+    ],
+    "warnings": [],
+    "snapshotSeqs": [
+     2,
+     3,
+     4,
+     5,
+     6,
+     7,
+     8,
+     9,
+     10,
+     11,
+     12,
+     13,
+     14,
+     15,
+     16,
+     17,
+     18,
+     19,
+     20,
+     21
+    ],
+    "roundStarts": [],
+    "save": {
+     "v": 2,
+     "code": "abcd",
+     "rules": "coc7",
+     "savedAt": 1700000000000,
+     "seq": 21,
+     "stateSeq": 0,
+     "meta": {
+      "code": "abcd",
+      "name": "",
+      "rules": "coc7",
+      "kpName": "",
+      "maxPlayers": 4,
+      "allowSpectate": false,
+      "status": "CLOSED",
+      "mode": "COMBAT",
+      "round": 0,
+      "critThreshold": 1,
+      "fumbleThreshold": 100,
+      "hpWeek": {},
+      "psychoRound": {},
+      "ended": true
+     },
+     "members": [
+      {
+       "seat": "p1",
+       "role": "player",
+       "nickname": "甲",
+       "online": true,
+       "ready": false,
+       "charId": null,
+       "charName": "",
+       "spec": false,
+       "joinedAt": 1,
+       "cid": ""
+      },
+      {
+       "seat": "p3",
+       "role": "player",
+       "nickname": "丙",
+       "online": true,
+       "ready": false,
+       "charId": null,
+       "charName": "",
+       "spec": false,
+       "joinedAt": 3,
+       "cid": ""
+      }
+     ],
+     "chats": [
+      {
+       "seq": 5,
+       "seat": "p1",
+       "nickname": "甲",
+       "text": "c3",
+       "at": 3,
+       "kind": "user"
+      },
+      {
+       "seq": 14,
+       "seat": "p2",
+       "nickname": "甲",
+       "text": "c12",
+       "at": 12,
+       "kind": "user"
+      },
+      {
+       "seq": 15,
+       "seat": "host",
+       "nickname": "甲",
+       "text": "c13",
+       "at": 13,
+       "kind": "user"
+      },
+      {
+       "seq": 16,
+       "seat": "host",
+       "nickname": "甲",
+       "text": "c14",
+       "at": 14,
+       "kind": "user"
+      }
+     ],
+     "logs": [
+      {
+       "seq": 7,
+       "seat": "",
+       "text": "l5",
+       "at": 5,
+       "kind": "sys"
+      },
+      {
+       "seq": 13,
+       "seat": "",
+       "text": "l11",
+       "at": 11,
+       "kind": "sys"
+      },
+      {
+       "seq": 20,
+       "seat": "",
+       "text": "乙 已离开房间",
+       "at": 1700000000000,
+       "kind": "sys"
+      }
+     ],
+     "dice": [
+      {
+       "seq": 8,
+       "seat": "p1",
+       "nickname": "甲",
+       "expr": "1D100",
+       "rolls": [
+        71
+       ],
+       "total": 70,
+       "level": 1,
+       "levelText": "成功",
+       "label": "",
+       "at": 6
+      }
+     ],
+     "scene": null,
+     "combat": null,
+     "sceneCheck": null,
+     "roundStarts": [],
+     "privateBySeat": {},
+     "requestsBySeat": {},
+     "boardBySeat": {},
+     "localAssets": [],
+     "localActors": []
+    },
+    "saveKeys": [
+     "v",
+     "code",
+     "rules",
+     "savedAt",
+     "seq",
+     "stateSeq",
+     "meta",
+     "members",
+     "chats",
+     "logs",
+     "dice",
+     "scene",
+     "combat",
+     "sceneCheck",
+     "roundStarts",
+     "privateBySeat",
+     "requestsBySeat",
+     "boardBySeat",
+     "localAssets",
+     "localActors"
+    ]
+   },
+   "randUsed": 0,
+   "tag": "F:random",
+   "error": null
+  },
+  {
+   "name": "F:5#1234567",
+   "fn": "hostScript",
+   "args": {
+    "meta": {},
+    "snapshotEvery": 2,
+    "logCap": 400,
+    "ops": [
+     {
+      "op": "attach",
+      "m": {
+       "seat": "p1",
+       "nickname": "甲",
+       "at": 1
+      }
+     },
+     {
+      "op": "attach",
+      "m": {
+       "seat": "p2",
+       "nickname": "乙",
+       "at": 2
+      }
+     },
+     {
+      "op": "detach",
+      "seat": "p2"
+     },
+     {
+      "op": "emit",
+      "t": "chat",
+      "vis": "public",
+      "to": null,
+      "p": {
+       "seat": "host",
+       "nickname": "甲",
+       "text": "c1",
+       "at": 1,
+       "kind": "user"
+      },
+      "plan": false
+     },
+     {
+      "op": "emit",
+      "t": "board",
+      "vis": "public",
+      "to": null,
+      "p": {
+       "seat": "p1",
+       "at": 2,
+       "strokes": [
+        {
+         "p": 1
+        }
+       ],
+       "thumb": "t",
+       "self": true
+      }
+     },
+     {
+      "op": "emit",
+      "t": "round",
+      "vis": "public",
+      "to": null,
+      "p": {
+       "round": 3
+      }
+     },
+     {
+      "op": "emit",
+      "t": "round",
+      "vis": "public",
+      "to": null,
+      "p": {
+       "round": 2
+      }
+     },
+     {
+      "op": "emit",
+      "t": "status",
+      "vis": "public",
+      "to": null,
+      "p": {
+       "status": "IN_GAME",
+       "mode": "COMBAT"
+      }
+     },
+     {
+      "op": "emit",
+      "t": "log",
+      "vis": "public",
+      "to": null,
+      "p": {
+       "seat": "",
+       "text": "l6",
+       "at": 6,
+       "kind": "info"
+      }
+     },
+     {
+      "op": "emit",
+      "t": "status",
+      "vis": "public",
+      "to": null,
+      "p": {
+       "status": "IN_GAME",
+       "mode": "COMBAT"
+      }
+     },
+     {
+      "op": "emit",
+      "t": "archive",
+      "vis": "public",
+      "to": null,
+      "p": {
+       "seq": 8,
+       "savedAt": 8,
+       "ok": true
+      }
+     },
+     {
+      "op": "emit",
+      "t": "log",
+      "vis": "public",
+      "to": null,
+      "p": {
+       "seat": "",
+       "text": "l9",
+       "at": 9,
+       "kind": "state"
+      }
+     },
+     {
+      "op": "emit",
+      "t": "chat",
+      "vis": "public",
+      "to": null,
+      "p": {
+       "seat": "p2",
+       "nickname": "甲",
+       "text": "c10",
+       "at": 10,
+       "kind": "user"
+      },
+      "plan": false
+     },
+     {
+      "op": "emit",
+      "t": "asset",
+      "vis": "public",
+      "to": null,
+      "p": {
+       "assets": [
+        {
+         "id": "a11",
+         "kind": "map",
+         "name": "素材",
+         "data": "",
+         "revealed": true,
+         "at": 11
+        }
+       ]
+      }
+     },
+     {
+      "op": "emit",
+      "t": "round",
+      "vis": "public",
+      "to": null,
+      "p": {
+       "round": 2
+      }
+     },
+     {
+      "op": "emit",
+      "t": "dice",
+      "vis": "public",
+      "to": null,
+      "p": {
+       "seat": "p1",
+       "nickname": "甲",
+       "expr": "1D100",
+       "rolls": [
+        37
+       ],
+       "total": 66,
+       "level": 1,
+       "levelText": "成功",
+       "label": "",
+       "at": 13
+      }
+     },
+     {
+      "op": "emit",
+      "t": "dice",
+      "vis": "public",
+      "to": null,
+      "p": {
+       "seat": "p1",
+       "nickname": "甲",
+       "expr": "1D100",
+       "rolls": [
+        29
+       ],
+       "total": 41,
+       "level": 3,
+       "levelText": "成功",
+       "label": "",
+       "at": 14
+      }
+     },
+     {
+      "op": "kick",
+      "seat": "p2"
+     },
+     {
+      "op": "save"
+     }
+    ]
+   },
+   "seed": 1234567,
+   "expect": {
+    "steps": [
+     {
+      "seat": "p1",
+      "rejected": false,
+      "blocked": false,
+      "member": {
+       "seat": "p1",
+       "role": "player",
+       "nickname": "甲",
+       "online": true,
+       "ready": false,
+       "charId": null,
+       "charName": "",
+       "spec": false,
+       "joinedAt": 1,
+       "cid": ""
+      },
+      "out": [
+       {
+        "to": "*",
+        "msg": {
+         "k": "evt",
+         "seq": 1,
+         "t": "members",
+         "p": {
+          "members": [
+           {
+            "seat": "p1",
+            "role": "player",
+            "nickname": "甲",
+            "online": true,
+            "ready": false,
+            "charId": null,
+            "charName": "",
+            "spec": false,
+            "joinedAt": 1,
+            "cid": ""
+           }
+          ]
+         }
+        }
+       },
+       {
+        "to": "p1",
+        "msg": {
+         "k": "sync",
+         "seq": 1,
+         "state": {
+          "meta": {
+           "code": "",
+           "name": "",
+           "rules": "coc7",
+           "kpName": "",
+           "maxPlayers": 4,
+           "allowSpectate": false,
+           "status": "RECRUITING",
+           "mode": "EXPLORATION",
+           "round": 0,
+           "critThreshold": 1,
+           "fumbleThreshold": 100,
+           "hpWeek": {},
+           "psychoRound": {}
+          },
+          "members": [
+           {
+            "seat": "p1",
+            "role": "player",
+            "nickname": "甲",
+            "online": true,
+            "ready": false,
+            "charId": null,
+            "charName": "",
+            "spec": false,
+            "joinedAt": 1,
+            "cid": ""
+           }
+          ],
+          "chats": [],
+          "logs": [],
+          "dice": [],
+          "scene": null,
+          "combat": null,
+          "privates": [],
+          "rewind": null,
+          "requests": [],
+          "board": null,
+          "seq": 1,
+          "version": 1
+         }
+        }
+       }
+      ]
+     },
+     {
+      "seat": "p2",
+      "rejected": false,
+      "blocked": false,
+      "member": {
+       "seat": "p2",
+       "role": "player",
+       "nickname": "乙",
+       "online": false,
+       "ready": false,
+       "charId": null,
+       "charName": "",
+       "spec": false,
+       "joinedAt": 2,
+       "cid": ""
+      },
+      "out": [
+       {
+        "to": "*",
+        "msg": {
+         "k": "evt",
+         "seq": 2,
+         "t": "members",
+         "p": {
+          "members": [
+           {
+            "seat": "p1",
+            "role": "player",
+            "nickname": "甲",
+            "online": true,
+            "ready": false,
+            "charId": null,
+            "charName": "",
+            "spec": false,
+            "joinedAt": 1,
+            "cid": ""
+           },
+           {
+            "seat": "p2",
+            "role": "player",
+            "nickname": "乙",
+            "online": true,
+            "ready": false,
+            "charId": null,
+            "charName": "",
+            "spec": false,
+            "joinedAt": 2,
+            "cid": ""
+           }
+          ]
+         }
+        }
+       },
+       {
+        "to": "p2",
+        "msg": {
+         "k": "sync",
+         "seq": 2,
+         "state": {
+          "meta": {
+           "code": "",
+           "name": "",
+           "rules": "coc7",
+           "kpName": "",
+           "maxPlayers": 4,
+           "allowSpectate": false,
+           "status": "RECRUITING",
+           "mode": "EXPLORATION",
+           "round": 0,
+           "critThreshold": 1,
+           "fumbleThreshold": 100,
+           "hpWeek": {},
+           "psychoRound": {}
+          },
+          "members": [
+           {
+            "seat": "p1",
+            "role": "player",
+            "nickname": "甲",
+            "online": true,
+            "ready": false,
+            "charId": null,
+            "charName": "",
+            "spec": false,
+            "joinedAt": 1,
+            "cid": ""
+           },
+           {
+            "seat": "p2",
+            "role": "player",
+            "nickname": "乙",
+            "online": true,
+            "ready": false,
+            "charId": null,
+            "charName": "",
+            "spec": false,
+            "joinedAt": 2,
+            "cid": ""
+           }
+          ],
+          "chats": [],
+          "logs": [],
+          "dice": [],
+          "scene": null,
+          "combat": null,
+          "privates": [],
+          "rewind": null,
+          "requests": [],
+          "board": null,
+          "seq": 2,
+          "version": 1
+         }
+        }
+       }
+      ]
+     },
+     [
+      {
+       "to": "*",
+       "msg": {
+        "k": "evt",
+        "seq": 3,
+        "t": "members",
+        "p": {
+         "members": [
+          {
+           "seat": "p1",
+           "role": "player",
+           "nickname": "甲",
+           "online": true,
+           "ready": false,
+           "charId": null,
+           "charName": "",
+           "spec": false,
+           "joinedAt": 1,
+           "cid": ""
+          },
+          {
+           "seat": "p2",
+           "role": "player",
+           "nickname": "乙",
+           "online": false,
+           "ready": false,
+           "charId": null,
+           "charName": "",
+           "spec": false,
+           "joinedAt": 2,
+           "cid": ""
+          }
+         ]
+        }
+       }
+      }
+     ],
+     {
+      "seq": 4,
+      "plan": null
+     },
+     {
+      "seq": 5,
+      "plan": null
+     },
+     {
+      "seq": 6,
+      "plan": null
+     },
+     {
+      "seq": 7,
+      "plan": null
+     },
+     {
+      "seq": 8,
+      "plan": null
+     },
+     {
+      "seq": 9,
+      "plan": null
+     },
+     {
+      "seq": 10,
+      "plan": null
+     },
+     {
+      "seq": 11,
+      "plan": null
+     },
+     {
+      "seq": 12,
+      "plan": null
+     },
+     {
+      "seq": 13,
+      "plan": null
+     },
+     {
+      "seq": 14,
+      "plan": null
+     },
+     {
+      "seq": 15,
+      "plan": null
+     },
+     {
+      "seq": 16,
+      "plan": null
+     },
+     {
+      "seq": 17,
+      "plan": null
+     },
+     [
+      {
+       "to": "p2",
+       "msg": {
+        "k": "evt",
+        "seq": 18,
+        "t": "kick",
+        "p": {
+         "reason": "你已被房主移出房间"
+        }
+       }
+      },
+      {
+       "to": "p1",
+       "msg": {
+        "k": "skip",
+        "seq": 18
+       }
+      },
+      {
+       "to": "*",
+       "msg": {
+        "k": "evt",
+        "seq": 19,
+        "t": "members",
+        "p": {
+         "members": [
+          {
+           "seat": "p1",
+           "role": "player",
+           "nickname": "甲",
+           "online": true,
+           "ready": false,
+           "charId": null,
+           "charName": "",
+           "spec": false,
+           "joinedAt": 1,
+           "cid": ""
+          }
+         ]
+        }
+       }
+      },
+      {
+       "to": "*",
+       "msg": {
+        "k": "evt",
+        "seq": 20,
+        "t": "log",
+        "p": {
+         "seat": "",
+         "text": "乙 已离开房间",
+         "at": 1700000000000,
+         "kind": "sys"
+        }
+       }
+      }
+     ],
+     null
+    ],
+    "state": {
+     "meta": {
+      "code": "",
+      "name": "",
+      "rules": "coc7",
+      "kpName": "",
+      "maxPlayers": 4,
+      "allowSpectate": false,
+      "status": "CLOSED",
+      "mode": "COMBAT",
+      "round": 2,
+      "critThreshold": 1,
+      "fumbleThreshold": 100,
+      "hpWeek": {},
+      "psychoRound": {}
+     },
+     "members": [
+      {
+       "seat": "p1",
+       "role": "player",
+       "nickname": "甲",
+       "online": true,
+       "ready": false,
+       "charId": null,
+       "charName": "",
+       "spec": false,
+       "joinedAt": 1,
+       "cid": ""
+      }
+     ],
+     "chats": [
+      {
+       "seq": 4,
+       "seat": "host",
+       "nickname": "甲",
+       "text": "c1",
+       "at": 1,
+       "kind": "user"
+      },
+      {
+       "seq": 13,
+       "seat": "p2",
+       "nickname": "甲",
+       "text": "c10",
+       "at": 10,
+       "kind": "user"
+      }
+     ],
+     "logs": [
+      {
+       "seq": 9,
+       "seat": "",
+       "text": "l6",
+       "at": 6,
+       "kind": "info"
+      },
+      {
+       "seq": 12,
+       "seat": "",
+       "text": "l9",
+       "at": 9,
+       "kind": "state"
+      },
+      {
+       "seq": 20,
+       "seat": "",
+       "text": "乙 已离开房间",
+       "at": 1700000000000,
+       "kind": "sys"
+      }
+     ],
+     "dice": [
+      {
+       "seq": 16,
+       "seat": "p1",
+       "nickname": "甲",
+       "expr": "1D100",
+       "rolls": [
+        37
+       ],
+       "total": 66,
+       "level": 1,
+       "levelText": "成功",
+       "label": "",
+       "at": 13
+      },
+      {
+       "seq": 17,
+       "seat": "p1",
+       "nickname": "甲",
+       "expr": "1D100",
+       "rolls": [
+        29
+       ],
+       "total": 41,
+       "level": 3,
+       "levelText": "成功",
+       "label": "",
+       "at": 14
+      }
+     ],
+     "scene": {
+      "title": "",
+      "image": "",
+      "assets": [
+       {
+        "id": "a11",
+        "kind": "map",
+        "name": "素材",
+        "data": "",
+        "revealed": true,
+        "at": 11
+       }
+      ],
+      "marks": [],
+      "strokes": [],
+      "boards": {
+       "p1": {
+        "at": 2,
+        "count": 1,
+        "thumb": "t"
+       }
+      }
+     },
+     "combat": null,
+     "privates": [],
+     "rewind": null,
+     "requests": [],
+     "board": {
+      "strokes": [
+       {
+        "p": 1
+       }
+      ],
+      "at": 2
+     },
+     "sceneCheck": null,
+     "archive": {
+      "seq": 8,
+      "savedAt": 8,
+      "ok": true
+     },
+     "lastState": null,
+     "alert": null,
+     "opposed": null,
+     "seq": 20,
+     "version": 1
+    },
+    "logSeq": 20,
+    "log": [
+     {
+      "seq": 1,
+      "t": "members",
+      "vis": "public",
+      "to": null
+     },
+     {
+      "seq": 2,
+      "t": "members",
+      "vis": "public",
+      "to": null
+     },
+     {
+      "seq": 3,
+      "t": "members",
+      "vis": "public",
+      "to": null
+     },
+     {
+      "seq": 4,
+      "t": "chat",
+      "vis": "public",
+      "to": null
+     },
+     {
+      "seq": 5,
+      "t": "board",
+      "vis": "public",
+      "to": null
+     },
+     {
+      "seq": 6,
+      "t": "round",
+      "vis": "public",
+      "to": null
+     },
+     {
+      "seq": 7,
+      "t": "round",
+      "vis": "public",
+      "to": null
+     },
+     {
+      "seq": 8,
+      "t": "status",
+      "vis": "public",
+      "to": null
+     },
+     {
+      "seq": 9,
+      "t": "log",
+      "vis": "public",
+      "to": null
+     },
+     {
+      "seq": 10,
+      "t": "status",
+      "vis": "public",
+      "to": null
+     },
+     {
+      "seq": 11,
+      "t": "archive",
+      "vis": "public",
+      "to": null
+     },
+     {
+      "seq": 12,
+      "t": "log",
+      "vis": "public",
+      "to": null
+     },
+     {
+      "seq": 13,
+      "t": "chat",
+      "vis": "public",
+      "to": null
+     },
+     {
+      "seq": 14,
+      "t": "asset",
+      "vis": "public",
+      "to": null
+     },
+     {
+      "seq": 15,
+      "t": "round",
+      "vis": "public",
+      "to": null
+     },
+     {
+      "seq": 16,
+      "t": "dice",
+      "vis": "public",
+      "to": null
+     },
+     {
+      "seq": 17,
+      "t": "dice",
+      "vis": "public",
+      "to": null
+     },
+     {
+      "seq": 18,
+      "t": "kick",
+      "vis": "seat",
+      "to": "p2"
+     },
+     {
+      "seq": 19,
+      "t": "members",
+      "vis": "public",
+      "to": null
+     },
+     {
+      "seq": 20,
+      "t": "log",
+      "vis": "public",
+      "to": null
+     }
+    ],
+    "warnings": [],
+    "snapshotSeqs": [
+     0,
+     2,
+     4,
+     6,
+     8,
+     10,
+     12,
+     14,
+     16,
+     18,
+     20
+    ],
+    "roundStarts": [
+     {
+      "round": 3,
+      "seq": 6
+     },
+     {
+      "round": 2,
+      "seq": 7
+     },
+     {
+      "round": 2,
+      "seq": 15
+     }
+    ],
+    "save": {
+     "v": 2,
+     "code": "",
+     "rules": "coc7",
+     "savedAt": 1700000000000,
+     "seq": 20,
+     "stateSeq": 0,
+     "meta": {
+      "code": "",
+      "name": "",
+      "rules": "coc7",
+      "kpName": "",
+      "maxPlayers": 4,
+      "allowSpectate": false,
+      "status": "CLOSED",
+      "mode": "COMBAT",
+      "round": 2,
+      "critThreshold": 1,
+      "fumbleThreshold": 100,
+      "hpWeek": {},
+      "psychoRound": {}
+     },
+     "members": [
+      {
+       "seat": "p1",
+       "role": "player",
+       "nickname": "甲",
+       "online": true,
+       "ready": false,
+       "charId": null,
+       "charName": "",
+       "spec": false,
+       "joinedAt": 1,
+       "cid": ""
+      }
+     ],
+     "chats": [
+      {
+       "seq": 4,
+       "seat": "host",
+       "nickname": "甲",
+       "text": "c1",
+       "at": 1,
+       "kind": "user"
+      },
+      {
+       "seq": 13,
+       "seat": "p2",
+       "nickname": "甲",
+       "text": "c10",
+       "at": 10,
+       "kind": "user"
+      }
+     ],
+     "logs": [
+      {
+       "seq": 9,
+       "seat": "",
+       "text": "l6",
+       "at": 6,
+       "kind": "info"
+      },
+      {
+       "seq": 12,
+       "seat": "",
+       "text": "l9",
+       "at": 9,
+       "kind": "state"
+      },
+      {
+       "seq": 20,
+       "seat": "",
+       "text": "乙 已离开房间",
+       "at": 1700000000000,
+       "kind": "sys"
+      }
+     ],
+     "dice": [
+      {
+       "seq": 16,
+       "seat": "p1",
+       "nickname": "甲",
+       "expr": "1D100",
+       "rolls": [
+        37
+       ],
+       "total": 66,
+       "level": 1,
+       "levelText": "成功",
+       "label": "",
+       "at": 13
+      },
+      {
+       "seq": 17,
+       "seat": "p1",
+       "nickname": "甲",
+       "expr": "1D100",
+       "rolls": [
+        29
+       ],
+       "total": 41,
+       "level": 3,
+       "levelText": "成功",
+       "label": "",
+       "at": 14
+      }
+     ],
+     "scene": {
+      "title": "",
+      "image": "",
+      "assets": [
+       {
+        "id": "a11",
+        "kind": "map",
+        "name": "素材",
+        "data": "",
+        "revealed": true,
+        "at": 11
+       }
+      ],
+      "marks": [],
+      "strokes": [],
+      "boards": {
+       "p1": {
+        "at": 2,
+        "count": 1,
+        "thumb": "t"
+       }
+      }
+     },
+     "combat": null,
+     "sceneCheck": null,
+     "roundStarts": [
+      {
+       "round": 3,
+       "seq": 6
+      },
+      {
+       "round": 2,
+       "seq": 7
+      },
+      {
+       "round": 2,
+       "seq": 15
+      }
+     ],
+     "privateBySeat": {},
+     "requestsBySeat": {},
+     "boardBySeat": {},
+     "localAssets": [],
+     "localActors": []
+    },
+    "saveKeys": [
+     "v",
+     "code",
+     "rules",
+     "savedAt",
+     "seq",
+     "stateSeq",
+     "meta",
+     "members",
+     "chats",
+     "logs",
+     "dice",
+     "scene",
+     "combat",
+     "sceneCheck",
+     "roundStarts",
+     "privateBySeat",
+     "requestsBySeat",
+     "boardBySeat",
+     "localAssets",
+     "localActors"
+    ]
+   },
+   "randUsed": 0,
+   "tag": "F:random",
+   "error": null
+  }
+ ]
+}

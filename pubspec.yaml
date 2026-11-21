@@ -1,0 +1,121 @@
+name: dice_realm
+description: "骰境TRPG — 克苏鲁的呼唤 7th 车卡器与跑团房间（原生 Flutter 重写）"
+# The following line prevents the package from being accidentally published to
+# pub.dev using `flutter pub publish`. This is preferred for private packages.
+publish_to: 'none' # Remove this line if you wish to publish to pub.dev
+
+# The following defines the version and build number for your application.
+# A version number is three numbers separated by dots, like 1.2.43
+# followed by an optional build number separated by a +.
+# Both the version and the builder number may be overridden in flutter
+# build by specifying --build-name and --build-number, respectively.
+# In Android, build-name is used as versionName while build-number used as versionCode.
+# Read more about Android versioning at https://developer.android.com/studio/publish/versioning
+# In iOS, build-name is used as CFBundleShortVersionString while build-number is used as CFBundleVersion.
+# Read more about iOS versioning at
+# https://developer.apple.com/library/archive/documentation/General/Reference/InfoPlistKeyReference/Articles/CoreFoundationKeys.html
+# In Windows, build-name is used as the major, minor, and patch parts
+# of the product and file versions while build-number is used as the build suffix.
+version: 2.45.0+115
+
+environment:
+  sdk: ^3.13.7
+
+# Dependencies specify other packages that your package needs in order to work.
+# To automatically upgrade your package dependencies to the latest versions
+# consider running `flutter pub upgrade --major-versions`. Alternatively,
+# dependencies can be manually updated by changing the version numbers below to
+# the latest version available on pub.dev. To see which dependencies have newer
+# versions available, run `flutter pub outdated`.
+dependencies:
+  flutter:
+    sdk: flutter
+
+  # The following adds the Cupertino Icons font to your application.
+  # Use with the CupertinoIcons class for iOS style icons.
+  cupertino_icons: ^1.0.8
+  path_provider: ^2.1.6
+  share_plus: ^13.3.1
+  # ★ 精确版本不是随手固定：file_picker 13.4.0 会拉 android_file_picker 2.2.0，
+  #   那个版本在 release 编译时直接报 Kotlin Unresolved reference（FilePickerDelegate /
+  #   saveFileName / SAVE_FILE_CODE 等十余处）⇒ `assembleRelease` 必然失败（已实测）。
+  #   13.3.3 是 v2.41.0 出包时的实际版本；要升级请先确认上游修掉那段 Kotlin。
+  file_picker: 13.3.3
+  audioplayers: ^6.8.1
+
+# ★ P20/v2.42.0 出包实测：file_picker 上游把 android_file_picker 顶到 2.2.0，
+#   该版本 Kotlin 源码引用不存在的符号（FilePickerDelegate / saveFileName /
+#   SAVE_FILE_CODE 等十余处），`assembleRelease` 直接编译失败（已实测两轮）。
+#   这里把传递依赖钉回 v2.41.0 实际出包用的版本；上游修好后删掉本节即可。
+dependency_overrides:
+  android_file_picker: 2.1.5
+  file_picker_platform_interface: 4.2.0
+  # jni 系列会编进 `libdartjni.so`。2.1.x→2.2.x 那批连带升级没有验证过，
+  # 钉回 v2.41.0 的版本，保证三 ABI 产物与上一包可比。
+  jni: 1.1.2
+  jni_flutter: 1.0.4+1
+  dbus: 0.8.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+
+  # The "flutter_lints" package below contains a set of recommended lints to
+  # encourage good coding practices. The lint set provided by the package is
+  # activated in the `analysis_options.yaml` file located at the root of your
+  # package. See that file for information about deactivating specific lint
+  # rules and activating additional ones.
+  flutter_lints: ^6.0.0
+
+# For information on the generic Dart part of this file, see the
+# following page: https://dart.dev/tools/pub/pubspec
+
+# The following section is specific to Flutter packages.
+flutter:
+
+  # The following line ensures that the Material Icons font is
+  # included with your application, so that you can use the icons in
+  # the material Icons class.
+  uses-material-design: true
+
+  # 美术资源（由 ui_asset_plan.md 清单产出，见 ui_assets/README.md）。
+  # 目录必须逐个列出（Flutter 不递归子目录）。
+  assets:
+    - assets/images/a_home/
+    - assets/images/b_card/
+    - assets/images/c_wizard/
+    - assets/images/d_lobby/
+    - assets/images/e_game/
+    - assets/images/f_common/
+    - assets/images/icons/dice/
+    - assets/images/icons/wizard/
+    - assets/images/icons/general/
+    - assets/images/icons/badge/
+    - assets/images/g_rules/
+    - assets/images/icons/share/
+
+  # An image asset can refer to one or more resolution-specific "variants", see
+  # https://flutter.dev/to/resolution-aware-images
+
+  # For details regarding adding assets from package dependencies, see
+  # https://flutter.dev/to/asset-from-package
+
+  # To add custom fonts to your application, add a fonts section here,
+  # in this "flutter" section. Each entry in this list should have a
+  # "family" key with the font family name, and a "fonts" key with a
+  # list giving the asset and other descriptors for the font. For
+  # example:
+  # fonts:
+  #   - family: Schyler
+  #     fonts:
+  #       - asset: fonts/Schyler-Regular.ttf
+  #       - asset: fonts/Schyler-Italic.ttf
+  #         style: italic
+  #   - family: Trajan Pro
+  #     fonts:
+  #       - asset: fonts/TrajanPro.ttf
+  #       - asset: fonts/TrajanPro_Bold.ttf
+  #         weight: 700
+  #
+  # For details regarding fonts from package dependencies,
+  # see https://flutter.dev/to/font-from-package

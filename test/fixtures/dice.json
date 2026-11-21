@@ -1,0 +1,3376 @@
+{
+ "domain": "dice",
+ "oracle": "coc7th-card-app/web/js",
+ "note": "由 tool/oracle/dump_fixtures.js 生成；请勿手改。",
+ "count": 283,
+ "cases": [
+  {
+   "name": "successLevel#1",
+   "fn": "successLevel",
+   "args": [
+    1,
+    0
+   ],
+   "expect": 5,
+   "randUsed": 0,
+   "seed": 2654435761,
+   "error": null
+  },
+  {
+   "name": "successLevel#2",
+   "fn": "successLevel",
+   "args": [
+    1,
+    1
+   ],
+   "expect": 5,
+   "randUsed": 0,
+   "seed": 1013904226,
+   "error": null
+  },
+  {
+   "name": "successLevel#3",
+   "fn": "successLevel",
+   "args": [
+    1,
+    4
+   ],
+   "expect": 5,
+   "randUsed": 0,
+   "seed": 3668339987,
+   "error": null
+  },
+  {
+   "name": "successLevel#4",
+   "fn": "successLevel",
+   "args": [
+    1,
+    5
+   ],
+   "expect": 5,
+   "randUsed": 0,
+   "seed": 2027808452,
+   "error": null
+  },
+  {
+   "name": "successLevel#5",
+   "fn": "successLevel",
+   "args": [
+    1,
+    9
+   ],
+   "expect": 5,
+   "randUsed": 0,
+   "seed": 387276917,
+   "error": null
+  },
+  {
+   "name": "successLevel#6",
+   "fn": "successLevel",
+   "args": [
+    1,
+    10
+   ],
+   "expect": 5,
+   "randUsed": 0,
+   "seed": 3041712678,
+   "error": null
+  },
+  {
+   "name": "successLevel#7",
+   "fn": "successLevel",
+   "args": [
+    1,
+    24
+   ],
+   "expect": 5,
+   "randUsed": 0,
+   "seed": 1401181143,
+   "error": null
+  },
+  {
+   "name": "successLevel#8",
+   "fn": "successLevel",
+   "args": [
+    1,
+    25
+   ],
+   "expect": 5,
+   "randUsed": 0,
+   "seed": 4055616904,
+   "error": null
+  },
+  {
+   "name": "successLevel#9",
+   "fn": "successLevel",
+   "args": [
+    1,
+    49
+   ],
+   "expect": 5,
+   "randUsed": 0,
+   "seed": 2415085369,
+   "error": null
+  },
+  {
+   "name": "successLevel#10",
+   "fn": "successLevel",
+   "args": [
+    1,
+    50
+   ],
+   "expect": 5,
+   "randUsed": 0,
+   "seed": 774553834,
+   "error": null
+  },
+  {
+   "name": "successLevel#11",
+   "fn": "successLevel",
+   "args": [
+    1,
+    51
+   ],
+   "expect": 5,
+   "randUsed": 0,
+   "seed": 3428989595,
+   "error": null
+  },
+  {
+   "name": "successLevel#12",
+   "fn": "successLevel",
+   "args": [
+    1,
+    60
+   ],
+   "expect": 5,
+   "randUsed": 0,
+   "seed": 1788458060,
+   "error": null
+  },
+  {
+   "name": "successLevel#13",
+   "fn": "successLevel",
+   "args": [
+    1,
+    94
+   ],
+   "expect": 5,
+   "randUsed": 0,
+   "seed": 147926525,
+   "error": null
+  },
+  {
+   "name": "successLevel#14",
+   "fn": "successLevel",
+   "args": [
+    1,
+    95
+   ],
+   "expect": 5,
+   "randUsed": 0,
+   "seed": 2802362286,
+   "error": null
+  },
+  {
+   "name": "successLevel#15",
+   "fn": "successLevel",
+   "args": [
+    1,
+    99
+   ],
+   "expect": 5,
+   "randUsed": 0,
+   "seed": 1161830751,
+   "error": null
+  },
+  {
+   "name": "successLevel#16",
+   "fn": "successLevel",
+   "args": [
+    1,
+    100
+   ],
+   "expect": 5,
+   "randUsed": 0,
+   "seed": 3816266512,
+   "error": null
+  },
+  {
+   "name": "successLevel#17",
+   "fn": "successLevel",
+   "args": [
+    1,
+    120
+   ],
+   "expect": 5,
+   "randUsed": 0,
+   "seed": 2175734977,
+   "error": null
+  },
+  {
+   "name": "successLevel#18",
+   "fn": "successLevel",
+   "args": [
+    2,
+    0
+   ],
+   "expect": 0,
+   "randUsed": 0,
+   "seed": 535203442,
+   "error": null
+  },
+  {
+   "name": "successLevel#19",
+   "fn": "successLevel",
+   "args": [
+    2,
+    1
+   ],
+   "expect": 0,
+   "randUsed": 0,
+   "seed": 3189639203,
+   "error": null
+  },
+  {
+   "name": "successLevel#20",
+   "fn": "successLevel",
+   "args": [
+    2,
+    4
+   ],
+   "expect": 3,
+   "randUsed": 0,
+   "seed": 1549107668,
+   "error": null
+  },
+  {
+   "name": "successLevel#21",
+   "fn": "successLevel",
+   "args": [
+    2,
+    5
+   ],
+   "expect": 3,
+   "randUsed": 0,
+   "seed": 4203543429,
+   "error": null
+  },
+  {
+   "name": "successLevel#22",
+   "fn": "successLevel",
+   "args": [
+    2,
+    9
+   ],
+   "expect": 3,
+   "randUsed": 0,
+   "seed": 2563011894,
+   "error": null
+  },
+  {
+   "name": "successLevel#23",
+   "fn": "successLevel",
+   "args": [
+    2,
+    10
+   ],
+   "expect": 4,
+   "randUsed": 0,
+   "seed": 922480359,
+   "error": null
+  },
+  {
+   "name": "successLevel#24",
+   "fn": "successLevel",
+   "args": [
+    2,
+    24
+   ],
+   "expect": 4,
+   "randUsed": 0,
+   "seed": 3576916120,
+   "error": null
+  },
+  {
+   "name": "successLevel#25",
+   "fn": "successLevel",
+   "args": [
+    2,
+    25
+   ],
+   "expect": 4,
+   "randUsed": 0,
+   "seed": 1936384585,
+   "error": null
+  },
+  {
+   "name": "successLevel#26",
+   "fn": "successLevel",
+   "args": [
+    2,
+    49
+   ],
+   "expect": 4,
+   "randUsed": 0,
+   "seed": 295853050,
+   "error": null
+  },
+  {
+   "name": "successLevel#27",
+   "fn": "successLevel",
+   "args": [
+    2,
+    50
+   ],
+   "expect": 4,
+   "randUsed": 0,
+   "seed": 2950288811,
+   "error": null
+  },
+  {
+   "name": "successLevel#28",
+   "fn": "successLevel",
+   "args": [
+    2,
+    51
+   ],
+   "expect": 4,
+   "randUsed": 0,
+   "seed": 1309757276,
+   "error": null
+  },
+  {
+   "name": "successLevel#29",
+   "fn": "successLevel",
+   "args": [
+    2,
+    60
+   ],
+   "expect": 4,
+   "randUsed": 0,
+   "seed": 3964193037,
+   "error": null
+  },
+  {
+   "name": "successLevel#30",
+   "fn": "successLevel",
+   "args": [
+    2,
+    94
+   ],
+   "expect": 4,
+   "randUsed": 0,
+   "seed": 2323661502,
+   "error": null
+  },
+  {
+   "name": "successLevel#31",
+   "fn": "successLevel",
+   "args": [
+    2,
+    95
+   ],
+   "expect": 4,
+   "randUsed": 0,
+   "seed": 683129967,
+   "error": null
+  },
+  {
+   "name": "successLevel#32",
+   "fn": "successLevel",
+   "args": [
+    2,
+    99
+   ],
+   "expect": 4,
+   "randUsed": 0,
+   "seed": 3337565728,
+   "error": null
+  },
+  {
+   "name": "successLevel#33",
+   "fn": "successLevel",
+   "args": [
+    2,
+    100
+   ],
+   "expect": 4,
+   "randUsed": 0,
+   "seed": 1697034193,
+   "error": null
+  },
+  {
+   "name": "successLevel#34",
+   "fn": "successLevel",
+   "args": [
+    2,
+    120
+   ],
+   "expect": 4,
+   "randUsed": 0,
+   "seed": 56502658,
+   "error": null
+  },
+  {
+   "name": "successLevel#35",
+   "fn": "successLevel",
+   "args": [
+    3,
+    0
+   ],
+   "expect": 0,
+   "randUsed": 0,
+   "seed": 2710938419,
+   "error": null
+  },
+  {
+   "name": "successLevel#36",
+   "fn": "successLevel",
+   "args": [
+    3,
+    1
+   ],
+   "expect": 0,
+   "randUsed": 0,
+   "seed": 1070406884,
+   "error": null
+  },
+  {
+   "name": "successLevel#37",
+   "fn": "successLevel",
+   "args": [
+    3,
+    4
+   ],
+   "expect": 2,
+   "randUsed": 0,
+   "seed": 3724842645,
+   "error": null
+  },
+  {
+   "name": "successLevel#38",
+   "fn": "successLevel",
+   "args": [
+    3,
+    5
+   ],
+   "expect": 2,
+   "randUsed": 0,
+   "seed": 2084311110,
+   "error": null
+  },
+  {
+   "name": "successLevel#39",
+   "fn": "successLevel",
+   "args": [
+    3,
+    9
+   ],
+   "expect": 3,
+   "randUsed": 0,
+   "seed": 443779575,
+   "error": null
+  },
+  {
+   "name": "successLevel#40",
+   "fn": "successLevel",
+   "args": [
+    3,
+    10
+   ],
+   "expect": 3,
+   "randUsed": 0,
+   "seed": 3098215336,
+   "error": null
+  },
+  {
+   "name": "successLevel#41",
+   "fn": "successLevel",
+   "args": [
+    3,
+    24
+   ],
+   "expect": 4,
+   "randUsed": 0,
+   "seed": 1457683801,
+   "error": null
+  },
+  {
+   "name": "successLevel#42",
+   "fn": "successLevel",
+   "args": [
+    3,
+    25
+   ],
+   "expect": 4,
+   "randUsed": 0,
+   "seed": 4112119562,
+   "error": null
+  },
+  {
+   "name": "successLevel#43",
+   "fn": "successLevel",
+   "args": [
+    3,
+    49
+   ],
+   "expect": 4,
+   "randUsed": 0,
+   "seed": 2471588027,
+   "error": null
+  },
+  {
+   "name": "successLevel#44",
+   "fn": "successLevel",
+   "args": [
+    3,
+    50
+   ],
+   "expect": 4,
+   "randUsed": 0,
+   "seed": 831056492,
+   "error": null
+  },
+  {
+   "name": "successLevel#45",
+   "fn": "successLevel",
+   "args": [
+    3,
+    51
+   ],
+   "expect": 4,
+   "randUsed": 0,
+   "seed": 3485492253,
+   "error": null
+  },
+  {
+   "name": "successLevel#46",
+   "fn": "successLevel",
+   "args": [
+    3,
+    60
+   ],
+   "expect": 4,
+   "randUsed": 0,
+   "seed": 1844960718,
+   "error": null
+  },
+  {
+   "name": "successLevel#47",
+   "fn": "successLevel",
+   "args": [
+    3,
+    94
+   ],
+   "expect": 4,
+   "randUsed": 0,
+   "seed": 204429183,
+   "error": null
+  },
+  {
+   "name": "successLevel#48",
+   "fn": "successLevel",
+   "args": [
+    3,
+    95
+   ],
+   "expect": 4,
+   "randUsed": 0,
+   "seed": 2858864944,
+   "error": null
+  },
+  {
+   "name": "successLevel#49",
+   "fn": "successLevel",
+   "args": [
+    3,
+    99
+   ],
+   "expect": 4,
+   "randUsed": 0,
+   "seed": 1218333409,
+   "error": null
+  },
+  {
+   "name": "successLevel#50",
+   "fn": "successLevel",
+   "args": [
+    3,
+    100
+   ],
+   "expect": 4,
+   "randUsed": 0,
+   "seed": 3872769170,
+   "error": null
+  },
+  {
+   "name": "successLevel#51",
+   "fn": "successLevel",
+   "args": [
+    3,
+    120
+   ],
+   "expect": 4,
+   "randUsed": 0,
+   "seed": 2232237635,
+   "error": null
+  },
+  {
+   "name": "successLevel#52",
+   "fn": "successLevel",
+   "args": [
+    5,
+    0
+   ],
+   "expect": 0,
+   "randUsed": 0,
+   "seed": 591706100,
+   "error": null
+  },
+  {
+   "name": "successLevel#53",
+   "fn": "successLevel",
+   "args": [
+    5,
+    1
+   ],
+   "expect": 0,
+   "randUsed": 0,
+   "seed": 3246141861,
+   "error": null
+  },
+  {
+   "name": "successLevel#54",
+   "fn": "successLevel",
+   "args": [
+    5,
+    4
+   ],
+   "expect": 0,
+   "randUsed": 0,
+   "seed": 1605610326,
+   "error": null
+  },
+  {
+   "name": "successLevel#55",
+   "fn": "successLevel",
+   "args": [
+    5,
+    5
+   ],
+   "expect": 2,
+   "randUsed": 0,
+   "seed": 4260046087,
+   "error": null
+  },
+  {
+   "name": "successLevel#56",
+   "fn": "successLevel",
+   "args": [
+    5,
+    9
+   ],
+   "expect": 2,
+   "randUsed": 0,
+   "seed": 2619514552,
+   "error": null
+  },
+  {
+   "name": "successLevel#57",
+   "fn": "successLevel",
+   "args": [
+    5,
+    10
+   ],
+   "expect": 3,
+   "randUsed": 0,
+   "seed": 978983017,
+   "error": null
+  },
+  {
+   "name": "successLevel#58",
+   "fn": "successLevel",
+   "args": [
+    5,
+    24
+   ],
+   "expect": 3,
+   "randUsed": 0,
+   "seed": 3633418778,
+   "error": null
+  },
+  {
+   "name": "successLevel#59",
+   "fn": "successLevel",
+   "args": [
+    5,
+    25
+   ],
+   "expect": 4,
+   "randUsed": 0,
+   "seed": 1992887243,
+   "error": null
+  },
+  {
+   "name": "successLevel#60",
+   "fn": "successLevel",
+   "args": [
+    5,
+    49
+   ],
+   "expect": 4,
+   "randUsed": 0,
+   "seed": 352355708,
+   "error": null
+  },
+  {
+   "name": "successLevel#61",
+   "fn": "successLevel",
+   "args": [
+    5,
+    50
+   ],
+   "expect": 4,
+   "randUsed": 0,
+   "seed": 3006791469,
+   "error": null
+  },
+  {
+   "name": "successLevel#62",
+   "fn": "successLevel",
+   "args": [
+    5,
+    51
+   ],
+   "expect": 4,
+   "randUsed": 0,
+   "seed": 1366259934,
+   "error": null
+  },
+  {
+   "name": "successLevel#63",
+   "fn": "successLevel",
+   "args": [
+    5,
+    60
+   ],
+   "expect": 4,
+   "randUsed": 0,
+   "seed": 4020695695,
+   "error": null
+  },
+  {
+   "name": "successLevel#64",
+   "fn": "successLevel",
+   "args": [
+    5,
+    94
+   ],
+   "expect": 4,
+   "randUsed": 0,
+   "seed": 2380164160,
+   "error": null
+  },
+  {
+   "name": "successLevel#65",
+   "fn": "successLevel",
+   "args": [
+    5,
+    95
+   ],
+   "expect": 4,
+   "randUsed": 0,
+   "seed": 739632625,
+   "error": null
+  },
+  {
+   "name": "successLevel#66",
+   "fn": "successLevel",
+   "args": [
+    5,
+    99
+   ],
+   "expect": 4,
+   "randUsed": 0,
+   "seed": 3394068386,
+   "error": null
+  },
+  {
+   "name": "successLevel#67",
+   "fn": "successLevel",
+   "args": [
+    5,
+    100
+   ],
+   "expect": 4,
+   "randUsed": 0,
+   "seed": 1753536851,
+   "error": null
+  },
+  {
+   "name": "successLevel#68",
+   "fn": "successLevel",
+   "args": [
+    5,
+    120
+   ],
+   "expect": 4,
+   "randUsed": 0,
+   "seed": 113005316,
+   "error": null
+  },
+  {
+   "name": "successLevel#69",
+   "fn": "successLevel",
+   "args": [
+    6,
+    0
+   ],
+   "expect": 0,
+   "randUsed": 0,
+   "seed": 2767441077,
+   "error": null
+  },
+  {
+   "name": "successLevel#70",
+   "fn": "successLevel",
+   "args": [
+    6,
+    1
+   ],
+   "expect": 0,
+   "randUsed": 0,
+   "seed": 1126909542,
+   "error": null
+  },
+  {
+   "name": "successLevel#71",
+   "fn": "successLevel",
+   "args": [
+    6,
+    4
+   ],
+   "expect": 0,
+   "randUsed": 0,
+   "seed": 3781345303,
+   "error": null
+  },
+  {
+   "name": "successLevel#72",
+   "fn": "successLevel",
+   "args": [
+    6,
+    5
+   ],
+   "expect": 0,
+   "randUsed": 0,
+   "seed": 2140813768,
+   "error": null
+  },
+  {
+   "name": "successLevel#73",
+   "fn": "successLevel",
+   "args": [
+    6,
+    9
+   ],
+   "expect": 2,
+   "randUsed": 0,
+   "seed": 500282233,
+   "error": null
+  },
+  {
+   "name": "successLevel#74",
+   "fn": "successLevel",
+   "args": [
+    6,
+    10
+   ],
+   "expect": 2,
+   "randUsed": 0,
+   "seed": 3154717994,
+   "error": null
+  },
+  {
+   "name": "successLevel#75",
+   "fn": "successLevel",
+   "args": [
+    6,
+    24
+   ],
+   "expect": 3,
+   "randUsed": 0,
+   "seed": 1514186459,
+   "error": null
+  },
+  {
+   "name": "successLevel#76",
+   "fn": "successLevel",
+   "args": [
+    6,
+    25
+   ],
+   "expect": 3,
+   "randUsed": 0,
+   "seed": 4168622220,
+   "error": null
+  },
+  {
+   "name": "successLevel#77",
+   "fn": "successLevel",
+   "args": [
+    6,
+    49
+   ],
+   "expect": 4,
+   "randUsed": 0,
+   "seed": 2528090685,
+   "error": null
+  },
+  {
+   "name": "successLevel#78",
+   "fn": "successLevel",
+   "args": [
+    6,
+    50
+   ],
+   "expect": 4,
+   "randUsed": 0,
+   "seed": 887559150,
+   "error": null
+  },
+  {
+   "name": "successLevel#79",
+   "fn": "successLevel",
+   "args": [
+    6,
+    51
+   ],
+   "expect": 4,
+   "randUsed": 0,
+   "seed": 3541994911,
+   "error": null
+  },
+  {
+   "name": "successLevel#80",
+   "fn": "successLevel",
+   "args": [
+    6,
+    60
+   ],
+   "expect": 4,
+   "randUsed": 0,
+   "seed": 1901463376,
+   "error": null
+  },
+  {
+   "name": "successLevel#81",
+   "fn": "successLevel",
+   "args": [
+    6,
+    94
+   ],
+   "expect": 4,
+   "randUsed": 0,
+   "seed": 260931841,
+   "error": null
+  },
+  {
+   "name": "successLevel#82",
+   "fn": "successLevel",
+   "args": [
+    6,
+    95
+   ],
+   "expect": 4,
+   "randUsed": 0,
+   "seed": 2915367602,
+   "error": null
+  },
+  {
+   "name": "successLevel#83",
+   "fn": "successLevel",
+   "args": [
+    6,
+    99
+   ],
+   "expect": 4,
+   "randUsed": 0,
+   "seed": 1274836067,
+   "error": null
+  },
+  {
+   "name": "successLevel#84",
+   "fn": "successLevel",
+   "args": [
+    6,
+    100
+   ],
+   "expect": 4,
+   "randUsed": 0,
+   "seed": 3929271828,
+   "error": null
+  },
+  {
+   "name": "successLevel#85",
+   "fn": "successLevel",
+   "args": [
+    6,
+    120
+   ],
+   "expect": 4,
+   "randUsed": 0,
+   "seed": 2288740293,
+   "error": null
+  },
+  {
+   "name": "successLevel#86",
+   "fn": "successLevel",
+   "args": [
+    10,
+    0
+   ],
+   "expect": 0,
+   "randUsed": 0,
+   "seed": 648208758,
+   "error": null
+  },
+  {
+   "name": "successLevel#87",
+   "fn": "successLevel",
+   "args": [
+    10,
+    1
+   ],
+   "expect": 0,
+   "randUsed": 0,
+   "seed": 3302644519,
+   "error": null
+  },
+  {
+   "name": "successLevel#88",
+   "fn": "successLevel",
+   "args": [
+    10,
+    4
+   ],
+   "expect": 0,
+   "randUsed": 0,
+   "seed": 1662112984,
+   "error": null
+  },
+  {
+   "name": "successLevel#89",
+   "fn": "successLevel",
+   "args": [
+    10,
+    5
+   ],
+   "expect": 0,
+   "randUsed": 0,
+   "seed": 21581449,
+   "error": null
+  },
+  {
+   "name": "successLevel#90",
+   "fn": "successLevel",
+   "args": [
+    10,
+    9
+   ],
+   "expect": 0,
+   "randUsed": 0,
+   "seed": 2676017210,
+   "error": null
+  },
+  {
+   "name": "successLevel#91",
+   "fn": "successLevel",
+   "args": [
+    10,
+    10
+   ],
+   "expect": 2,
+   "randUsed": 0,
+   "seed": 1035485675,
+   "error": null
+  },
+  {
+   "name": "successLevel#92",
+   "fn": "successLevel",
+   "args": [
+    10,
+    24
+   ],
+   "expect": 3,
+   "randUsed": 0,
+   "seed": 3689921436,
+   "error": null
+  },
+  {
+   "name": "successLevel#93",
+   "fn": "successLevel",
+   "args": [
+    10,
+    25
+   ],
+   "expect": 3,
+   "randUsed": 0,
+   "seed": 2049389901,
+   "error": null
+  },
+  {
+   "name": "successLevel#94",
+   "fn": "successLevel",
+   "args": [
+    10,
+    49
+   ],
+   "expect": 3,
+   "randUsed": 0,
+   "seed": 408858366,
+   "error": null
+  },
+  {
+   "name": "successLevel#95",
+   "fn": "successLevel",
+   "args": [
+    10,
+    50
+   ],
+   "expect": 4,
+   "randUsed": 0,
+   "seed": 3063294127,
+   "error": null
+  },
+  {
+   "name": "successLevel#96",
+   "fn": "successLevel",
+   "args": [
+    10,
+    51
+   ],
+   "expect": 4,
+   "randUsed": 0,
+   "seed": 1422762592,
+   "error": null
+  },
+  {
+   "name": "successLevel#97",
+   "fn": "successLevel",
+   "args": [
+    10,
+    60
+   ],
+   "expect": 4,
+   "randUsed": 0,
+   "seed": 4077198353,
+   "error": null
+  },
+  {
+   "name": "successLevel#98",
+   "fn": "successLevel",
+   "args": [
+    10,
+    94
+   ],
+   "expect": 4,
+   "randUsed": 0,
+   "seed": 2436666818,
+   "error": null
+  },
+  {
+   "name": "successLevel#99",
+   "fn": "successLevel",
+   "args": [
+    10,
+    95
+   ],
+   "expect": 4,
+   "randUsed": 0,
+   "seed": 796135283,
+   "error": null
+  },
+  {
+   "name": "successLevel#100",
+   "fn": "successLevel",
+   "args": [
+    10,
+    99
+   ],
+   "expect": 4,
+   "randUsed": 0,
+   "seed": 3450571044,
+   "error": null
+  },
+  {
+   "name": "successLevel#101",
+   "fn": "successLevel",
+   "args": [
+    10,
+    100
+   ],
+   "expect": 4,
+   "randUsed": 0,
+   "seed": 1810039509,
+   "error": null
+  },
+  {
+   "name": "successLevel#102",
+   "fn": "successLevel",
+   "args": [
+    10,
+    120
+   ],
+   "expect": 4,
+   "randUsed": 0,
+   "seed": 169507974,
+   "error": null
+  },
+  {
+   "name": "successLevel#103",
+   "fn": "successLevel",
+   "args": [
+    25,
+    0
+   ],
+   "expect": 0,
+   "randUsed": 0,
+   "seed": 2823943735,
+   "error": null
+  },
+  {
+   "name": "successLevel#104",
+   "fn": "successLevel",
+   "args": [
+    25,
+    1
+   ],
+   "expect": 0,
+   "randUsed": 0,
+   "seed": 1183412200,
+   "error": null
+  },
+  {
+   "name": "successLevel#105",
+   "fn": "successLevel",
+   "args": [
+    25,
+    4
+   ],
+   "expect": 0,
+   "randUsed": 0,
+   "seed": 3837847961,
+   "error": null
+  },
+  {
+   "name": "successLevel#106",
+   "fn": "successLevel",
+   "args": [
+    25,
+    5
+   ],
+   "expect": 0,
+   "randUsed": 0,
+   "seed": 2197316426,
+   "error": null
+  },
+  {
+   "name": "successLevel#107",
+   "fn": "successLevel",
+   "args": [
+    25,
+    9
+   ],
+   "expect": 0,
+   "randUsed": 0,
+   "seed": 556784891,
+   "error": null
+  },
+  {
+   "name": "successLevel#108",
+   "fn": "successLevel",
+   "args": [
+    25,
+    10
+   ],
+   "expect": 0,
+   "randUsed": 0,
+   "seed": 3211220652,
+   "error": null
+  },
+  {
+   "name": "successLevel#109",
+   "fn": "successLevel",
+   "args": [
+    25,
+    24
+   ],
+   "expect": 0,
+   "randUsed": 0,
+   "seed": 1570689117,
+   "error": null
+  },
+  {
+   "name": "successLevel#110",
+   "fn": "successLevel",
+   "args": [
+    25,
+    25
+   ],
+   "expect": 2,
+   "randUsed": 0,
+   "seed": 4225124878,
+   "error": null
+  },
+  {
+   "name": "successLevel#111",
+   "fn": "successLevel",
+   "args": [
+    25,
+    49
+   ],
+   "expect": 2,
+   "randUsed": 0,
+   "seed": 2584593343,
+   "error": null
+  },
+  {
+   "name": "successLevel#112",
+   "fn": "successLevel",
+   "args": [
+    25,
+    50
+   ],
+   "expect": 3,
+   "randUsed": 0,
+   "seed": 944061808,
+   "error": null
+  },
+  {
+   "name": "successLevel#113",
+   "fn": "successLevel",
+   "args": [
+    25,
+    51
+   ],
+   "expect": 3,
+   "randUsed": 0,
+   "seed": 3598497569,
+   "error": null
+  },
+  {
+   "name": "successLevel#114",
+   "fn": "successLevel",
+   "args": [
+    25,
+    60
+   ],
+   "expect": 3,
+   "randUsed": 0,
+   "seed": 1957966034,
+   "error": null
+  },
+  {
+   "name": "successLevel#115",
+   "fn": "successLevel",
+   "args": [
+    25,
+    94
+   ],
+   "expect": 3,
+   "randUsed": 0,
+   "seed": 317434499,
+   "error": null
+  },
+  {
+   "name": "successLevel#116",
+   "fn": "successLevel",
+   "args": [
+    25,
+    95
+   ],
+   "expect": 3,
+   "randUsed": 0,
+   "seed": 2971870260,
+   "error": null
+  },
+  {
+   "name": "successLevel#117",
+   "fn": "successLevel",
+   "args": [
+    25,
+    99
+   ],
+   "expect": 3,
+   "randUsed": 0,
+   "seed": 1331338725,
+   "error": null
+  },
+  {
+   "name": "successLevel#118",
+   "fn": "successLevel",
+   "args": [
+    25,
+    100
+   ],
+   "expect": 3,
+   "randUsed": 0,
+   "seed": 3985774486,
+   "error": null
+  },
+  {
+   "name": "successLevel#119",
+   "fn": "successLevel",
+   "args": [
+    25,
+    120
+   ],
+   "expect": 3,
+   "randUsed": 0,
+   "seed": 2345242951,
+   "error": null
+  },
+  {
+   "name": "successLevel#120",
+   "fn": "successLevel",
+   "args": [
+    49,
+    0
+   ],
+   "expect": 0,
+   "randUsed": 0,
+   "seed": 704711416,
+   "error": null
+  },
+  {
+   "name": "successLevel#121",
+   "fn": "successLevel",
+   "args": [
+    49,
+    1
+   ],
+   "expect": 0,
+   "randUsed": 0,
+   "seed": 3359147177,
+   "error": null
+  },
+  {
+   "name": "successLevel#122",
+   "fn": "successLevel",
+   "args": [
+    49,
+    4
+   ],
+   "expect": 0,
+   "randUsed": 0,
+   "seed": 1718615642,
+   "error": null
+  },
+  {
+   "name": "successLevel#123",
+   "fn": "successLevel",
+   "args": [
+    49,
+    5
+   ],
+   "expect": 0,
+   "randUsed": 0,
+   "seed": 78084107,
+   "error": null
+  },
+  {
+   "name": "successLevel#124",
+   "fn": "successLevel",
+   "args": [
+    49,
+    9
+   ],
+   "expect": 0,
+   "randUsed": 0,
+   "seed": 2732519868,
+   "error": null
+  },
+  {
+   "name": "successLevel#125",
+   "fn": "successLevel",
+   "args": [
+    49,
+    10
+   ],
+   "expect": 0,
+   "randUsed": 0,
+   "seed": 1091988333,
+   "error": null
+  },
+  {
+   "name": "successLevel#126",
+   "fn": "successLevel",
+   "args": [
+    49,
+    24
+   ],
+   "expect": 0,
+   "randUsed": 0,
+   "seed": 3746424094,
+   "error": null
+  },
+  {
+   "name": "successLevel#127",
+   "fn": "successLevel",
+   "args": [
+    49,
+    25
+   ],
+   "expect": 0,
+   "randUsed": 0,
+   "seed": 2105892559,
+   "error": null
+  },
+  {
+   "name": "successLevel#128",
+   "fn": "successLevel",
+   "args": [
+    49,
+    49
+   ],
+   "expect": 2,
+   "randUsed": 0,
+   "seed": 465361024,
+   "error": null
+  },
+  {
+   "name": "successLevel#129",
+   "fn": "successLevel",
+   "args": [
+    49,
+    50
+   ],
+   "expect": 2,
+   "randUsed": 0,
+   "seed": 3119796785,
+   "error": null
+  },
+  {
+   "name": "successLevel#130",
+   "fn": "successLevel",
+   "args": [
+    49,
+    51
+   ],
+   "expect": 2,
+   "randUsed": 0,
+   "seed": 1479265250,
+   "error": null
+  },
+  {
+   "name": "successLevel#131",
+   "fn": "successLevel",
+   "args": [
+    49,
+    60
+   ],
+   "expect": 2,
+   "randUsed": 0,
+   "seed": 4133701011,
+   "error": null
+  },
+  {
+   "name": "successLevel#132",
+   "fn": "successLevel",
+   "args": [
+    49,
+    94
+   ],
+   "expect": 2,
+   "randUsed": 0,
+   "seed": 2493169476,
+   "error": null
+  },
+  {
+   "name": "successLevel#133",
+   "fn": "successLevel",
+   "args": [
+    49,
+    95
+   ],
+   "expect": 2,
+   "randUsed": 0,
+   "seed": 852637941,
+   "error": null
+  },
+  {
+   "name": "successLevel#134",
+   "fn": "successLevel",
+   "args": [
+    49,
+    99
+   ],
+   "expect": 3,
+   "randUsed": 0,
+   "seed": 3507073702,
+   "error": null
+  },
+  {
+   "name": "successLevel#135",
+   "fn": "successLevel",
+   "args": [
+    49,
+    100
+   ],
+   "expect": 3,
+   "randUsed": 0,
+   "seed": 1866542167,
+   "error": null
+  },
+  {
+   "name": "successLevel#136",
+   "fn": "successLevel",
+   "args": [
+    49,
+    120
+   ],
+   "expect": 3,
+   "randUsed": 0,
+   "seed": 226010632,
+   "error": null
+  },
+  {
+   "name": "successLevel#137",
+   "fn": "successLevel",
+   "args": [
+    50,
+    0
+   ],
+   "expect": 0,
+   "randUsed": 0,
+   "seed": 2880446393,
+   "error": null
+  },
+  {
+   "name": "successLevel#138",
+   "fn": "successLevel",
+   "args": [
+    50,
+    1
+   ],
+   "expect": 0,
+   "randUsed": 0,
+   "seed": 1239914858,
+   "error": null
+  },
+  {
+   "name": "successLevel#139",
+   "fn": "successLevel",
+   "args": [
+    50,
+    4
+   ],
+   "expect": 0,
+   "randUsed": 0,
+   "seed": 3894350619,
+   "error": null
+  },
+  {
+   "name": "successLevel#140",
+   "fn": "successLevel",
+   "args": [
+    50,
+    5
+   ],
+   "expect": 0,
+   "randUsed": 0,
+   "seed": 2253819084,
+   "error": null
+  },
+  {
+   "name": "successLevel#141",
+   "fn": "successLevel",
+   "args": [
+    50,
+    9
+   ],
+   "expect": 0,
+   "randUsed": 0,
+   "seed": 613287549,
+   "error": null
+  },
+  {
+   "name": "successLevel#142",
+   "fn": "successLevel",
+   "args": [
+    50,
+    10
+   ],
+   "expect": 0,
+   "randUsed": 0,
+   "seed": 3267723310,
+   "error": null
+  },
+  {
+   "name": "successLevel#143",
+   "fn": "successLevel",
+   "args": [
+    50,
+    24
+   ],
+   "expect": 0,
+   "randUsed": 0,
+   "seed": 1627191775,
+   "error": null
+  },
+  {
+   "name": "successLevel#144",
+   "fn": "successLevel",
+   "args": [
+    50,
+    25
+   ],
+   "expect": 0,
+   "randUsed": 0,
+   "seed": 4281627536,
+   "error": null
+  },
+  {
+   "name": "successLevel#145",
+   "fn": "successLevel",
+   "args": [
+    50,
+    49
+   ],
+   "expect": 0,
+   "randUsed": 0,
+   "seed": 2641096001,
+   "error": null
+  },
+  {
+   "name": "successLevel#146",
+   "fn": "successLevel",
+   "args": [
+    50,
+    50
+   ],
+   "expect": 2,
+   "randUsed": 0,
+   "seed": 1000564466,
+   "error": null
+  },
+  {
+   "name": "successLevel#147",
+   "fn": "successLevel",
+   "args": [
+    50,
+    51
+   ],
+   "expect": 2,
+   "randUsed": 0,
+   "seed": 3655000227,
+   "error": null
+  },
+  {
+   "name": "successLevel#148",
+   "fn": "successLevel",
+   "args": [
+    50,
+    60
+   ],
+   "expect": 2,
+   "randUsed": 0,
+   "seed": 2014468692,
+   "error": null
+  },
+  {
+   "name": "successLevel#149",
+   "fn": "successLevel",
+   "args": [
+    50,
+    94
+   ],
+   "expect": 2,
+   "randUsed": 0,
+   "seed": 373937157,
+   "error": null
+  },
+  {
+   "name": "successLevel#150",
+   "fn": "successLevel",
+   "args": [
+    50,
+    95
+   ],
+   "expect": 2,
+   "randUsed": 0,
+   "seed": 3028372918,
+   "error": null
+  },
+  {
+   "name": "successLevel#151",
+   "fn": "successLevel",
+   "args": [
+    50,
+    99
+   ],
+   "expect": 2,
+   "randUsed": 0,
+   "seed": 1387841383,
+   "error": null
+  },
+  {
+   "name": "successLevel#152",
+   "fn": "successLevel",
+   "args": [
+    50,
+    100
+   ],
+   "expect": 3,
+   "randUsed": 0,
+   "seed": 4042277144,
+   "error": null
+  },
+  {
+   "name": "successLevel#153",
+   "fn": "successLevel",
+   "args": [
+    50,
+    120
+   ],
+   "expect": 3,
+   "randUsed": 0,
+   "seed": 2401745609,
+   "error": null
+  },
+  {
+   "name": "successLevel#154",
+   "fn": "successLevel",
+   "args": [
+    51,
+    0
+   ],
+   "expect": 0,
+   "randUsed": 0,
+   "seed": 761214074,
+   "error": null
+  },
+  {
+   "name": "successLevel#155",
+   "fn": "successLevel",
+   "args": [
+    51,
+    1
+   ],
+   "expect": 0,
+   "randUsed": 0,
+   "seed": 3415649835,
+   "error": null
+  },
+  {
+   "name": "successLevel#156",
+   "fn": "successLevel",
+   "args": [
+    51,
+    4
+   ],
+   "expect": 0,
+   "randUsed": 0,
+   "seed": 1775118300,
+   "error": null
+  },
+  {
+   "name": "successLevel#157",
+   "fn": "successLevel",
+   "args": [
+    51,
+    5
+   ],
+   "expect": 0,
+   "randUsed": 0,
+   "seed": 134586765,
+   "error": null
+  },
+  {
+   "name": "successLevel#158",
+   "fn": "successLevel",
+   "args": [
+    51,
+    9
+   ],
+   "expect": 0,
+   "randUsed": 0,
+   "seed": 2789022526,
+   "error": null
+  },
+  {
+   "name": "successLevel#159",
+   "fn": "successLevel",
+   "args": [
+    51,
+    10
+   ],
+   "expect": 0,
+   "randUsed": 0,
+   "seed": 1148490991,
+   "error": null
+  },
+  {
+   "name": "successLevel#160",
+   "fn": "successLevel",
+   "args": [
+    51,
+    24
+   ],
+   "expect": 0,
+   "randUsed": 0,
+   "seed": 3802926752,
+   "error": null
+  },
+  {
+   "name": "successLevel#161",
+   "fn": "successLevel",
+   "args": [
+    51,
+    25
+   ],
+   "expect": 0,
+   "randUsed": 0,
+   "seed": 2162395217,
+   "error": null
+  },
+  {
+   "name": "successLevel#162",
+   "fn": "successLevel",
+   "args": [
+    51,
+    49
+   ],
+   "expect": 0,
+   "randUsed": 0,
+   "seed": 521863682,
+   "error": null
+  },
+  {
+   "name": "successLevel#163",
+   "fn": "successLevel",
+   "args": [
+    51,
+    50
+   ],
+   "expect": 0,
+   "randUsed": 0,
+   "seed": 3176299443,
+   "error": null
+  },
+  {
+   "name": "successLevel#164",
+   "fn": "successLevel",
+   "args": [
+    51,
+    51
+   ],
+   "expect": 2,
+   "randUsed": 0,
+   "seed": 1535767908,
+   "error": null
+  },
+  {
+   "name": "successLevel#165",
+   "fn": "successLevel",
+   "args": [
+    51,
+    60
+   ],
+   "expect": 2,
+   "randUsed": 0,
+   "seed": 4190203669,
+   "error": null
+  },
+  {
+   "name": "successLevel#166",
+   "fn": "successLevel",
+   "args": [
+    51,
+    94
+   ],
+   "expect": 2,
+   "randUsed": 0,
+   "seed": 2549672134,
+   "error": null
+  },
+  {
+   "name": "successLevel#167",
+   "fn": "successLevel",
+   "args": [
+    51,
+    95
+   ],
+   "expect": 2,
+   "randUsed": 0,
+   "seed": 909140599,
+   "error": null
+  },
+  {
+   "name": "successLevel#168",
+   "fn": "successLevel",
+   "args": [
+    51,
+    99
+   ],
+   "expect": 2,
+   "randUsed": 0,
+   "seed": 3563576360,
+   "error": null
+  },
+  {
+   "name": "successLevel#169",
+   "fn": "successLevel",
+   "args": [
+    51,
+    100
+   ],
+   "expect": 2,
+   "randUsed": 0,
+   "seed": 1923044825,
+   "error": null
+  },
+  {
+   "name": "successLevel#170",
+   "fn": "successLevel",
+   "args": [
+    51,
+    120
+   ],
+   "expect": 3,
+   "randUsed": 0,
+   "seed": 282513290,
+   "error": null
+  },
+  {
+   "name": "successLevel#171",
+   "fn": "successLevel",
+   "args": [
+    94,
+    0
+   ],
+   "expect": 0,
+   "randUsed": 0,
+   "seed": 2936949051,
+   "error": null
+  },
+  {
+   "name": "successLevel#172",
+   "fn": "successLevel",
+   "args": [
+    94,
+    1
+   ],
+   "expect": 0,
+   "randUsed": 0,
+   "seed": 1296417516,
+   "error": null
+  },
+  {
+   "name": "successLevel#173",
+   "fn": "successLevel",
+   "args": [
+    94,
+    4
+   ],
+   "expect": 0,
+   "randUsed": 0,
+   "seed": 3950853277,
+   "error": null
+  },
+  {
+   "name": "successLevel#174",
+   "fn": "successLevel",
+   "args": [
+    94,
+    5
+   ],
+   "expect": 0,
+   "randUsed": 0,
+   "seed": 2310321742,
+   "error": null
+  },
+  {
+   "name": "successLevel#175",
+   "fn": "successLevel",
+   "args": [
+    94,
+    9
+   ],
+   "expect": 0,
+   "randUsed": 0,
+   "seed": 669790207,
+   "error": null
+  },
+  {
+   "name": "successLevel#176",
+   "fn": "successLevel",
+   "args": [
+    94,
+    10
+   ],
+   "expect": 0,
+   "randUsed": 0,
+   "seed": 3324225968,
+   "error": null
+  },
+  {
+   "name": "successLevel#177",
+   "fn": "successLevel",
+   "args": [
+    94,
+    24
+   ],
+   "expect": 0,
+   "randUsed": 0,
+   "seed": 1683694433,
+   "error": null
+  },
+  {
+   "name": "successLevel#178",
+   "fn": "successLevel",
+   "args": [
+    94,
+    25
+   ],
+   "expect": 0,
+   "randUsed": 0,
+   "seed": 43162898,
+   "error": null
+  },
+  {
+   "name": "successLevel#179",
+   "fn": "successLevel",
+   "args": [
+    94,
+    49
+   ],
+   "expect": 0,
+   "randUsed": 0,
+   "seed": 2697598659,
+   "error": null
+  },
+  {
+   "name": "successLevel#180",
+   "fn": "successLevel",
+   "args": [
+    94,
+    50
+   ],
+   "expect": 0,
+   "randUsed": 0,
+   "seed": 1057067124,
+   "error": null
+  },
+  {
+   "name": "successLevel#181",
+   "fn": "successLevel",
+   "args": [
+    94,
+    51
+   ],
+   "expect": 0,
+   "randUsed": 0,
+   "seed": 3711502885,
+   "error": null
+  },
+  {
+   "name": "successLevel#182",
+   "fn": "successLevel",
+   "args": [
+    94,
+    60
+   ],
+   "expect": 0,
+   "randUsed": 0,
+   "seed": 2070971350,
+   "error": null
+  },
+  {
+   "name": "successLevel#183",
+   "fn": "successLevel",
+   "args": [
+    94,
+    94
+   ],
+   "expect": 2,
+   "randUsed": 0,
+   "seed": 430439815,
+   "error": null
+  },
+  {
+   "name": "successLevel#184",
+   "fn": "successLevel",
+   "args": [
+    94,
+    95
+   ],
+   "expect": 2,
+   "randUsed": 0,
+   "seed": 3084875576,
+   "error": null
+  },
+  {
+   "name": "successLevel#185",
+   "fn": "successLevel",
+   "args": [
+    94,
+    99
+   ],
+   "expect": 2,
+   "randUsed": 0,
+   "seed": 1444344041,
+   "error": null
+  },
+  {
+   "name": "successLevel#186",
+   "fn": "successLevel",
+   "args": [
+    94,
+    100
+   ],
+   "expect": 2,
+   "randUsed": 0,
+   "seed": 4098779802,
+   "error": null
+  },
+  {
+   "name": "successLevel#187",
+   "fn": "successLevel",
+   "args": [
+    94,
+    120
+   ],
+   "expect": 2,
+   "randUsed": 0,
+   "seed": 2458248267,
+   "error": null
+  },
+  {
+   "name": "successLevel#188",
+   "fn": "successLevel",
+   "args": [
+    95,
+    0
+   ],
+   "expect": 0,
+   "randUsed": 0,
+   "seed": 817716732,
+   "error": null
+  },
+  {
+   "name": "successLevel#189",
+   "fn": "successLevel",
+   "args": [
+    95,
+    1
+   ],
+   "expect": 0,
+   "randUsed": 0,
+   "seed": 3472152493,
+   "error": null
+  },
+  {
+   "name": "successLevel#190",
+   "fn": "successLevel",
+   "args": [
+    95,
+    4
+   ],
+   "expect": 0,
+   "randUsed": 0,
+   "seed": 1831620958,
+   "error": null
+  },
+  {
+   "name": "successLevel#191",
+   "fn": "successLevel",
+   "args": [
+    95,
+    5
+   ],
+   "expect": 0,
+   "randUsed": 0,
+   "seed": 191089423,
+   "error": null
+  },
+  {
+   "name": "successLevel#192",
+   "fn": "successLevel",
+   "args": [
+    95,
+    9
+   ],
+   "expect": 0,
+   "randUsed": 0,
+   "seed": 2845525184,
+   "error": null
+  },
+  {
+   "name": "successLevel#193",
+   "fn": "successLevel",
+   "args": [
+    95,
+    10
+   ],
+   "expect": 0,
+   "randUsed": 0,
+   "seed": 1204993649,
+   "error": null
+  },
+  {
+   "name": "successLevel#194",
+   "fn": "successLevel",
+   "args": [
+    95,
+    24
+   ],
+   "expect": 0,
+   "randUsed": 0,
+   "seed": 3859429410,
+   "error": null
+  },
+  {
+   "name": "successLevel#195",
+   "fn": "successLevel",
+   "args": [
+    95,
+    25
+   ],
+   "expect": 0,
+   "randUsed": 0,
+   "seed": 2218897875,
+   "error": null
+  },
+  {
+   "name": "successLevel#196",
+   "fn": "successLevel",
+   "args": [
+    95,
+    49
+   ],
+   "expect": 0,
+   "randUsed": 0,
+   "seed": 578366340,
+   "error": null
+  },
+  {
+   "name": "successLevel#197",
+   "fn": "successLevel",
+   "args": [
+    95,
+    50
+   ],
+   "expect": 0,
+   "randUsed": 0,
+   "seed": 3232802101,
+   "error": null
+  },
+  {
+   "name": "successLevel#198",
+   "fn": "successLevel",
+   "args": [
+    95,
+    51
+   ],
+   "expect": 0,
+   "randUsed": 0,
+   "seed": 1592270566,
+   "error": null
+  },
+  {
+   "name": "successLevel#199",
+   "fn": "successLevel",
+   "args": [
+    95,
+    60
+   ],
+   "expect": 0,
+   "randUsed": 0,
+   "seed": 4246706327,
+   "error": null
+  },
+  {
+   "name": "successLevel#200",
+   "fn": "successLevel",
+   "args": [
+    95,
+    94
+   ],
+   "expect": 0,
+   "randUsed": 0,
+   "seed": 2606174792,
+   "error": null
+  },
+  {
+   "name": "successLevel#201",
+   "fn": "successLevel",
+   "args": [
+    95,
+    95
+   ],
+   "expect": 2,
+   "randUsed": 0,
+   "seed": 965643257,
+   "error": null
+  },
+  {
+   "name": "successLevel#202",
+   "fn": "successLevel",
+   "args": [
+    95,
+    99
+   ],
+   "expect": 2,
+   "randUsed": 0,
+   "seed": 3620079018,
+   "error": null
+  },
+  {
+   "name": "successLevel#203",
+   "fn": "successLevel",
+   "args": [
+    95,
+    100
+   ],
+   "expect": 2,
+   "randUsed": 0,
+   "seed": 1979547483,
+   "error": null
+  },
+  {
+   "name": "successLevel#204",
+   "fn": "successLevel",
+   "args": [
+    95,
+    120
+   ],
+   "expect": 2,
+   "randUsed": 0,
+   "seed": 339015948,
+   "error": null
+  },
+  {
+   "name": "successLevel#205",
+   "fn": "successLevel",
+   "args": [
+    96,
+    0
+   ],
+   "expect": -1,
+   "randUsed": 0,
+   "seed": 2993451709,
+   "error": null
+  },
+  {
+   "name": "successLevel#206",
+   "fn": "successLevel",
+   "args": [
+    96,
+    1
+   ],
+   "expect": -1,
+   "randUsed": 0,
+   "seed": 1352920174,
+   "error": null
+  },
+  {
+   "name": "successLevel#207",
+   "fn": "successLevel",
+   "args": [
+    96,
+    4
+   ],
+   "expect": -1,
+   "randUsed": 0,
+   "seed": 4007355935,
+   "error": null
+  },
+  {
+   "name": "successLevel#208",
+   "fn": "successLevel",
+   "args": [
+    96,
+    5
+   ],
+   "expect": -1,
+   "randUsed": 0,
+   "seed": 2366824400,
+   "error": null
+  },
+  {
+   "name": "successLevel#209",
+   "fn": "successLevel",
+   "args": [
+    96,
+    9
+   ],
+   "expect": -1,
+   "randUsed": 0,
+   "seed": 726292865,
+   "error": null
+  },
+  {
+   "name": "successLevel#210",
+   "fn": "successLevel",
+   "args": [
+    96,
+    10
+   ],
+   "expect": -1,
+   "randUsed": 0,
+   "seed": 3380728626,
+   "error": null
+  },
+  {
+   "name": "successLevel#211",
+   "fn": "successLevel",
+   "args": [
+    96,
+    24
+   ],
+   "expect": -1,
+   "randUsed": 0,
+   "seed": 1740197091,
+   "error": null
+  },
+  {
+   "name": "successLevel#212",
+   "fn": "successLevel",
+   "args": [
+    96,
+    25
+   ],
+   "expect": -1,
+   "randUsed": 0,
+   "seed": 99665556,
+   "error": null
+  },
+  {
+   "name": "successLevel#213",
+   "fn": "successLevel",
+   "args": [
+    96,
+    49
+   ],
+   "expect": -1,
+   "randUsed": 0,
+   "seed": 2754101317,
+   "error": null
+  },
+  {
+   "name": "successLevel#214",
+   "fn": "successLevel",
+   "args": [
+    96,
+    50
+   ],
+   "expect": 0,
+   "randUsed": 0,
+   "seed": 1113569782,
+   "error": null
+  },
+  {
+   "name": "successLevel#215",
+   "fn": "successLevel",
+   "args": [
+    96,
+    51
+   ],
+   "expect": 0,
+   "randUsed": 0,
+   "seed": 3768005543,
+   "error": null
+  },
+  {
+   "name": "successLevel#216",
+   "fn": "successLevel",
+   "args": [
+    96,
+    60
+   ],
+   "expect": 0,
+   "randUsed": 0,
+   "seed": 2127474008,
+   "error": null
+  },
+  {
+   "name": "successLevel#217",
+   "fn": "successLevel",
+   "args": [
+    96,
+    94
+   ],
+   "expect": 0,
+   "randUsed": 0,
+   "seed": 486942473,
+   "error": null
+  },
+  {
+   "name": "successLevel#218",
+   "fn": "successLevel",
+   "args": [
+    96,
+    95
+   ],
+   "expect": 0,
+   "randUsed": 0,
+   "seed": 3141378234,
+   "error": null
+  },
+  {
+   "name": "successLevel#219",
+   "fn": "successLevel",
+   "args": [
+    96,
+    99
+   ],
+   "expect": 2,
+   "randUsed": 0,
+   "seed": 1500846699,
+   "error": null
+  },
+  {
+   "name": "successLevel#220",
+   "fn": "successLevel",
+   "args": [
+    96,
+    100
+   ],
+   "expect": 2,
+   "randUsed": 0,
+   "seed": 4155282460,
+   "error": null
+  },
+  {
+   "name": "successLevel#221",
+   "fn": "successLevel",
+   "args": [
+    96,
+    120
+   ],
+   "expect": 2,
+   "randUsed": 0,
+   "seed": 2514750925,
+   "error": null
+  },
+  {
+   "name": "successLevel#222",
+   "fn": "successLevel",
+   "args": [
+    99,
+    0
+   ],
+   "expect": -1,
+   "randUsed": 0,
+   "seed": 874219390,
+   "error": null
+  },
+  {
+   "name": "successLevel#223",
+   "fn": "successLevel",
+   "args": [
+    99,
+    1
+   ],
+   "expect": -1,
+   "randUsed": 0,
+   "seed": 3528655151,
+   "error": null
+  },
+  {
+   "name": "successLevel#224",
+   "fn": "successLevel",
+   "args": [
+    99,
+    4
+   ],
+   "expect": -1,
+   "randUsed": 0,
+   "seed": 1888123616,
+   "error": null
+  },
+  {
+   "name": "successLevel#225",
+   "fn": "successLevel",
+   "args": [
+    99,
+    5
+   ],
+   "expect": -1,
+   "randUsed": 0,
+   "seed": 247592081,
+   "error": null
+  },
+  {
+   "name": "successLevel#226",
+   "fn": "successLevel",
+   "args": [
+    99,
+    9
+   ],
+   "expect": -1,
+   "randUsed": 0,
+   "seed": 2902027842,
+   "error": null
+  },
+  {
+   "name": "successLevel#227",
+   "fn": "successLevel",
+   "args": [
+    99,
+    10
+   ],
+   "expect": -1,
+   "randUsed": 0,
+   "seed": 1261496307,
+   "error": null
+  },
+  {
+   "name": "successLevel#228",
+   "fn": "successLevel",
+   "args": [
+    99,
+    24
+   ],
+   "expect": -1,
+   "randUsed": 0,
+   "seed": 3915932068,
+   "error": null
+  },
+  {
+   "name": "successLevel#229",
+   "fn": "successLevel",
+   "args": [
+    99,
+    25
+   ],
+   "expect": -1,
+   "randUsed": 0,
+   "seed": 2275400533,
+   "error": null
+  },
+  {
+   "name": "successLevel#230",
+   "fn": "successLevel",
+   "args": [
+    99,
+    49
+   ],
+   "expect": -1,
+   "randUsed": 0,
+   "seed": 634868998,
+   "error": null
+  },
+  {
+   "name": "successLevel#231",
+   "fn": "successLevel",
+   "args": [
+    99,
+    50
+   ],
+   "expect": 0,
+   "randUsed": 0,
+   "seed": 3289304759,
+   "error": null
+  },
+  {
+   "name": "successLevel#232",
+   "fn": "successLevel",
+   "args": [
+    99,
+    51
+   ],
+   "expect": 0,
+   "randUsed": 0,
+   "seed": 1648773224,
+   "error": null
+  },
+  {
+   "name": "successLevel#233",
+   "fn": "successLevel",
+   "args": [
+    99,
+    60
+   ],
+   "expect": 0,
+   "randUsed": 0,
+   "seed": 8241689,
+   "error": null
+  },
+  {
+   "name": "successLevel#234",
+   "fn": "successLevel",
+   "args": [
+    99,
+    94
+   ],
+   "expect": 0,
+   "randUsed": 0,
+   "seed": 2662677450,
+   "error": null
+  },
+  {
+   "name": "successLevel#235",
+   "fn": "successLevel",
+   "args": [
+    99,
+    95
+   ],
+   "expect": 0,
+   "randUsed": 0,
+   "seed": 1022145915,
+   "error": null
+  },
+  {
+   "name": "successLevel#236",
+   "fn": "successLevel",
+   "args": [
+    99,
+    99
+   ],
+   "expect": 2,
+   "randUsed": 0,
+   "seed": 3676581676,
+   "error": null
+  },
+  {
+   "name": "successLevel#237",
+   "fn": "successLevel",
+   "args": [
+    99,
+    100
+   ],
+   "expect": 2,
+   "randUsed": 0,
+   "seed": 2036050141,
+   "error": null
+  },
+  {
+   "name": "successLevel#238",
+   "fn": "successLevel",
+   "args": [
+    99,
+    120
+   ],
+   "expect": 2,
+   "randUsed": 0,
+   "seed": 395518606,
+   "error": null
+  },
+  {
+   "name": "successLevel#239",
+   "fn": "successLevel",
+   "args": [
+    100,
+    0
+   ],
+   "expect": -1,
+   "randUsed": 0,
+   "seed": 3049954367,
+   "error": null
+  },
+  {
+   "name": "successLevel#240",
+   "fn": "successLevel",
+   "args": [
+    100,
+    1
+   ],
+   "expect": -1,
+   "randUsed": 0,
+   "seed": 1409422832,
+   "error": null
+  },
+  {
+   "name": "successLevel#241",
+   "fn": "successLevel",
+   "args": [
+    100,
+    4
+   ],
+   "expect": -1,
+   "randUsed": 0,
+   "seed": 4063858593,
+   "error": null
+  },
+  {
+   "name": "successLevel#242",
+   "fn": "successLevel",
+   "args": [
+    100,
+    5
+   ],
+   "expect": -1,
+   "randUsed": 0,
+   "seed": 2423327058,
+   "error": null
+  },
+  {
+   "name": "successLevel#243",
+   "fn": "successLevel",
+   "args": [
+    100,
+    9
+   ],
+   "expect": -1,
+   "randUsed": 0,
+   "seed": 782795523,
+   "error": null
+  },
+  {
+   "name": "successLevel#244",
+   "fn": "successLevel",
+   "args": [
+    100,
+    10
+   ],
+   "expect": -1,
+   "randUsed": 0,
+   "seed": 3437231284,
+   "error": null
+  },
+  {
+   "name": "successLevel#245",
+   "fn": "successLevel",
+   "args": [
+    100,
+    24
+   ],
+   "expect": -1,
+   "randUsed": 0,
+   "seed": 1796699749,
+   "error": null
+  },
+  {
+   "name": "successLevel#246",
+   "fn": "successLevel",
+   "args": [
+    100,
+    25
+   ],
+   "expect": -1,
+   "randUsed": 0,
+   "seed": 156168214,
+   "error": null
+  },
+  {
+   "name": "successLevel#247",
+   "fn": "successLevel",
+   "args": [
+    100,
+    49
+   ],
+   "expect": -1,
+   "randUsed": 0,
+   "seed": 2810603975,
+   "error": null
+  },
+  {
+   "name": "successLevel#248",
+   "fn": "successLevel",
+   "args": [
+    100,
+    50
+   ],
+   "expect": -1,
+   "randUsed": 0,
+   "seed": 1170072440,
+   "error": null
+  },
+  {
+   "name": "successLevel#249",
+   "fn": "successLevel",
+   "args": [
+    100,
+    51
+   ],
+   "expect": -1,
+   "randUsed": 0,
+   "seed": 3824508201,
+   "error": null
+  },
+  {
+   "name": "successLevel#250",
+   "fn": "successLevel",
+   "args": [
+    100,
+    60
+   ],
+   "expect": -1,
+   "randUsed": 0,
+   "seed": 2183976666,
+   "error": null
+  },
+  {
+   "name": "successLevel#251",
+   "fn": "successLevel",
+   "args": [
+    100,
+    94
+   ],
+   "expect": -1,
+   "randUsed": 0,
+   "seed": 543445131,
+   "error": null
+  },
+  {
+   "name": "successLevel#252",
+   "fn": "successLevel",
+   "args": [
+    100,
+    95
+   ],
+   "expect": -1,
+   "randUsed": 0,
+   "seed": 3197880892,
+   "error": null
+  },
+  {
+   "name": "successLevel#253",
+   "fn": "successLevel",
+   "args": [
+    100,
+    99
+   ],
+   "expect": -1,
+   "randUsed": 0,
+   "seed": 1557349357,
+   "error": null
+  },
+  {
+   "name": "successLevel#254",
+   "fn": "successLevel",
+   "args": [
+    100,
+    100
+   ],
+   "expect": -1,
+   "randUsed": 0,
+   "seed": 4211785118,
+   "error": null
+  },
+  {
+   "name": "successLevel#255",
+   "fn": "successLevel",
+   "args": [
+    100,
+    120
+   ],
+   "expect": -1,
+   "randUsed": 0,
+   "seed": 2571253583,
+   "error": null
+  },
+  {
+   "name": "d100Bonus#256",
+   "fn": "d100Bonus",
+   "args": [
+    -5
+   ],
+   "expect": 78,
+   "randUsed": 7,
+   "seed": 930722048,
+   "error": null
+  },
+  {
+   "name": "d100Bonus#257",
+   "fn": "d100Bonus",
+   "args": [
+    -3
+   ],
+   "expect": 98,
+   "randUsed": 5,
+   "seed": 3585157809,
+   "error": null
+  },
+  {
+   "name": "d100Bonus#258",
+   "fn": "d100Bonus",
+   "args": [
+    -2
+   ],
+   "expect": 38,
+   "randUsed": 4,
+   "seed": 1944626274,
+   "error": null
+  },
+  {
+   "name": "d100Bonus#259",
+   "fn": "d100Bonus",
+   "args": [
+    -1
+   ],
+   "expect": 18,
+   "randUsed": 3,
+   "seed": 304094739,
+   "error": null
+  },
+  {
+   "name": "d100Bonus#260",
+   "fn": "d100Bonus",
+   "args": [
+    0
+   ],
+   "expect": 99,
+   "randUsed": 2,
+   "seed": 2958530500,
+   "error": null
+  },
+  {
+   "name": "d100Bonus#261",
+   "fn": "d100Bonus",
+   "args": [
+    1
+   ],
+   "expect": 9,
+   "randUsed": 3,
+   "seed": 1317998965,
+   "error": null
+  },
+  {
+   "name": "d100Bonus#262",
+   "fn": "d100Bonus",
+   "args": [
+    2
+   ],
+   "expect": 9,
+   "randUsed": 4,
+   "seed": 3972434726,
+   "error": null
+  },
+  {
+   "name": "d100Bonus#263",
+   "fn": "d100Bonus",
+   "args": [
+    3
+   ],
+   "expect": 49,
+   "randUsed": 5,
+   "seed": 2331903191,
+   "error": null
+  },
+  {
+   "name": "d100Bonus#264",
+   "fn": "d100Bonus",
+   "args": [
+    5
+   ],
+   "expect": 9,
+   "randUsed": 7,
+   "seed": 691371656,
+   "error": null
+  },
+  {
+   "name": "parse#265",
+   "fn": "parse",
+   "args": [
+    ""
+   ],
+   "expect": 0,
+   "randUsed": 0,
+   "seed": 3345807417,
+   "error": null
+  },
+  {
+   "name": "parse#266",
+   "fn": "parse",
+   "args": [
+    "3D6"
+   ],
+   "expect": 3,
+   "randUsed": 0,
+   "seed": 1705275882,
+   "error": null
+  },
+  {
+   "name": "parse#267",
+   "fn": "parse",
+   "args": [
+    "2D6+6"
+   ],
+   "expect": 2,
+   "randUsed": 0,
+   "seed": 64744347,
+   "error": null
+  },
+  {
+   "name": "parse#268",
+   "fn": "parse",
+   "args": [
+    "1D10+1D4+2"
+   ],
+   "expect": 1,
+   "randUsed": 0,
+   "seed": 2719180108,
+   "error": null
+  },
+  {
+   "name": "parse#269",
+   "fn": "parse",
+   "args": [
+    "4D6/3码"
+   ],
+   "expect": 4,
+   "randUsed": 0,
+   "seed": 1078648573,
+   "error": null
+  },
+  {
+   "name": "parse#270",
+   "fn": "parse",
+   "args": [
+    "1D100"
+   ],
+   "expect": 1,
+   "randUsed": 0,
+   "seed": 3733084334,
+   "error": null
+  },
+  {
+   "name": "parse#271",
+   "fn": "parse",
+   "args": [
+    "D6"
+   ],
+   "expect": 0,
+   "randUsed": 0,
+   "seed": 2092552799,
+   "error": null
+  },
+  {
+   "name": "parse#272",
+   "fn": "parse",
+   "args": [
+    "-2D6+4"
+   ],
+   "expect": 2,
+   "randUsed": 0,
+   "seed": 452021264,
+   "error": null
+  },
+  {
+   "name": "parse#273",
+   "fn": "parse",
+   "args": [
+    "（1D6）2D6+3"
+   ],
+   "expect": 2,
+   "randUsed": 0,
+   "seed": 3106457025,
+   "error": null
+  },
+  {
+   "name": "parse#274",
+   "fn": "parse",
+   "args": [
+    "无"
+   ],
+   "expect": 0,
+   "randUsed": 0,
+   "seed": 1465925490,
+   "error": null
+  },
+  {
+   "name": "parse#275",
+   "fn": "parse",
+   "args": [
+    "1d4+1d6+1"
+   ],
+   "expect": 1,
+   "randUsed": 0,
+   "seed": 4120361251,
+   "error": null
+  },
+  {
+   "name": "parse#276",
+   "fn": "parse",
+   "args": [
+    "2D10-1"
+   ],
+   "expect": 2,
+   "randUsed": 0,
+   "seed": 2479829716,
+   "error": null
+  },
+  {
+   "name": "parse#277",
+   "fn": "parse",
+   "args": [
+    "3D6+1D6"
+   ],
+   "expect": 3,
+   "randUsed": 0,
+   "seed": 839298181,
+   "error": null
+  },
+  {
+   "name": "parse#278",
+   "fn": "parse",
+   "args": [
+    "1D3"
+   ],
+   "expect": 1,
+   "randUsed": 0,
+   "seed": 3493733942,
+   "error": null
+  },
+  {
+   "name": "parse#279",
+   "fn": "parse",
+   "args": [
+    "10D10"
+   ],
+   "expect": 10,
+   "randUsed": 0,
+   "seed": 1853202407,
+   "error": null
+  },
+  {
+   "name": "roll#280",
+   "fn": "roll",
+   "args": [
+    3,
+    6
+   ],
+   "expect": 5,
+   "randUsed": 3,
+   "seed": 212670872,
+   "error": null
+  },
+  {
+   "name": "roll#281",
+   "fn": "roll",
+   "args": [
+    0,
+    6
+   ],
+   "expect": 0,
+   "randUsed": 0,
+   "seed": 2867106633,
+   "error": null
+  },
+  {
+   "name": "d#282",
+   "fn": "d",
+   "args": [
+    20
+   ],
+   "expect": 8,
+   "randUsed": 1,
+   "seed": 1226575098,
+   "error": null
+  },
+  {
+   "name": "d100#283",
+   "fn": "d100",
+   "args": [],
+   "expect": 42,
+   "randUsed": 1,
+   "seed": 3881010859,
+   "error": null
+  }
+ ]
+}

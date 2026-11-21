@@ -1,0 +1,243 @@
+{
+  "format": "coc7-card",
+  "version": 1,
+  "data": {
+    "id": "legacy01",
+    "userId": "local",
+    "ruleSystemId": "coc7",
+    "characterName": "旧版调查员",
+    "playerName": "老玩家",
+    "avatar": "",
+    "basicInfo": {
+      "era": "现代",
+      "eraCustom": "",
+      "age": 32,
+      "gender": "女",
+      "genderCustom": "",
+      "residence": "阿卡姆 · 洛根街 12 号",
+      "birthplace": "波士顿",
+      "occupationName": "记者"
+    },
+    "age": 32,
+    "occupationId": "occ67",
+    "occupationPicks": {},
+    "customOccupation": null,
+    "attributes": {
+      "str": 50,
+      "con": 50,
+      "siz": 50,
+      "dex": 50,
+      "app": 50,
+      "int": 50,
+      "pow": 50,
+      "edu": 50,
+      "luck": 50
+    },
+    "attributeMode": "random",
+    "attributeHistory": [],
+    "pbCap": 480,
+    "pbIncludeLuck": true,
+    "fate": {
+      "n": 5,
+      "rolled": false,
+      "options": [],
+      "picked": -1,
+      "rolledAt": 0
+    },
+    "eduProgress": {
+      "base": null,
+      "done": 0,
+      "log": [],
+      "bonus": 0
+    },
+    "derivedStats": {
+      "hp": 10,
+      "maxHP": 10,
+      "mp": 10,
+      "maxMP": 10,
+      "san": 50,
+      "maxSAN": 50,
+      "mov": 8,
+      "build": 0,
+      "db": "0",
+      "dodgeBase": 25,
+      "ageLoss": {
+        "str": 0,
+        "con": 0,
+        "siz": 0,
+        "dex": 0,
+        "app": 0
+      },
+      "ageLossTotal": 0
+    },
+    "status": {
+      "currentHP": 10,
+      "maxHP": 10,
+      "currentMP": 10,
+      "maxMP": 10,
+      "currentSAN": 50,
+      "maxSAN": 50,
+      "currentLuck": 50,
+      "body": "正常",
+      "mental": [
+        "疯狂症状"
+      ],
+      "dying": false,
+      "unconscious": false,
+      "baseMaxSAN": 50,
+      "sanLoss": 0,
+      "_inited": true
+    },
+    "madness": [
+      {
+        "id": "mloyw3v28l47u",
+        "type": "phobia",
+        "name": "幽闭恐惧症",
+        "en": "Claustrophobia",
+        "desc": "对于处在封闭的空间中的恐惧。",
+        "permanent": true,
+        "rounds": 0,
+        "at": 1700000000000,
+        "bg": true
+      }
+    ],
+    "baseMaxSAN": 50,
+    "sanLoss": 0,
+    "skills": [
+      {
+        "key": "library_use",
+        "id": "library_use",
+        "name": "图书馆使用",
+        "sub": "",
+        "base": 0,
+        "growth": 0,
+        "occ": 40,
+        "int": 0,
+        "total": 40,
+        "custom": false,
+        "desc": ""
+      },
+      {
+        "key": "spot_hidden",
+        "id": "spot_hidden",
+        "name": "侦查",
+        "sub": "",
+        "base": 25,
+        "growth": 0,
+        "occ": 0,
+        "int": 35,
+        "total": 60,
+        "custom": false,
+        "desc": ""
+      }
+    ],
+    "weapons": [],
+    "armors": [],
+    "vehicles": [],
+    "items": [],
+    "assets": {
+      "creditRating": 0,
+      "cash": 0,
+      "spendingLevel": "标准",
+      "assetsDescription": "",
+      "assets": [],
+      "currency": "$"
+    },
+    "background": {
+      "description": "衣着略显褶皱的风衣，领口别着一支钢笔。",
+      "ideology": "信仰 / 人生观 / 价值观 / 政治观点 / 人生目标：\n真相必须被记录。",
+      "significantPeople": "主编老陈｜报社上司｜他给了我第一份工作｜严厉但护短。",
+      "meaningfulPlaces": "报社资料室｜堆满旧报纸的房间｜我在这里查到过改变一生的线索。",
+      "treasuredPossessions": "祖父的钢笔｜笔身有裂痕｜祖父遗物｜提醒我为什么开始写作。",
+      "traits": "固执、习惯性怀疑权威、咖啡成瘾",
+      "wounds": "右手掌有一道旧烫伤。",
+      "phobias": "【恐惧症】幽闭恐惧症：对密闭空间有强烈不适。"
+    },
+    "history": [],
+    "companions": [],
+    "mythos": {
+      "skill": 0,
+      "knowledge": "",
+      "entries": [],
+      "spells": []
+    },
+    "skillCap": 99,
+    "skillCapOcc": 99,
+    "skillCapInterest": 99,
+    "shareVisibility": "link",
+    "shareId": "",
+    "version": "v1.0",
+    "changeLog": [
+      {
+        "version": "v1.0",
+        "note": "创建角色",
+        "at": 1700000000000
+      }
+    ],
+    "createdAt": 1700000000000,
+    "updatedAt": 1700000000000,
+    "ageAdj": {
+      "age": 32,
+      "rule": {
+        "max": 39,
+        "physLoss": 0,
+        "appLoss": 0,
+        "movLoss": 0,
+        "eduChecks": 1,
+        "note": "无属性扣减，教育进步检定 1 次"
+      },
+      "raw": {
+        "str": 50,
+        "con": 50,
+        "siz": 50,
+        "dex": 50,
+        "app": 50,
+        "int": 50,
+        "pow": 50,
+        "edu": 50,
+        "luck": 50
+      },
+      "eff": {
+        "str": 50,
+        "con": 50,
+        "siz": 50,
+        "dex": 50,
+        "app": 50,
+        "int": 50,
+        "pow": 50,
+        "edu": 50,
+        "luck": 50
+      },
+      "loss": {
+        "str": 0,
+        "con": 0,
+        "siz": 0,
+        "dex": 0,
+        "app": 0
+      },
+      "totalLoss": 0,
+      "physLoss": 0,
+      "appLoss": 0,
+      "movLoss": 0,
+      "eduChecks": 1,
+      "eduBonus": 0,
+      "unapplied": 0,
+      "floor": 15,
+      "active": false
+    },
+    "effAttributes": {
+      "str": 50,
+      "con": 50,
+      "siz": 50,
+      "dex": 50,
+      "app": 50,
+      "int": 50,
+      "pow": 50,
+      "edu": 50,
+      "luck": 50
+    },
+    "_effSig": "50|50|50|50|50|50|50|50|50|32|0|4",
+    "_adjSig": "50|50|50|50|50|50|50|50|50|32|0|4",
+    "sanMythosCap": 99
+  }
+}

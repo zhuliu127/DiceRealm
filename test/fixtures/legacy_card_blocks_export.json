@@ -1,0 +1,294 @@
+{
+  "format": "coc7-card",
+  "version": 1,
+  "data": {
+    "id": "legacy02",
+    "userId": "local",
+    "ruleSystemId": "coc7",
+    "characterName": "旧版博学者",
+    "playerName": "老玩家",
+    "avatar": "",
+    "basicInfo": {
+      "era": "现代",
+      "eraCustom": "",
+      "age": 41,
+      "gender": "男",
+      "genderCustom": "",
+      "residence": "普罗维登斯",
+      "birthplace": "金斯波特",
+      "occupationName": "神秘学者"
+    },
+    "age": 41,
+    "occupationId": "occ67",
+    "occupationPicks": {},
+    "customOccupation": null,
+    "attributes": {
+      "str": 50,
+      "con": 50,
+      "siz": 50,
+      "dex": 50,
+      "app": 50,
+      "int": 50,
+      "pow": 50,
+      "edu": 50,
+      "luck": 50
+    },
+    "attributeMode": "random",
+    "attributeHistory": [],
+    "pbCap": 480,
+    "pbIncludeLuck": true,
+    "fate": {
+      "n": 5,
+      "rolled": false,
+      "options": [],
+      "picked": -1,
+      "rolledAt": 0
+    },
+    "eduProgress": {
+      "base": null,
+      "done": 0,
+      "log": [],
+      "bonus": 0
+    },
+    "derivedStats": {
+      "hp": 9,
+      "maxHP": 9,
+      "mp": 10,
+      "maxMP": 10,
+      "san": 50,
+      "maxSAN": 50,
+      "mov": 6,
+      "build": 0,
+      "db": "0",
+      "dodgeBase": 24,
+      "ageLoss": {
+        "str": 2,
+        "con": 2,
+        "siz": 0,
+        "dex": 1,
+        "app": 5
+      },
+      "ageLossTotal": 10
+    },
+    "status": {
+      "currentHP": 9,
+      "maxHP": 9,
+      "currentMP": 10,
+      "maxMP": 10,
+      "currentSAN": 50,
+      "maxSAN": 50,
+      "currentLuck": 50,
+      "body": "正常",
+      "mental": [
+        "正常"
+      ],
+      "dying": false,
+      "unconscious": false,
+      "baseMaxSAN": 50,
+      "sanLoss": 0,
+      "_inited": true
+    },
+    "madness": [],
+    "baseMaxSAN": 50,
+    "sanLoss": 0,
+    "skills": [],
+    "weapons": [],
+    "armors": [],
+    "vehicles": [],
+    "items": [],
+    "assets": {
+      "creditRating": 0,
+      "cash": 0,
+      "spendingLevel": "标准",
+      "assetsDescription": "",
+      "assets": [],
+      "currency": "$"
+    },
+    "background": {
+      "description": "",
+      "ideology": "",
+      "significantPeople": "",
+      "meaningfulPlaces": "",
+      "treasuredPossessions": "",
+      "traits": "",
+      "wounds": "",
+      "phobias": ""
+    },
+    "history": [
+      {
+        "title": "阿卡姆调查事件",
+        "date": "1925-03",
+        "description": "在旧宅地下室发生了不该发生的事。",
+        "sanChange": "-5",
+        "hpChange": "-2",
+        "skillChanges": "侦查 +3",
+        "moneyChange": "0",
+        "itemsObtained": "神秘古书",
+        "notes": "那一夜之后我开始做同一个梦。"
+      },
+      {
+        "title": "金斯波特郊外的仪式",
+        "date": "1925-07",
+        "description": "",
+        "sanChange": "-1D6",
+        "hpChange": "",
+        "skillChanges": "",
+        "moneyChange": "-20",
+        "itemsObtained": "",
+        "notes": ""
+      }
+    ],
+    "companions": [
+      {
+        "name": "约翰·万斯",
+        "avatar": "",
+        "identity": "大学教授",
+        "age": "45",
+        "relationship": "调查搭档",
+        "description": "两年前认识的考古学家。"
+      }
+    ],
+    "mythos": {
+      "skill": 0,
+      "knowledge": "已知的神话学识：达贡、克苏鲁的星位。",
+      "entries": [],
+      "spells": [
+        {
+          "id": "summon_deity",
+          "name": "请神术",
+          "category": "请神与送神",
+          "cost": "每位参与者 1 点以上魔法值；仅施法者额外 1D10 点理智值",
+          "time": "1-100 分钟",
+          "effect": "将某位神祇请至施法现场。神祇现身往往带来灾难性后果，需严格遵守各自的地形与天象条件。",
+          "condition": "七位神祇各有独立的施法条件，见下方变体。",
+          "variants": [
+            {
+              "name": "阿撒托斯",
+              "cost": "同基础消耗",
+              "note": "夜间户外即可。召唤极度危险，可能毁灭整个星球"
+            },
+            {
+              "name": "克图格亚",
+              "cost": "同基础消耗",
+              "note": "从施法者手持的火焰中现身；需北落师门升上地平线的晴朗夜晚（北半球 9-11 月最佳）"
+            },
+            {
+              "name": "哈斯塔",
+              "cost": "同基础消耗",
+              "note": "九块巨石排成 V 形，每块 7 立方米以上；毕宿五升空的晴朗夜晚（约 10 月至次年 3 月）；每只拜亚基在场 +10% 成功率"
+            },
+            {
+              "name": "伊塔库亚",
+              "cost": "同基础消耗",
+              "note": "3 米以上的巨大雪堆；传说限极北冰点以下，巫师推测任何雪山甚至南极皆可"
+            },
+            {
+              "name": "尼约格萨",
+              "cost": "同基础消耗",
+              "note": "洞穴入口；典籍暗示所有巨型洞穴都与其栖息的洞穴相连"
+            },
+            {
+              "name": "莎布-尼古拉丝",
+              "cost": "同基础消耗",
+              "note": "阴湿露天荒地上的神圣石祭坛；新月施放。祭坛浸 200 体型鲜血 +20%，每只黑山羊幼崽在场 +10%"
+            },
+            {
+              "name": "犹格-索托斯",
+              "cost": "同基础消耗",
+              "note": "开阔地带 10 米以上石塔，天空晴朗无云；须选派一名人牲。石塔每注入 1 点 POW，成功率 +1%"
+            }
+          ]
+        },
+        {
+          "id": "custom_m0legacy",
+          "name": "旧版自定义法术",
+          "category": "自定义",
+          "cost": "8 点魔法值",
+          "time": "1 轮",
+          "effect": "让灯芯自己点燃。",
+          "condition": "",
+          "custom": true
+        }
+      ],
+      "notes": "古籍 / 魔法 / 神话生物 / 第三类接触 / 梦境 / 其他：在梦中见过拉莱耶。"
+    },
+    "skillCap": 99,
+    "skillCapOcc": 99,
+    "skillCapInterest": 99,
+    "shareVisibility": "link",
+    "shareId": "",
+    "version": "v1.0",
+    "changeLog": [
+      {
+        "version": "v1.0",
+        "note": "创建角色",
+        "at": 1700000000000
+      }
+    ],
+    "createdAt": 1700000000000,
+    "updatedAt": 1700000000000,
+    "ageAdj": {
+      "age": 41,
+      "rule": {
+        "max": 49,
+        "physLoss": 5,
+        "appLoss": 5,
+        "movLoss": 1,
+        "eduChecks": 2,
+        "note": "力量/体质/敏捷合计 −5（三项平均分摊），外貌 −5，移动 −1，教育进步检定 2 次"
+      },
+      "raw": {
+        "str": 50,
+        "con": 50,
+        "siz": 50,
+        "dex": 50,
+        "app": 50,
+        "int": 50,
+        "pow": 50,
+        "edu": 50,
+        "luck": 50
+      },
+      "eff": {
+        "str": 48,
+        "con": 48,
+        "siz": 50,
+        "dex": 49,
+        "app": 45,
+        "int": 50,
+        "pow": 50,
+        "edu": 50,
+        "luck": 50
+      },
+      "loss": {
+        "str": 2,
+        "con": 2,
+        "siz": 0,
+        "dex": 1,
+        "app": 5
+      },
+      "totalLoss": 10,
+      "physLoss": 5,
+      "appLoss": 5,
+      "movLoss": 1,
+      "eduChecks": 2,
+      "eduBonus": 0,
+      "unapplied": 0,
+      "floor": 15,
+      "active": true
+    },
+    "effAttributes": {
+      "str": 48,
+      "con": 48,
+      "siz": 50,
+      "dex": 49,
+      "app": 45,
+      "int": 50,
+      "pow": 50,
+      "edu": 50,
+      "luck": 50
+    },
+    "_effSig": "50|50|50|50|50|50|50|50|50|41|0|4",
+    "_adjSig": "50|50|50|50|50|50|50|50|50|41|0|4",
+    "sanMythosCap": 99
+  }
+}

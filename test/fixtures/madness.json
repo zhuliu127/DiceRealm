@@ -1,0 +1,5237 @@
+{
+ "domain": "madness",
+ "oracle": "coc7th-card-app/web/js",
+ "note": "由 tool/oracle/dump_fixtures.js 生成；请勿手改。",
+ "count": 142,
+ "cases": [
+  {
+   "name": "rollTable#1455",
+   "fn": "rollTable",
+   "args": [],
+   "expect": {
+    "kind": "mania",
+    "no": 10,
+    "src": {
+     "no": 30,
+     "name": "小丑狂",
+     "en": "Coulromania",
+     "desc": "痴迷于小丑。"
+    }
+   },
+   "randUsed": 2,
+   "seed": 1028433151,
+   "error": null
+  },
+  {
+   "name": "rollSummary#1456",
+   "fn": "rollSummary",
+   "args": [],
+   "expect": {
+    "kind": "sum",
+    "no": 1,
+    "src": {
+     "no": 1,
+     "name": "失忆",
+     "en": "Amnesia",
+     "desc": "身在陌生地点，连自己是谁都不记得。"
+    }
+   },
+   "randUsed": 1,
+   "seed": 3682868912,
+   "error": null
+  },
+  {
+   "name": "rollTable#1457",
+   "fn": "rollTable",
+   "args": [],
+   "expect": {
+    "kind": "bout",
+    "no": 1,
+    "src": {
+     "no": 1,
+     "name": "失忆",
+     "en": "Amnesia",
+     "desc": "不知何时到的这里。"
+    }
+   },
+   "randUsed": 1,
+   "seed": 2042337377,
+   "error": null
+  },
+  {
+   "name": "rollSummary#1458",
+   "fn": "rollSummary",
+   "args": [],
+   "expect": {
+    "kind": "sum",
+    "no": 1,
+    "src": {
+     "no": 1,
+     "name": "失忆",
+     "en": "Amnesia",
+     "desc": "身在陌生地点，连自己是谁都不记得。"
+    }
+   },
+   "randUsed": 1,
+   "seed": 401805842,
+   "error": null
+  },
+  {
+   "name": "rollTable#1459",
+   "fn": "rollTable",
+   "args": [],
+   "expect": {
+    "kind": "bout",
+    "no": 1,
+    "src": {
+     "no": 1,
+     "name": "失忆",
+     "en": "Amnesia",
+     "desc": "不知何时到的这里。"
+    }
+   },
+   "randUsed": 1,
+   "seed": 3056241603,
+   "error": null
+  },
+  {
+   "name": "rollSummary#1460",
+   "fn": "rollSummary",
+   "args": [],
+   "expect": {
+    "kind": "sum",
+    "no": 2,
+    "src": {
+     "no": 2,
+     "name": "被劫",
+     "en": "Robbed",
+     "desc": "财物遭劫，宝贵之物掷幸运决定是否幸免。"
+    }
+   },
+   "randUsed": 1,
+   "seed": 1415710068,
+   "error": null
+  },
+  {
+   "name": "rollTable#1461",
+   "fn": "rollTable",
+   "args": [],
+   "expect": {
+    "kind": "bout",
+    "no": 2,
+    "src": {
+     "no": 2,
+     "name": "假性残疾",
+     "en": "Psychosomatic Disability",
+     "desc": "心因性失明 / 耳聋 / 失能。"
+    }
+   },
+   "randUsed": 1,
+   "seed": 4070145829,
+   "error": null
+  },
+  {
+   "name": "rollSummary#1462",
+   "fn": "rollSummary",
+   "args": [],
+   "expect": {
+    "kind": "sum",
+    "no": 2,
+    "src": {
+     "no": 2,
+     "name": "被劫",
+     "en": "Robbed",
+     "desc": "财物遭劫，宝贵之物掷幸运决定是否幸免。"
+    }
+   },
+   "randUsed": 1,
+   "seed": 2429614294,
+   "error": null
+  },
+  {
+   "name": "rollTable#1463",
+   "fn": "rollTable",
+   "args": [],
+   "expect": {
+    "kind": "bout",
+    "no": 2,
+    "src": {
+     "no": 2,
+     "name": "假性残疾",
+     "en": "Psychosomatic Disability",
+     "desc": "心因性失明 / 耳聋 / 失能。"
+    }
+   },
+   "randUsed": 1,
+   "seed": 789082759,
+   "error": null
+  },
+  {
+   "name": "rollSummary#1464",
+   "fn": "rollSummary",
+   "args": [],
+   "expect": {
+    "kind": "sum",
+    "no": 2,
+    "src": {
+     "no": 2,
+     "name": "被劫",
+     "en": "Robbed",
+     "desc": "财物遭劫，宝贵之物掷幸运决定是否幸免。"
+    }
+   },
+   "randUsed": 1,
+   "seed": 3443518520,
+   "error": null
+  },
+  {
+   "name": "rollTable#1465",
+   "fn": "rollTable",
+   "args": [],
+   "expect": {
+    "kind": "bout",
+    "no": 3,
+    "src": {
+     "no": 3,
+     "name": "暴力倾向",
+     "en": "Violence",
+     "desc": "对四周无差别破坏。"
+    }
+   },
+   "randUsed": 1,
+   "seed": 1802986985,
+   "error": null
+  },
+  {
+   "name": "rollSummary#1466",
+   "fn": "rollSummary",
+   "args": [],
+   "expect": {
+    "kind": "sum",
+    "no": 3,
+    "src": {
+     "no": 3,
+     "name": "遍体鳞伤",
+     "en": "Battered",
+     "desc": "HP 减半（不算重伤）。"
+    }
+   },
+   "randUsed": 1,
+   "seed": 162455450,
+   "error": null
+  },
+  {
+   "name": "rollTable#1467",
+   "fn": "rollTable",
+   "args": [],
+   "expect": {
+    "kind": "bout",
+    "no": 3,
+    "src": {
+     "no": 3,
+     "name": "暴力倾向",
+     "en": "Violence",
+     "desc": "对四周无差别破坏。"
+    }
+   },
+   "randUsed": 1,
+   "seed": 2816891211,
+   "error": null
+  },
+  {
+   "name": "rollSummary#1468",
+   "fn": "rollSummary",
+   "args": [],
+   "expect": {
+    "kind": "sum",
+    "no": 3,
+    "src": {
+     "no": 3,
+     "name": "遍体鳞伤",
+     "en": "Battered",
+     "desc": "HP 减半（不算重伤）。"
+    }
+   },
+   "randUsed": 1,
+   "seed": 1176359676,
+   "error": null
+  },
+  {
+   "name": "rollTable#1469",
+   "fn": "rollTable",
+   "args": [],
+   "expect": {
+    "kind": "bout",
+    "no": 4,
+    "src": {
+     "no": 4,
+     "name": "偏执妄想",
+     "en": "Paranoia",
+     "desc": "人人与我作对。"
+    }
+   },
+   "randUsed": 1,
+   "seed": 3830795437,
+   "error": null
+  },
+  {
+   "name": "rollSummary#1470",
+   "fn": "rollSummary",
+   "args": [],
+   "expect": {
+    "kind": "sum",
+    "no": 4,
+    "src": {
+     "no": 4,
+     "name": "暴力",
+     "en": "Violence",
+     "desc": "对谁施暴、是否致死由 KP 决定。"
+    }
+   },
+   "randUsed": 1,
+   "seed": 2190263902,
+   "error": null
+  },
+  {
+   "name": "rollTable#1471",
+   "fn": "rollTable",
+   "args": [],
+   "expect": {
+    "kind": "bout",
+    "no": 4,
+    "src": {
+     "no": 4,
+     "name": "偏执妄想",
+     "en": "Paranoia",
+     "desc": "人人与我作对。"
+    }
+   },
+   "randUsed": 1,
+   "seed": 549732367,
+   "error": null
+  },
+  {
+   "name": "rollSummary#1472",
+   "fn": "rollSummary",
+   "args": [],
+   "expect": {
+    "kind": "sum",
+    "no": 4,
+    "src": {
+     "no": 4,
+     "name": "暴力",
+     "en": "Violence",
+     "desc": "对谁施暴、是否致死由 KP 决定。"
+    }
+   },
+   "randUsed": 1,
+   "seed": 3204168128,
+   "error": null
+  },
+  {
+   "name": "rollTable#1473",
+   "fn": "rollTable",
+   "args": [],
+   "expect": {
+    "kind": "bout",
+    "no": 4,
+    "src": {
+     "no": 4,
+     "name": "偏执妄想",
+     "en": "Paranoia",
+     "desc": "人人与我作对。"
+    }
+   },
+   "randUsed": 1,
+   "seed": 1563636593,
+   "error": null
+  },
+  {
+   "name": "rollSummary#1474",
+   "fn": "rollSummary",
+   "args": [],
+   "expect": {
+    "kind": "sum",
+    "no": 5,
+    "src": {
+     "no": 5,
+     "name": "思想与信念",
+     "en": "Ideology",
+     "desc": "把信条以极端方式活出来。"
+    }
+   },
+   "randUsed": 1,
+   "seed": 4218072354,
+   "error": null
+  },
+  {
+   "name": "rollTable#1475",
+   "fn": "rollTable",
+   "args": [],
+   "expect": {
+    "kind": "bout",
+    "no": 5,
+    "src": {
+     "no": 5,
+     "name": "人际依赖",
+     "en": "Interpersonal Dependency",
+     "desc": "把同伴错认成重要之人。"
+    }
+   },
+   "randUsed": 1,
+   "seed": 2577540819,
+   "error": null
+  },
+  {
+   "name": "rollSummary#1476",
+   "fn": "rollSummary",
+   "args": [],
+   "expect": {
+    "kind": "sum",
+    "no": 5,
+    "src": {
+     "no": 5,
+     "name": "思想与信念",
+     "en": "Ideology",
+     "desc": "把信条以极端方式活出来。"
+    }
+   },
+   "randUsed": 1,
+   "seed": 937009284,
+   "error": null
+  },
+  {
+   "name": "rollTable#1477",
+   "fn": "rollTable",
+   "args": [],
+   "expect": {
+    "kind": "bout",
+    "no": 5,
+    "src": {
+     "no": 5,
+     "name": "人际依赖",
+     "en": "Interpersonal Dependency",
+     "desc": "把同伴错认成重要之人。"
+    }
+   },
+   "randUsed": 1,
+   "seed": 3591445045,
+   "error": null
+  },
+  {
+   "name": "rollSummary#1478",
+   "fn": "rollSummary",
+   "args": [],
+   "expect": {
+    "kind": "sum",
+    "no": 6,
+    "src": {
+     "no": 6,
+     "name": "重要之人",
+     "en": "Significant People",
+     "desc": "尽一切努力接近 TA。"
+    }
+   },
+   "randUsed": 1,
+   "seed": 1950913510,
+   "error": null
+  },
+  {
+   "name": "rollTable#1479",
+   "fn": "rollTable",
+   "args": [],
+   "expect": {
+    "kind": "bout",
+    "no": 6,
+    "src": {
+     "no": 6,
+     "name": "昏厥",
+     "en": "Fainting",
+     "desc": "立即昏倒。"
+    }
+   },
+   "randUsed": 1,
+   "seed": 310381975,
+   "error": null
+  },
+  {
+   "name": "rollSummary#1480",
+   "fn": "rollSummary",
+   "args": [],
+   "expect": {
+    "kind": "sum",
+    "no": 6,
+    "src": {
+     "no": 6,
+     "name": "重要之人",
+     "en": "Significant People",
+     "desc": "尽一切努力接近 TA。"
+    }
+   },
+   "randUsed": 1,
+   "seed": 2964817736,
+   "error": null
+  },
+  {
+   "name": "rollTable#1481",
+   "fn": "rollTable",
+   "args": [],
+   "expect": {
+    "kind": "bout",
+    "no": 6,
+    "src": {
+     "no": 6,
+     "name": "昏厥",
+     "en": "Fainting",
+     "desc": "立即昏倒。"
+    }
+   },
+   "randUsed": 1,
+   "seed": 1324286201,
+   "error": null
+  },
+  {
+   "name": "rollSummary#1482",
+   "fn": "rollSummary",
+   "args": [],
+   "expect": {
+    "kind": "sum",
+    "no": 6,
+    "src": {
+     "no": 6,
+     "name": "重要之人",
+     "en": "Significant People",
+     "desc": "尽一切努力接近 TA。"
+    }
+   },
+   "randUsed": 1,
+   "seed": 3978721962,
+   "error": null
+  },
+  {
+   "name": "rollTable#1483",
+   "fn": "rollTable",
+   "args": [],
+   "expect": {
+    "kind": "bout",
+    "no": 7,
+    "src": {
+     "no": 7,
+     "name": "惊慌逃窜",
+     "en": "Flee in Panic",
+     "desc": "不择手段逃离。"
+    }
+   },
+   "randUsed": 1,
+   "seed": 2338190427,
+   "error": null
+  },
+  {
+   "name": "rollSummary#1484",
+   "fn": "rollSummary",
+   "args": [],
+   "expect": {
+    "kind": "sum",
+    "no": 7,
+    "src": {
+     "no": 7,
+     "name": "被收容",
+     "en": "Institutionalized",
+     "desc": "醒来在病房或拘留室。"
+    }
+   },
+   "randUsed": 1,
+   "seed": 697658892,
+   "error": null
+  },
+  {
+   "name": "rollTable#1485",
+   "fn": "rollTable",
+   "args": [],
+   "expect": {
+    "kind": "bout",
+    "no": 7,
+    "src": {
+     "no": 7,
+     "name": "惊慌逃窜",
+     "en": "Flee in Panic",
+     "desc": "不择手段逃离。"
+    }
+   },
+   "randUsed": 1,
+   "seed": 3352094653,
+   "error": null
+  },
+  {
+   "name": "rollSummary#1486",
+   "fn": "rollSummary",
+   "args": [],
+   "expect": {
+    "kind": "sum",
+    "no": 7,
+    "src": {
+     "no": 7,
+     "name": "被收容",
+     "en": "Institutionalized",
+     "desc": "醒来在病房或拘留室。"
+    }
+   },
+   "randUsed": 1,
+   "seed": 1711563118,
+   "error": null
+  },
+  {
+   "name": "rollTable#1487",
+   "fn": "rollTable",
+   "args": [],
+   "expect": {
+    "kind": "bout",
+    "no": 7,
+    "src": {
+     "no": 7,
+     "name": "惊慌逃窜",
+     "en": "Flee in Panic",
+     "desc": "不择手段逃离。"
+    }
+   },
+   "randUsed": 1,
+   "seed": 71031583,
+   "error": null
+  },
+  {
+   "name": "rollSummary#1488",
+   "fn": "rollSummary",
+   "args": [],
+   "expect": {
+    "kind": "sum",
+    "no": 8,
+    "src": {
+     "no": 8,
+     "name": "惊慌逃窜",
+     "en": "Flee in Panic",
+     "desc": "醒来已在荒野或长途车上。"
+    }
+   },
+   "randUsed": 1,
+   "seed": 2725467344,
+   "error": null
+  },
+  {
+   "name": "rollTable#1489",
+   "fn": "rollTable",
+   "args": [],
+   "expect": {
+    "kind": "bout",
+    "no": 8,
+    "src": {
+     "no": 8,
+     "name": "歇斯底里",
+     "en": "Hysteria",
+     "desc": "狂笑 / 哭泣 / 尖叫。"
+    }
+   },
+   "randUsed": 1,
+   "seed": 1084935809,
+   "error": null
+  },
+  {
+   "name": "rollSummary#1490",
+   "fn": "rollSummary",
+   "args": [],
+   "expect": {
+    "kind": "sum",
+    "no": 8,
+    "src": {
+     "no": 8,
+     "name": "惊慌逃窜",
+     "en": "Flee in Panic",
+     "desc": "醒来已在荒野或长途车上。"
+    }
+   },
+   "randUsed": 1,
+   "seed": 3739371570,
+   "error": null
+  },
+  {
+   "name": "rollTable#1491",
+   "fn": "rollTable",
+   "args": [],
+   "expect": {
+    "kind": "bout",
+    "no": 8,
+    "src": {
+     "no": 8,
+     "name": "歇斯底里",
+     "en": "Hysteria",
+     "desc": "狂笑 / 哭泣 / 尖叫。"
+    }
+   },
+   "randUsed": 1,
+   "seed": 2098840035,
+   "error": null
+  },
+  {
+   "name": "rollSummary#1492",
+   "fn": "rollSummary",
+   "args": [],
+   "expect": {
+    "kind": "phobia",
+    "no": 9,
+    "src": {
+     "no": 84,
+     "name": "火车恐惧症",
+     "en": "Siderodromophobia",
+     "desc": "对于乘坐火车出行的恐惧。"
+    }
+   },
+   "randUsed": 2,
+   "seed": 458308500,
+   "error": null
+  },
+  {
+   "name": "rollTable#1493",
+   "fn": "rollTable",
+   "args": [],
+   "expect": {
+    "kind": "phobia",
+    "no": 9,
+    "src": {
+     "no": 75,
+     "name": "幽灵恐惧症",
+     "en": "Phasmophobia",
+     "desc": "对鬼魂的恐惧。"
+    }
+   },
+   "randUsed": 2,
+   "seed": 3112744261,
+   "error": null
+  },
+  {
+   "name": "rollSummary#1494",
+   "fn": "rollSummary",
+   "args": [],
+   "expect": {
+    "kind": "phobia",
+    "no": 9,
+    "src": {
+     "no": 65,
+     "name": "数字8恐惧症",
+     "en": "Octophobia",
+     "desc": "对数字 8 的恐惧。"
+    }
+   },
+   "randUsed": 2,
+   "seed": 1472212726,
+   "error": null
+  },
+  {
+   "name": "rollTable#1495",
+   "fn": "rollTable",
+   "args": [],
+   "expect": {
+    "kind": "phobia",
+    "no": 9,
+    "src": {
+     "no": 56,
+     "name": "恐湖症",
+     "en": "Limnophobia",
+     "desc": "对湖泊的恐惧。"
+    }
+   },
+   "randUsed": 2,
+   "seed": 4126648487,
+   "error": null
+  },
+  {
+   "name": "rollSummary#1496",
+   "fn": "rollSummary",
+   "args": [],
+   "expect": {
+    "kind": "phobia",
+    "no": 9,
+    "src": {
+     "no": 47,
+     "name": "火器恐惧症",
+     "en": "Hoplophobia",
+     "desc": "对火器的恐惧。"
+    }
+   },
+   "randUsed": 2,
+   "seed": 2486116952,
+   "error": null
+  },
+  {
+   "name": "rollTable#1497",
+   "fn": "rollTable",
+   "args": [],
+   "expect": {
+    "kind": "mania",
+    "no": 10,
+    "src": {
+     "no": 37,
+     "name": "毛皮狂",
+     "en": "Doramania",
+     "desc": "痴迷于拥有毛皮。（存疑）"
+    }
+   },
+   "randUsed": 2,
+   "seed": 845585417,
+   "error": null
+  },
+  {
+   "name": "rollSummary#1498",
+   "fn": "rollSummary",
+   "args": [],
+   "expect": {
+    "kind": "mania",
+    "no": 10,
+    "src": {
+     "no": 28,
+     "name": "恋墓狂",
+     "en": "Coimetormania",
+     "desc": "痴迷于墓地。"
+    }
+   },
+   "randUsed": 2,
+   "seed": 3500021178,
+   "error": null
+  },
+  {
+   "name": "rollTable#1499",
+   "fn": "rollTable",
+   "args": [],
+   "expect": {
+    "kind": "mania",
+    "no": 10,
+    "src": {
+     "no": 19,
+     "name": "恋书狂",
+     "en": "Bibliomania",
+     "desc": "痴迷于书籍和/或阅读"
+    }
+   },
+   "randUsed": 2,
+   "seed": 1859489643,
+   "error": null
+  },
+  {
+   "name": "rollSummary#1500",
+   "fn": "rollSummary",
+   "args": [],
+   "expect": {
+    "kind": "mania",
+    "no": 10,
+    "src": {
+     "no": 9,
+     "name": "疼痛癖",
+     "en": "Algomania",
+     "desc": "痴迷于疼痛。"
+    }
+   },
+   "randUsed": 2,
+   "seed": 218958108,
+   "error": null
+  },
+  {
+   "name": "rollTable#1501",
+   "fn": "rollTable",
+   "args": [],
+   "expect": {
+    "kind": "bout",
+    "no": 1,
+    "src": {
+     "no": 1,
+     "name": "失忆",
+     "en": "Amnesia",
+     "desc": "不知何时到的这里。"
+    }
+   },
+   "randUsed": 1,
+   "seed": 2873393869,
+   "error": null
+  },
+  {
+   "name": "rollSummary#1502",
+   "fn": "rollSummary",
+   "args": [],
+   "expect": {
+    "kind": "sum",
+    "no": 1,
+    "src": {
+     "no": 1,
+     "name": "失忆",
+     "en": "Amnesia",
+     "desc": "身在陌生地点，连自己是谁都不记得。"
+    }
+   },
+   "randUsed": 1,
+   "seed": 1232862334,
+   "error": null
+  },
+  {
+   "name": "roll#1503",
+   "fn": "roll",
+   "args": [
+    "any",
+    true
+   ],
+   "expect": {
+    "id": "mloyw3v28haiy",
+    "type": "bout",
+    "name": "失忆",
+    "en": "Amnesia",
+    "desc": "不知何时到的这里。",
+    "permanent": true,
+    "rounds": 0,
+    "at": 1700000000000
+   },
+   "randUsed": 2,
+   "seed": 3887298095,
+   "error": null
+  },
+  {
+   "name": "roll#1504",
+   "fn": "roll",
+   "args": [
+    "any",
+    false
+   ],
+   "expect": {
+    "id": "mloyw3v28faet",
+    "type": "bout",
+    "name": "失忆",
+    "en": "Amnesia",
+    "desc": "不知何时到的这里。",
+    "permanent": false,
+    "rounds": 5,
+    "at": 1700000000000
+   },
+   "randUsed": 3,
+   "seed": 2246766560,
+   "error": null
+  },
+  {
+   "name": "roll#1505",
+   "fn": "roll",
+   "args": [
+    "phobia",
+    true
+   ],
+   "expect": {
+    "id": "mloyw3v28daao",
+    "type": "phobia",
+    "name": "恐英症",
+    "en": "Anglophobia",
+    "desc": "对英格兰或英格兰文化的恐惧。",
+    "permanent": true,
+    "rounds": 0,
+    "at": 1700000000000
+   },
+   "randUsed": 2,
+   "seed": 606235025,
+   "error": null
+  },
+  {
+   "name": "roll#1506",
+   "fn": "roll",
+   "args": [
+    "phobia",
+    false
+   ],
+   "expect": {
+    "id": "mloyw3v28ba6j",
+    "type": "phobia",
+    "name": "截肢者恐惧症",
+    "en": "Apotemnophobia",
+    "desc": "对截肢者的恐惧。",
+    "permanent": false,
+    "rounds": 4,
+    "at": 1700000000000
+   },
+   "randUsed": 3,
+   "seed": 3260670786,
+   "error": null
+  },
+  {
+   "name": "roll#1507",
+   "fn": "roll",
+   "args": [
+    "mania",
+    true
+   ],
+   "expect": {
+    "id": "mloyw3v289a2e",
+    "type": "mania",
+    "name": "计算癖",
+    "en": "Arithmomania",
+    "desc": "狂热地痴迷于数字。",
+    "permanent": true,
+    "rounds": 0,
+    "at": 1700000000000
+   },
+   "randUsed": 2,
+   "seed": 1620139251,
+   "error": null
+  },
+  {
+   "name": "roll#1508",
+   "fn": "roll",
+   "args": [
+    "mania",
+    false
+   ],
+   "expect": {
+    "id": "mloyw3v2879y9",
+    "type": "mania",
+    "name": "隐居癖*",
+    "en": "Automania",
+    "desc": "过度地热爱独自隐居。（原文如此，存疑，Automania 实际上是恋车癖）",
+    "permanent": false,
+    "rounds": 3,
+    "at": 1700000000000
+   },
+   "randUsed": 3,
+   "seed": 4274575012,
+   "error": null
+  },
+  {
+   "name": "roll#1509",
+   "fn": "roll",
+   "args": [
+    "bout",
+    true
+   ],
+   "expect": {
+    "id": "mloyw3v2859u4",
+    "type": "bout",
+    "name": "假性残疾",
+    "en": "Psychosomatic Disability",
+    "desc": "心因性失明 / 耳聋 / 失能。",
+    "permanent": true,
+    "rounds": 0,
+    "at": 1700000000000
+   },
+   "randUsed": 2,
+   "seed": 2634043477,
+   "error": null
+  },
+  {
+   "name": "roll#1510",
+   "fn": "roll",
+   "args": [
+    "bout",
+    false
+   ],
+   "expect": {
+    "id": "mloyw3v2839pz",
+    "type": "bout",
+    "name": "暴力倾向",
+    "en": "Violence",
+    "desc": "对四周无差别破坏。",
+    "permanent": false,
+    "rounds": 2,
+    "at": 1700000000000
+   },
+   "randUsed": 3,
+   "seed": 993511942,
+   "error": null
+  },
+  {
+   "name": "roll#1511",
+   "fn": "roll",
+   "args": [
+    "unknown",
+    true
+   ],
+   "expect": {
+    "id": "mloyw3v2819lu",
+    "type": "bout",
+    "name": "暴力倾向",
+    "en": "Violence",
+    "desc": "对四周无差别破坏。",
+    "permanent": true,
+    "rounds": 0,
+    "at": 1700000000000
+   },
+   "randUsed": 2,
+   "seed": 3647947703,
+   "error": null
+  },
+  {
+   "name": "roll#1512",
+   "fn": "roll",
+   "args": [
+    "unknown",
+    false
+   ],
+   "expect": {
+    "id": "mloyw3v28kp3h",
+    "type": "bout",
+    "name": "暴力倾向",
+    "en": "Violence",
+    "desc": "对四周无差别破坏。",
+    "permanent": false,
+    "rounds": 1,
+    "at": 1700000000000
+   },
+   "randUsed": 3,
+   "seed": 2007416168,
+   "error": null
+  },
+  {
+   "name": "roll#1513",
+   "fn": "roll",
+   "args": [
+    "",
+    true
+   ],
+   "expect": {
+    "id": "mloyw3v28iozd",
+    "type": "bout",
+    "name": "暴力倾向",
+    "en": "Violence",
+    "desc": "对四周无差别破坏。",
+    "permanent": true,
+    "rounds": 0,
+    "at": 1700000000000
+   },
+   "randUsed": 2,
+   "seed": 366884633,
+   "error": null
+  },
+  {
+   "name": "roll#1514",
+   "fn": "roll",
+   "args": [
+    "",
+    false
+   ],
+   "expect": {
+    "id": "mloyw3v28gov8",
+    "type": "bout",
+    "name": "暴力倾向",
+    "en": "Violence",
+    "desc": "对四周无差别破坏。",
+    "permanent": false,
+    "rounds": 10,
+    "at": 1700000000000
+   },
+   "randUsed": 3,
+   "seed": 3021320394,
+   "error": null
+  },
+  {
+   "name": "backgroundText#1515",
+   "fn": "backgroundText",
+   "args": [
+    null
+   ],
+   "expect": "【疯狂发作】暴力：对谁施暴、是否致死由 KP 决定。",
+   "randUsed": 1,
+   "seed": 1380788859,
+   "error": null
+  },
+  {
+   "name": "backgroundText#1516",
+   "fn": "backgroundText",
+   "args": [
+    ""
+   ],
+   "expect": "【疯狂发作】暴力：对谁施暴、是否致死由 KP 决定。",
+   "randUsed": 1,
+   "seed": 4035224620,
+   "error": null
+  },
+  {
+   "name": "backgroundText#1517",
+   "fn": "backgroundText",
+   "args": [
+    "（来自人设）"
+   ],
+   "expect": "【疯狂发作】暴力：对谁施暴、是否致死由 KP 决定。（来自人设）",
+   "randUsed": 1,
+   "seed": 2394693085,
+   "error": null
+  },
+  {
+   "name": "lookup#1518",
+   "fn": "lookup",
+   "args": [
+    "洗澡恐惧症"
+   ],
+   "expect": {
+    "type": "phobia",
+    "src": {
+     "no": 1,
+     "name": "洗澡恐惧症",
+     "en": "Ablutophobia",
+     "desc": "对于洗涤或洗澡的恐惧。"
+    }
+   },
+   "randUsed": 0,
+   "seed": 754161550,
+   "error": null
+  },
+  {
+   "name": "lookupPhobia#1519",
+   "fn": "lookupPhobia",
+   "args": [
+    "洗澡恐惧症",
+    "phobia"
+   ],
+   "expect": {
+    "type": "phobia",
+    "src": {
+     "no": 1,
+     "name": "洗澡恐惧症",
+     "en": "Ablutophobia",
+     "desc": "对于洗涤或洗澡的恐惧。"
+    }
+   },
+   "randUsed": 0,
+   "seed": 3408597311,
+   "error": null
+  },
+  {
+   "name": "lookupMania#1520",
+   "fn": "lookupMania",
+   "args": [
+    "洗澡恐惧症",
+    "mania"
+   ],
+   "expect": null,
+   "randUsed": 0,
+   "seed": 1768065776,
+   "error": null
+  },
+  {
+   "name": "lookup#1521",
+   "fn": "lookup",
+   "args": [
+    "恐高症"
+   ],
+   "expect": {
+    "type": "phobia",
+    "src": {
+     "no": 2,
+     "name": "恐高症",
+     "en": "Acrophobia",
+     "desc": "对于身处高处的恐惧。"
+    }
+   },
+   "randUsed": 0,
+   "seed": 127534241,
+   "error": null
+  },
+  {
+   "name": "lookupPhobia#1522",
+   "fn": "lookupPhobia",
+   "args": [
+    "恐高症",
+    "phobia"
+   ],
+   "expect": {
+    "type": "phobia",
+    "src": {
+     "no": 2,
+     "name": "恐高症",
+     "en": "Acrophobia",
+     "desc": "对于身处高处的恐惧。"
+    }
+   },
+   "randUsed": 0,
+   "seed": 2781970002,
+   "error": null
+  },
+  {
+   "name": "lookupMania#1523",
+   "fn": "lookupMania",
+   "args": [
+    "恐高症",
+    "mania"
+   ],
+   "expect": null,
+   "randUsed": 0,
+   "seed": 1141438467,
+   "error": null
+  },
+  {
+   "name": "lookup#1524",
+   "fn": "lookup",
+   "args": [
+    "飞行恐惧症"
+   ],
+   "expect": {
+    "type": "phobia",
+    "src": {
+     "no": 3,
+     "name": "飞行恐惧症",
+     "en": "Aerophobia",
+     "desc": "对飞行的恐惧。"
+    }
+   },
+   "randUsed": 0,
+   "seed": 3795874228,
+   "error": null
+  },
+  {
+   "name": "lookupPhobia#1525",
+   "fn": "lookupPhobia",
+   "args": [
+    "飞行恐惧症",
+    "phobia"
+   ],
+   "expect": {
+    "type": "phobia",
+    "src": {
+     "no": 3,
+     "name": "飞行恐惧症",
+     "en": "Aerophobia",
+     "desc": "对飞行的恐惧。"
+    }
+   },
+   "randUsed": 0,
+   "seed": 2155342693,
+   "error": null
+  },
+  {
+   "name": "lookupMania#1526",
+   "fn": "lookupMania",
+   "args": [
+    "飞行恐惧症",
+    "mania"
+   ],
+   "expect": null,
+   "randUsed": 0,
+   "seed": 514811158,
+   "error": null
+  },
+  {
+   "name": "lookup#1527",
+   "fn": "lookup",
+   "args": [
+    "广场恐惧症"
+   ],
+   "expect": {
+    "type": "phobia",
+    "src": {
+     "no": 4,
+     "name": "广场恐惧症",
+     "en": "Agoraphobia",
+     "desc": "对于开放的（拥挤）公共场所的恐惧。"
+    }
+   },
+   "randUsed": 0,
+   "seed": 3169246919,
+   "error": null
+  },
+  {
+   "name": "lookupPhobia#1528",
+   "fn": "lookupPhobia",
+   "args": [
+    "广场恐惧症",
+    "phobia"
+   ],
+   "expect": {
+    "type": "phobia",
+    "src": {
+     "no": 4,
+     "name": "广场恐惧症",
+     "en": "Agoraphobia",
+     "desc": "对于开放的（拥挤）公共场所的恐惧。"
+    }
+   },
+   "randUsed": 0,
+   "seed": 1528715384,
+   "error": null
+  },
+  {
+   "name": "lookupMania#1529",
+   "fn": "lookupMania",
+   "args": [
+    "广场恐惧症",
+    "mania"
+   ],
+   "expect": null,
+   "randUsed": 0,
+   "seed": 4183151145,
+   "error": null
+  },
+  {
+   "name": "lookup#1530",
+   "fn": "lookup",
+   "args": [
+    "恐鸡症"
+   ],
+   "expect": {
+    "type": "phobia",
+    "src": {
+     "no": 5,
+     "name": "恐鸡症",
+     "en": "Alektorophobia",
+     "desc": "对鸡的恐惧。"
+    }
+   },
+   "randUsed": 0,
+   "seed": 2542619610,
+   "error": null
+  },
+  {
+   "name": "lookupPhobia#1531",
+   "fn": "lookupPhobia",
+   "args": [
+    "恐鸡症",
+    "phobia"
+   ],
+   "expect": {
+    "type": "phobia",
+    "src": {
+     "no": 5,
+     "name": "恐鸡症",
+     "en": "Alektorophobia",
+     "desc": "对鸡的恐惧。"
+    }
+   },
+   "randUsed": 0,
+   "seed": 902088075,
+   "error": null
+  },
+  {
+   "name": "lookupMania#1532",
+   "fn": "lookupMania",
+   "args": [
+    "恐鸡症",
+    "mania"
+   ],
+   "expect": null,
+   "randUsed": 0,
+   "seed": 3556523836,
+   "error": null
+  },
+  {
+   "name": "lookup#1533",
+   "fn": "lookup",
+   "args": [
+    "沐浴癖"
+   ],
+   "expect": {
+    "type": "mania",
+    "src": {
+     "no": 1,
+     "name": "沐浴癖",
+     "en": "Ablutomania",
+     "desc": "执着于清洗自己。"
+    }
+   },
+   "randUsed": 0,
+   "seed": 1915992301,
+   "error": null
+  },
+  {
+   "name": "lookupPhobia#1534",
+   "fn": "lookupPhobia",
+   "args": [
+    "沐浴癖",
+    "phobia"
+   ],
+   "expect": null,
+   "randUsed": 0,
+   "seed": 275460766,
+   "error": null
+  },
+  {
+   "name": "lookupMania#1535",
+   "fn": "lookupMania",
+   "args": [
+    "沐浴癖",
+    "mania"
+   ],
+   "expect": {
+    "type": "mania",
+    "src": {
+     "no": 1,
+     "name": "沐浴癖",
+     "en": "Ablutomania",
+     "desc": "执着于清洗自己。"
+    }
+   },
+   "randUsed": 0,
+   "seed": 2929896527,
+   "error": null
+  },
+  {
+   "name": "lookup#1536",
+   "fn": "lookup",
+   "args": [
+    "犹豫癖"
+   ],
+   "expect": {
+    "type": "mania",
+    "src": {
+     "no": 2,
+     "name": "犹豫癖",
+     "en": "Aboulomania",
+     "desc": "病态地犹豫不定。"
+    }
+   },
+   "randUsed": 0,
+   "seed": 1289364992,
+   "error": null
+  },
+  {
+   "name": "lookupPhobia#1537",
+   "fn": "lookupPhobia",
+   "args": [
+    "犹豫癖",
+    "phobia"
+   ],
+   "expect": null,
+   "randUsed": 0,
+   "seed": 3943800753,
+   "error": null
+  },
+  {
+   "name": "lookupMania#1538",
+   "fn": "lookupMania",
+   "args": [
+    "犹豫癖",
+    "mania"
+   ],
+   "expect": {
+    "type": "mania",
+    "src": {
+     "no": 2,
+     "name": "犹豫癖",
+     "en": "Aboulomania",
+     "desc": "病态地犹豫不定。"
+    }
+   },
+   "randUsed": 0,
+   "seed": 2303269218,
+   "error": null
+  },
+  {
+   "name": "lookup#1539",
+   "fn": "lookup",
+   "args": [
+    "喜暗狂"
+   ],
+   "expect": {
+    "type": "mania",
+    "src": {
+     "no": 3,
+     "name": "喜暗狂",
+     "en": "Achluomania",
+     "desc": "对黑暗的过度热爱。"
+    }
+   },
+   "randUsed": 0,
+   "seed": 662737683,
+   "error": null
+  },
+  {
+   "name": "lookupPhobia#1540",
+   "fn": "lookupPhobia",
+   "args": [
+    "喜暗狂",
+    "phobia"
+   ],
+   "expect": null,
+   "randUsed": 0,
+   "seed": 3317173444,
+   "error": null
+  },
+  {
+   "name": "lookupMania#1541",
+   "fn": "lookupMania",
+   "args": [
+    "喜暗狂",
+    "mania"
+   ],
+   "expect": {
+    "type": "mania",
+    "src": {
+     "no": 3,
+     "name": "喜暗狂",
+     "en": "Achluomania",
+     "desc": "对黑暗的过度热爱。"
+    }
+   },
+   "randUsed": 0,
+   "seed": 1676641909,
+   "error": null
+  },
+  {
+   "name": "lookup#1542",
+   "fn": "lookup",
+   "args": [
+    "喜高狂"
+   ],
+   "expect": {
+    "type": "mania",
+    "src": {
+     "no": 4,
+     "name": "喜高狂",
+     "en": "Acromaniaheights",
+     "desc": "狂热迷恋高处。"
+    }
+   },
+   "randUsed": 0,
+   "seed": 36110374,
+   "error": null
+  },
+  {
+   "name": "lookupPhobia#1543",
+   "fn": "lookupPhobia",
+   "args": [
+    "喜高狂",
+    "phobia"
+   ],
+   "expect": null,
+   "randUsed": 0,
+   "seed": 2690546135,
+   "error": null
+  },
+  {
+   "name": "lookupMania#1544",
+   "fn": "lookupMania",
+   "args": [
+    "喜高狂",
+    "mania"
+   ],
+   "expect": {
+    "type": "mania",
+    "src": {
+     "no": 4,
+     "name": "喜高狂",
+     "en": "Acromaniaheights",
+     "desc": "狂热迷恋高处。"
+    }
+   },
+   "randUsed": 0,
+   "seed": 1050014600,
+   "error": null
+  },
+  {
+   "name": "lookup#1545",
+   "fn": "lookup",
+   "args": [
+    "亲切癖"
+   ],
+   "expect": {
+    "type": "mania",
+    "src": {
+     "no": 5,
+     "name": "亲切癖",
+     "en": "Agathomania",
+     "desc": "病态地对他人友好。"
+    }
+   },
+   "randUsed": 0,
+   "seed": 3704450361,
+   "error": null
+  },
+  {
+   "name": "lookupPhobia#1546",
+   "fn": "lookupPhobia",
+   "args": [
+    "亲切癖",
+    "phobia"
+   ],
+   "expect": null,
+   "randUsed": 0,
+   "seed": 2063918826,
+   "error": null
+  },
+  {
+   "name": "lookupMania#1547",
+   "fn": "lookupMania",
+   "args": [
+    "亲切癖",
+    "mania"
+   ],
+   "expect": {
+    "type": "mania",
+    "src": {
+     "no": 5,
+     "name": "亲切癖",
+     "en": "Agathomania",
+     "desc": "病态地对他人友好。"
+    }
+   },
+   "randUsed": 0,
+   "seed": 423387291,
+   "error": null
+  },
+  {
+   "name": "lookup#1548",
+   "fn": "lookup",
+   "args": [
+    "不存在的症状"
+   ],
+   "expect": null,
+   "randUsed": 0,
+   "seed": 3077823052,
+   "error": null
+  },
+  {
+   "name": "lookupPhobia#1549",
+   "fn": "lookupPhobia",
+   "args": [
+    "不存在的症状",
+    "phobia"
+   ],
+   "expect": null,
+   "randUsed": 0,
+   "seed": 1437291517,
+   "error": null
+  },
+  {
+   "name": "lookupMania#1550",
+   "fn": "lookupMania",
+   "args": [
+    "不存在的症状",
+    "mania"
+   ],
+   "expect": null,
+   "randUsed": 0,
+   "seed": 4091727278,
+   "error": null
+  },
+  {
+   "name": "lookup#1551",
+   "fn": "lookup",
+   "args": [
+    "幽闭恐惧症"
+   ],
+   "expect": {
+    "type": "phobia",
+    "src": {
+     "no": 25,
+     "name": "幽闭恐惧症",
+     "en": "Claustrophobia",
+     "desc": "对于处在封闭的空间中的恐惧。"
+    }
+   },
+   "randUsed": 0,
+   "seed": 2451195743,
+   "error": null
+  },
+  {
+   "name": "lookupPhobia#1552",
+   "fn": "lookupPhobia",
+   "args": [
+    "幽闭恐惧症",
+    "phobia"
+   ],
+   "expect": {
+    "type": "phobia",
+    "src": {
+     "no": 25,
+     "name": "幽闭恐惧症",
+     "en": "Claustrophobia",
+     "desc": "对于处在封闭的空间中的恐惧。"
+    }
+   },
+   "randUsed": 0,
+   "seed": 810664208,
+   "error": null
+  },
+  {
+   "name": "lookupMania#1553",
+   "fn": "lookupMania",
+   "args": [
+    "幽闭恐惧症",
+    "mania"
+   ],
+   "expect": null,
+   "randUsed": 0,
+   "seed": 3465099969,
+   "error": null
+  },
+  {
+   "name": "lookup#1554",
+   "fn": "lookup",
+   "args": [
+    ""
+   ],
+   "expect": null,
+   "randUsed": 0,
+   "seed": 1824568434,
+   "error": null
+  },
+  {
+   "name": "lookupPhobia#1555",
+   "fn": "lookupPhobia",
+   "args": [
+    "",
+    "phobia"
+   ],
+   "expect": null,
+   "randUsed": 0,
+   "seed": 184036899,
+   "error": null
+  },
+  {
+   "name": "lookupMania#1556",
+   "fn": "lookupMania",
+   "args": [
+    "",
+    "mania"
+   ],
+   "expect": null,
+   "randUsed": 0,
+   "seed": 2838472660,
+   "error": null
+  },
+  {
+   "name": "poolSize#1557",
+   "fn": "poolSize",
+   "args": [],
+   "expect": 100,
+   "randUsed": 0,
+   "seed": 1197941125,
+   "error": null
+  },
+  {
+   "name": "poolSizeMania#1558",
+   "fn": "poolSizeMania",
+   "args": [],
+   "expect": 100,
+   "randUsed": 0,
+   "seed": 3852376886,
+   "error": null
+  },
+  {
+   "name": "labelOf#1559",
+   "fn": "labelOf",
+   "args": [],
+   "expect": [
+    "恐惧症",
+    "狂躁症",
+    "疯狂发作",
+    "恐惧症"
+   ],
+   "randUsed": 0,
+   "seed": 2211845351,
+   "error": null
+  },
+  {
+   "name": "size#1560",
+   "fn": "size",
+   "args": [],
+   "expect": 200,
+   "randUsed": 0,
+   "seed": 571313816,
+   "error": null
+  },
+  {
+   "name": "phobias#1561",
+   "fn": "phobias",
+   "args": [],
+   "expect": [
+    {
+     "type": "phobia",
+     "name": "洗澡恐惧症",
+     "en": "Ablutophobia",
+     "desc": "对于洗涤或洗澡的恐惧。",
+     "no": 1
+    },
+    {
+     "type": "phobia",
+     "name": "恐高症",
+     "en": "Acrophobia",
+     "desc": "对于身处高处的恐惧。",
+     "no": 2
+    },
+    {
+     "type": "phobia",
+     "name": "飞行恐惧症",
+     "en": "Aerophobia",
+     "desc": "对飞行的恐惧。",
+     "no": 3
+    }
+   ],
+   "randUsed": 0,
+   "seed": 3225749577,
+   "error": null
+  },
+  {
+   "name": "manias#1562",
+   "fn": "manias",
+   "args": [],
+   "expect": [
+    {
+     "type": "mania",
+     "name": "沐浴癖",
+     "en": "Ablutomania",
+     "desc": "执着于清洗自己。",
+     "no": 1
+    },
+    {
+     "type": "mania",
+     "name": "犹豫癖",
+     "en": "Aboulomania",
+     "desc": "病态地犹豫不定。",
+     "no": 2
+    },
+    {
+     "type": "mania",
+     "name": "喜暗狂",
+     "en": "Achluomania",
+     "desc": "对黑暗的过度热爱。",
+     "no": 3
+    }
+   ],
+   "randUsed": 0,
+   "seed": 1585218042,
+   "error": null
+  },
+  {
+   "name": "make#1563",
+   "fn": "make",
+   "args": [
+    "phobia",
+    {
+     "no": 4,
+     "name": "广场恐惧症",
+     "en": "Agoraphobia",
+     "desc": "对于开放的（拥挤）公共场所的恐惧。"
+    },
+    true,
+    null
+   ],
+   "expect": {
+    "id": "mloyw3v287nxe",
+    "type": "phobia",
+    "name": "广场恐惧症",
+    "en": "Agoraphobia",
+    "desc": "对于开放的（拥挤）公共场所的恐惧。",
+    "permanent": true,
+    "rounds": 0,
+    "at": 1700000000000
+   },
+   "randUsed": 1,
+   "seed": 4239653803,
+   "error": null
+  },
+  {
+   "name": "make#1564",
+   "fn": "make",
+   "args": [
+    "mania",
+    {
+     "no": 8,
+     "name": "恋猫狂",
+     "en": "Ailuromania",
+     "desc": "近乎病态地对猫友善。"
+    },
+    true,
+    null
+   ],
+   "expect": {
+    "id": "mloyw3v2884rt",
+    "type": "mania",
+    "name": "恋猫狂",
+    "en": "Ailuromania",
+    "desc": "近乎病态地对猫友善。",
+    "permanent": true,
+    "rounds": 0,
+    "at": 1700000000000
+   },
+   "randUsed": 1,
+   "seed": 2599122268,
+   "error": null
+  },
+  {
+   "name": "make#1565",
+   "fn": "make",
+   "args": [
+    "bout",
+    {
+     "no": 4,
+     "name": "广场恐惧症",
+     "en": "Agoraphobia",
+     "desc": "对于开放的（拥挤）公共场所的恐惧。"
+    },
+    false,
+    5
+   ],
+   "expect": {
+    "id": "mloyw3v288lm8",
+    "type": "bout",
+    "name": "广场恐惧症",
+    "en": "Agoraphobia",
+    "desc": "对于开放的（拥挤）公共场所的恐惧。",
+    "permanent": false,
+    "rounds": 5,
+    "at": 1700000000000
+   },
+   "randUsed": 1,
+   "seed": 958590733,
+   "error": null
+  },
+  {
+   "name": "make#1566",
+   "fn": "make",
+   "args": [
+    "bout",
+    {
+     "no": 4,
+     "name": "广场恐惧症",
+     "en": "Agoraphobia",
+     "desc": "对于开放的（拥挤）公共场所的恐惧。"
+    },
+    false,
+    0
+   ],
+   "expect": {
+    "id": "mloyw3v2892gn",
+    "type": "bout",
+    "name": "广场恐惧症",
+    "en": "Agoraphobia",
+    "desc": "对于开放的（拥挤）公共场所的恐惧。",
+    "permanent": false,
+    "rounds": 10,
+    "at": 1700000000000
+   },
+   "randUsed": 2,
+   "seed": 3613026494,
+   "error": null
+  },
+  {
+   "name": "make#1567",
+   "fn": "make",
+   "args": [
+    "phobia",
+    null,
+    false,
+    null
+   ],
+   "expect": {
+    "id": "mloyw3v28hosu",
+    "type": "phobia",
+    "name": "爬虫恐惧症",
+    "en": "Herpetophobia",
+    "desc": "对爬行动物的恐惧。",
+    "permanent": false,
+    "rounds": 4,
+    "at": 1700000000000
+   },
+   "randUsed": 3,
+   "seed": 1972494959,
+   "error": null
+  },
+  {
+   "name": "parseBackground#1568",
+   "fn": "parseBackground",
+   "args": [
+    "【恐惧症】幽闭恐惧症：怕黑"
+   ],
+   "expect": [
+    {
+     "type": "phobia",
+     "src": {
+      "no": 25,
+      "name": "幽闭恐惧症",
+      "en": "Claustrophobia",
+      "desc": "对于处在封闭的空间中的恐惧。"
+     }
+    }
+   ],
+   "randUsed": 0,
+   "seed": 331963424,
+   "error": null
+  },
+  {
+   "name": "parseBackground#1569",
+   "fn": "parseBackground",
+   "args": [
+    "【狂躁症】沐浴癖：描述"
+   ],
+   "expect": [
+    {
+     "type": "mania",
+     "src": {
+      "no": 1,
+      "name": "沐浴癖",
+      "en": "Ablutomania",
+      "desc": "执着于清洗自己。"
+     }
+    }
+   ],
+   "randUsed": 0,
+   "seed": 2986399185,
+   "error": null
+  },
+  {
+   "name": "parseBackground#1570",
+   "fn": "parseBackground",
+   "args": [
+    "洗澡恐惧症：直白写法"
+   ],
+   "expect": [
+    {
+     "type": "phobia",
+     "src": {
+      "no": 1,
+      "name": "洗澡恐惧症",
+      "en": "Ablutophobia",
+      "desc": "对于洗涤或洗澡的恐惧。"
+     }
+    }
+   ],
+   "randUsed": 0,
+   "seed": 1345867650,
+   "error": null
+  },
+  {
+   "name": "parseBackground#1571",
+   "fn": "parseBackground",
+   "args": [
+    "自由文本没有症状\n第二行"
+   ],
+   "expect": [],
+   "randUsed": 0,
+   "seed": 4000303411,
+   "error": null
+  },
+  {
+   "name": "parseBackground#1572",
+   "fn": "parseBackground",
+   "args": [
+    ""
+   ],
+   "expect": [],
+   "randUsed": 0,
+   "seed": 2359771876,
+   "error": null
+  },
+  {
+   "name": "parseBackground#1573",
+   "fn": "parseBackground",
+   "args": [
+    "【恐惧症】不存在的症状：x\n【狂躁症】犹豫癖"
+   ],
+   "expect": [
+    {
+     "type": "mania",
+     "src": {
+      "no": 2,
+      "name": "犹豫癖",
+      "en": "Aboulomania",
+      "desc": "病态地犹豫不定。"
+     }
+    }
+   ],
+   "randUsed": 0,
+   "seed": 719240341,
+   "error": null
+  },
+  {
+   "name": "parseBackground#1574",
+   "fn": "parseBackground",
+   "args": [
+    "【恐惧症】恐高症\n【恐惧症】恐高症"
+   ],
+   "expect": [
+    {
+     "type": "phobia",
+     "src": {
+      "no": 2,
+      "name": "恐高症",
+      "en": "Acrophobia",
+      "desc": "对于身处高处的恐惧。"
+     }
+    }
+   ],
+   "randUsed": 0,
+   "seed": 3373676102,
+   "error": null
+  },
+  {
+   "name": "fromBackground#1575",
+   "fn": "fromBackground",
+   "args": {
+    "card": {
+     "id": "lt1pcrdy",
+     "userId": "local",
+     "ruleSystemId": "coc7",
+     "characterName": "",
+     "playerName": "",
+     "avatar": "",
+     "basicInfo": {
+      "era": "现代",
+      "eraCustom": "",
+      "age": 30,
+      "gender": "男",
+      "genderCustom": "",
+      "residence": "",
+      "birthplace": "",
+      "occupationName": ""
+     },
+     "age": 30,
+     "occupationId": "",
+     "occupationPicks": {},
+     "customOccupation": null,
+     "attributes": {
+      "str": "",
+      "con": "",
+      "siz": "",
+      "dex": "",
+      "app": "",
+      "int": "",
+      "pow": "",
+      "edu": "",
+      "luck": ""
+     },
+     "attributeMode": "random",
+     "attributeHistory": [],
+     "pbCap": 480,
+     "pbIncludeLuck": true,
+     "fate": {
+      "n": 5,
+      "rolled": false,
+      "options": [],
+      "picked": -1,
+      "rolledAt": 0
+     },
+     "eduProgress": {
+      "base": null,
+      "done": 0,
+      "log": [],
+      "bonus": 0
+     },
+     "derivedStats": {},
+     "status": {
+      "currentHP": 0,
+      "maxHP": 0,
+      "currentMP": 0,
+      "maxMP": 0,
+      "currentSAN": 0,
+      "maxSAN": 99,
+      "currentLuck": 0,
+      "body": "正常",
+      "mental": "正常",
+      "dying": false,
+      "unconscious": false
+     },
+     "madness": [],
+     "baseMaxSAN": null,
+     "sanLoss": 0,
+     "skills": [],
+     "weapons": [],
+     "armors": [],
+     "vehicles": [],
+     "items": [],
+     "assets": {
+      "creditRating": 0,
+      "cash": 0,
+      "spendingLevel": "标准",
+      "assetsDescription": "",
+      "assets": [],
+      "currency": "$"
+     },
+     "background": {
+      "description": "",
+      "ideology": "",
+      "significantPeople": "",
+      "meaningfulPlaces": "",
+      "treasuredPossessions": "",
+      "traits": "",
+      "wounds": "",
+      "phobias": "【恐惧症】幽闭恐惧症：怕黑"
+     },
+     "history": [],
+     "companions": [],
+     "mythos": {
+      "skill": 0,
+      "knowledge": "",
+      "entries": [],
+      "spells": []
+     },
+     "skillCap": 99,
+     "skillCapOcc": 99,
+     "skillCapInterest": 99,
+     "shareVisibility": "link",
+     "shareId": "",
+     "version": "v1.0",
+     "changeLog": [
+      {
+       "version": "v1.0",
+       "note": "创建角色",
+       "at": 1700000000000
+      }
+     ],
+     "createdAt": 1700000000000,
+     "updatedAt": 1700000000000
+    }
+   },
+   "expect": 1,
+   "randUsed": 1,
+   "seed": 1733144567,
+   "error": null
+  },
+  {
+   "name": "fromBackgroundIdem#1576",
+   "fn": "fromBackgroundIdem",
+   "args": {
+    "card": {
+     "id": "lt1pcrdy",
+     "userId": "local",
+     "ruleSystemId": "coc7",
+     "characterName": "",
+     "playerName": "",
+     "avatar": "",
+     "basicInfo": {
+      "era": "现代",
+      "eraCustom": "",
+      "age": 30,
+      "gender": "男",
+      "genderCustom": "",
+      "residence": "",
+      "birthplace": "",
+      "occupationName": ""
+     },
+     "age": 30,
+     "occupationId": "",
+     "occupationPicks": {},
+     "customOccupation": null,
+     "attributes": {
+      "str": "",
+      "con": "",
+      "siz": "",
+      "dex": "",
+      "app": "",
+      "int": "",
+      "pow": "",
+      "edu": "",
+      "luck": ""
+     },
+     "attributeMode": "random",
+     "attributeHistory": [],
+     "pbCap": 480,
+     "pbIncludeLuck": true,
+     "fate": {
+      "n": 5,
+      "rolled": false,
+      "options": [],
+      "picked": -1,
+      "rolledAt": 0
+     },
+     "eduProgress": {
+      "base": null,
+      "done": 0,
+      "log": [],
+      "bonus": 0
+     },
+     "derivedStats": {},
+     "status": {
+      "currentHP": 0,
+      "maxHP": 0,
+      "currentMP": 0,
+      "maxMP": 0,
+      "currentSAN": 0,
+      "maxSAN": 99,
+      "currentLuck": 0,
+      "body": "正常",
+      "mental": "正常",
+      "dying": false,
+      "unconscious": false
+     },
+     "madness": [],
+     "baseMaxSAN": null,
+     "sanLoss": 0,
+     "skills": [],
+     "weapons": [],
+     "armors": [],
+     "vehicles": [],
+     "items": [],
+     "assets": {
+      "creditRating": 0,
+      "cash": 0,
+      "spendingLevel": "标准",
+      "assetsDescription": "",
+      "assets": [],
+      "currency": "$"
+     },
+     "background": {
+      "description": "",
+      "ideology": "",
+      "significantPeople": "",
+      "meaningfulPlaces": "",
+      "treasuredPossessions": "",
+      "traits": "",
+      "wounds": "",
+      "phobias": "【恐惧症】幽闭恐惧症：怕黑"
+     },
+     "history": [],
+     "companions": [],
+     "mythos": {
+      "skill": 0,
+      "knowledge": "",
+      "entries": [],
+      "spells": []
+     },
+     "skillCap": 99,
+     "skillCapOcc": 99,
+     "skillCapInterest": 99,
+     "shareVisibility": "link",
+     "shareId": "",
+     "version": "v1.0",
+     "changeLog": [
+      {
+       "version": "v1.0",
+       "note": "创建角色",
+       "at": 1700000000000
+      }
+     ],
+     "createdAt": 1700000000000,
+     "updatedAt": 1700000000000
+    }
+   },
+   "expect": 0,
+   "randUsed": 1,
+   "seed": 92613032,
+   "error": null
+  },
+  {
+   "name": "advance#1577",
+   "fn": "advance",
+   "args": {
+    "card": {
+     "id": "vgbzaehv",
+     "userId": "local",
+     "ruleSystemId": "coc7",
+     "characterName": "",
+     "playerName": "",
+     "avatar": "",
+     "basicInfo": {
+      "era": "现代",
+      "eraCustom": "",
+      "age": 30,
+      "gender": "男",
+      "genderCustom": "",
+      "residence": "",
+      "birthplace": "",
+      "occupationName": ""
+     },
+     "age": 30,
+     "occupationId": "",
+     "occupationPicks": {},
+     "customOccupation": null,
+     "attributes": {
+      "str": "",
+      "con": "",
+      "siz": "",
+      "dex": "",
+      "app": "",
+      "int": "",
+      "pow": "",
+      "edu": "",
+      "luck": ""
+     },
+     "attributeMode": "random",
+     "attributeHistory": [],
+     "pbCap": 480,
+     "pbIncludeLuck": true,
+     "fate": {
+      "n": 5,
+      "rolled": false,
+      "options": [],
+      "picked": -1,
+      "rolledAt": 0
+     },
+     "eduProgress": {
+      "base": null,
+      "done": 0,
+      "log": [],
+      "bonus": 0
+     },
+     "derivedStats": {},
+     "status": {
+      "currentHP": 0,
+      "maxHP": 0,
+      "currentMP": 0,
+      "maxMP": 0,
+      "currentSAN": 0,
+      "maxSAN": 99,
+      "currentLuck": 0,
+      "body": "正常",
+      "mental": "正常",
+      "dying": false,
+      "unconscious": false
+     },
+     "madness": [],
+     "baseMaxSAN": null,
+     "sanLoss": 0,
+     "skills": [],
+     "weapons": [],
+     "armors": [],
+     "vehicles": [],
+     "items": [],
+     "assets": {
+      "creditRating": 0,
+      "cash": 0,
+      "spendingLevel": "标准",
+      "assetsDescription": "",
+      "assets": [],
+      "currency": "$"
+     },
+     "background": {
+      "description": "",
+      "ideology": "",
+      "significantPeople": "",
+      "meaningfulPlaces": "",
+      "treasuredPossessions": "",
+      "traits": "",
+      "wounds": "",
+      "phobias": ""
+     },
+     "history": [],
+     "companions": [],
+     "mythos": {
+      "skill": 0,
+      "knowledge": "",
+      "entries": [],
+      "spells": []
+     },
+     "skillCap": 99,
+     "skillCapOcc": 99,
+     "skillCapInterest": 99,
+     "shareVisibility": "link",
+     "shareId": "",
+     "version": "v1.0",
+     "changeLog": [
+      {
+       "version": "v1.0",
+       "note": "创建角色",
+       "at": 1700000000000
+      }
+     ],
+     "createdAt": 1700000000000,
+     "updatedAt": 1700000000000
+    },
+    "n": 1
+   },
+   "expect": [],
+   "randUsed": 0,
+   "seed": 2747048793,
+   "error": null
+  },
+  {
+   "name": "summary#1578",
+   "fn": "summary",
+   "args": {
+    "card": {
+     "id": "vgbzaehv",
+     "userId": "local",
+     "ruleSystemId": "coc7",
+     "characterName": "",
+     "playerName": "",
+     "avatar": "",
+     "basicInfo": {
+      "era": "现代",
+      "eraCustom": "",
+      "age": 30,
+      "gender": "男",
+      "genderCustom": "",
+      "residence": "",
+      "birthplace": "",
+      "occupationName": ""
+     },
+     "age": 30,
+     "occupationId": "",
+     "occupationPicks": {},
+     "customOccupation": null,
+     "attributes": {
+      "str": "",
+      "con": "",
+      "siz": "",
+      "dex": "",
+      "app": "",
+      "int": "",
+      "pow": "",
+      "edu": "",
+      "luck": ""
+     },
+     "attributeMode": "random",
+     "attributeHistory": [],
+     "pbCap": 480,
+     "pbIncludeLuck": true,
+     "fate": {
+      "n": 5,
+      "rolled": false,
+      "options": [],
+      "picked": -1,
+      "rolledAt": 0
+     },
+     "eduProgress": {
+      "base": null,
+      "done": 0,
+      "log": [],
+      "bonus": 0
+     },
+     "derivedStats": {},
+     "status": {
+      "currentHP": 0,
+      "maxHP": 0,
+      "currentMP": 0,
+      "maxMP": 0,
+      "currentSAN": 0,
+      "maxSAN": 99,
+      "currentLuck": 0,
+      "body": "正常",
+      "mental": "正常",
+      "dying": false,
+      "unconscious": false
+     },
+     "madness": [],
+     "baseMaxSAN": null,
+     "sanLoss": 0,
+     "skills": [],
+     "weapons": [],
+     "armors": [],
+     "vehicles": [],
+     "items": [],
+     "assets": {
+      "creditRating": 0,
+      "cash": 0,
+      "spendingLevel": "标准",
+      "assetsDescription": "",
+      "assets": [],
+      "currency": "$"
+     },
+     "background": {
+      "description": "",
+      "ideology": "",
+      "significantPeople": "",
+      "meaningfulPlaces": "",
+      "treasuredPossessions": "",
+      "traits": "",
+      "wounds": "",
+      "phobias": ""
+     },
+     "history": [],
+     "companions": [],
+     "mythos": {
+      "skill": 0,
+      "knowledge": "",
+      "entries": [],
+      "spells": []
+     },
+     "skillCap": 99,
+     "skillCapOcc": 99,
+     "skillCapInterest": 99,
+     "shareVisibility": "link",
+     "shareId": "",
+     "version": "v1.0",
+     "changeLog": [
+      {
+       "version": "v1.0",
+       "note": "创建角色",
+       "at": 1700000000000
+      }
+     ],
+     "createdAt": 1700000000000,
+     "updatedAt": 1700000000000
+    }
+   },
+   "expect": "",
+   "randUsed": 0,
+   "seed": 1106517258,
+   "error": null
+  },
+  {
+   "name": "fading#1579",
+   "fn": "fading",
+   "args": {
+    "card": {
+     "id": "vgbzaehv",
+     "userId": "local",
+     "ruleSystemId": "coc7",
+     "characterName": "",
+     "playerName": "",
+     "avatar": "",
+     "basicInfo": {
+      "era": "现代",
+      "eraCustom": "",
+      "age": 30,
+      "gender": "男",
+      "genderCustom": "",
+      "residence": "",
+      "birthplace": "",
+      "occupationName": ""
+     },
+     "age": 30,
+     "occupationId": "",
+     "occupationPicks": {},
+     "customOccupation": null,
+     "attributes": {
+      "str": "",
+      "con": "",
+      "siz": "",
+      "dex": "",
+      "app": "",
+      "int": "",
+      "pow": "",
+      "edu": "",
+      "luck": ""
+     },
+     "attributeMode": "random",
+     "attributeHistory": [],
+     "pbCap": 480,
+     "pbIncludeLuck": true,
+     "fate": {
+      "n": 5,
+      "rolled": false,
+      "options": [],
+      "picked": -1,
+      "rolledAt": 0
+     },
+     "eduProgress": {
+      "base": null,
+      "done": 0,
+      "log": [],
+      "bonus": 0
+     },
+     "derivedStats": {},
+     "status": {
+      "currentHP": 0,
+      "maxHP": 0,
+      "currentMP": 0,
+      "maxMP": 0,
+      "currentSAN": 0,
+      "maxSAN": 99,
+      "currentLuck": 0,
+      "body": "正常",
+      "mental": "正常",
+      "dying": false,
+      "unconscious": false
+     },
+     "madness": [],
+     "baseMaxSAN": null,
+     "sanLoss": 0,
+     "skills": [],
+     "weapons": [],
+     "armors": [],
+     "vehicles": [],
+     "items": [],
+     "assets": {
+      "creditRating": 0,
+      "cash": 0,
+      "spendingLevel": "标准",
+      "assetsDescription": "",
+      "assets": [],
+      "currency": "$"
+     },
+     "background": {
+      "description": "",
+      "ideology": "",
+      "significantPeople": "",
+      "meaningfulPlaces": "",
+      "treasuredPossessions": "",
+      "traits": "",
+      "wounds": "",
+      "phobias": ""
+     },
+     "history": [],
+     "companions": [],
+     "mythos": {
+      "skill": 0,
+      "knowledge": "",
+      "entries": [],
+      "spells": []
+     },
+     "skillCap": 99,
+     "skillCapOcc": 99,
+     "skillCapInterest": 99,
+     "shareVisibility": "link",
+     "shareId": "",
+     "version": "v1.0",
+     "changeLog": [
+      {
+       "version": "v1.0",
+       "note": "创建角色",
+       "at": 1700000000000
+      }
+     ],
+     "createdAt": 1700000000000,
+     "updatedAt": 1700000000000
+    },
+    "within": 2
+   },
+   "expect": [],
+   "randUsed": 0,
+   "seed": 3760953019,
+   "error": null
+  },
+  {
+   "name": "hasName#1580",
+   "fn": "hasName",
+   "args": {
+    "card": {
+     "id": "vgbzaehv",
+     "userId": "local",
+     "ruleSystemId": "coc7",
+     "characterName": "",
+     "playerName": "",
+     "avatar": "",
+     "basicInfo": {
+      "era": "现代",
+      "eraCustom": "",
+      "age": 30,
+      "gender": "男",
+      "genderCustom": "",
+      "residence": "",
+      "birthplace": "",
+      "occupationName": ""
+     },
+     "age": 30,
+     "occupationId": "",
+     "occupationPicks": {},
+     "customOccupation": null,
+     "attributes": {
+      "str": "",
+      "con": "",
+      "siz": "",
+      "dex": "",
+      "app": "",
+      "int": "",
+      "pow": "",
+      "edu": "",
+      "luck": ""
+     },
+     "attributeMode": "random",
+     "attributeHistory": [],
+     "pbCap": 480,
+     "pbIncludeLuck": true,
+     "fate": {
+      "n": 5,
+      "rolled": false,
+      "options": [],
+      "picked": -1,
+      "rolledAt": 0
+     },
+     "eduProgress": {
+      "base": null,
+      "done": 0,
+      "log": [],
+      "bonus": 0
+     },
+     "derivedStats": {},
+     "status": {
+      "currentHP": 0,
+      "maxHP": 0,
+      "currentMP": 0,
+      "maxMP": 0,
+      "currentSAN": 0,
+      "maxSAN": 99,
+      "currentLuck": 0,
+      "body": "正常",
+      "mental": "正常",
+      "dying": false,
+      "unconscious": false
+     },
+     "madness": [],
+     "baseMaxSAN": null,
+     "sanLoss": 0,
+     "skills": [],
+     "weapons": [],
+     "armors": [],
+     "vehicles": [],
+     "items": [],
+     "assets": {
+      "creditRating": 0,
+      "cash": 0,
+      "spendingLevel": "标准",
+      "assetsDescription": "",
+      "assets": [],
+      "currency": "$"
+     },
+     "background": {
+      "description": "",
+      "ideology": "",
+      "significantPeople": "",
+      "meaningfulPlaces": "",
+      "treasuredPossessions": "",
+      "traits": "",
+      "wounds": "",
+      "phobias": ""
+     },
+     "history": [],
+     "companions": [],
+     "mythos": {
+      "skill": 0,
+      "knowledge": "",
+      "entries": [],
+      "spells": []
+     },
+     "skillCap": 99,
+     "skillCapOcc": 99,
+     "skillCapInterest": 99,
+     "shareVisibility": "link",
+     "shareId": "",
+     "version": "v1.0",
+     "changeLog": [
+      {
+       "version": "v1.0",
+       "note": "创建角色",
+       "at": 1700000000000
+      }
+     ],
+     "createdAt": 1700000000000,
+     "updatedAt": 1700000000000
+    },
+    "type": "phobia",
+    "name": "幽闭恐惧症"
+   },
+   "expect": false,
+   "randUsed": 0,
+   "seed": 2120421484,
+   "error": null
+  },
+  {
+   "name": "add#1581",
+   "fn": "add",
+   "args": {
+    "card": {
+     "id": "vgbzaehv",
+     "userId": "local",
+     "ruleSystemId": "coc7",
+     "characterName": "",
+     "playerName": "",
+     "avatar": "",
+     "basicInfo": {
+      "era": "现代",
+      "eraCustom": "",
+      "age": 30,
+      "gender": "男",
+      "genderCustom": "",
+      "residence": "",
+      "birthplace": "",
+      "occupationName": ""
+     },
+     "age": 30,
+     "occupationId": "",
+     "occupationPicks": {},
+     "customOccupation": null,
+     "attributes": {
+      "str": "",
+      "con": "",
+      "siz": "",
+      "dex": "",
+      "app": "",
+      "int": "",
+      "pow": "",
+      "edu": "",
+      "luck": ""
+     },
+     "attributeMode": "random",
+     "attributeHistory": [],
+     "pbCap": 480,
+     "pbIncludeLuck": true,
+     "fate": {
+      "n": 5,
+      "rolled": false,
+      "options": [],
+      "picked": -1,
+      "rolledAt": 0
+     },
+     "eduProgress": {
+      "base": null,
+      "done": 0,
+      "log": [],
+      "bonus": 0
+     },
+     "derivedStats": {},
+     "status": {
+      "currentHP": 0,
+      "maxHP": 0,
+      "currentMP": 0,
+      "maxMP": 0,
+      "currentSAN": 0,
+      "maxSAN": 99,
+      "currentLuck": 0,
+      "body": "正常",
+      "mental": "正常",
+      "dying": false,
+      "unconscious": false
+     },
+     "madness": [],
+     "baseMaxSAN": null,
+     "sanLoss": 0,
+     "skills": [],
+     "weapons": [],
+     "armors": [],
+     "vehicles": [],
+     "items": [],
+     "assets": {
+      "creditRating": 0,
+      "cash": 0,
+      "spendingLevel": "标准",
+      "assetsDescription": "",
+      "assets": [],
+      "currency": "$"
+     },
+     "background": {
+      "description": "",
+      "ideology": "",
+      "significantPeople": "",
+      "meaningfulPlaces": "",
+      "treasuredPossessions": "",
+      "traits": "",
+      "wounds": "",
+      "phobias": ""
+     },
+     "history": [],
+     "companions": [],
+     "mythos": {
+      "skill": 0,
+      "knowledge": "",
+      "entries": [],
+      "spells": []
+     },
+     "skillCap": 99,
+     "skillCapOcc": 99,
+     "skillCapInterest": 99,
+     "shareVisibility": "link",
+     "shareId": "",
+     "version": "v1.0",
+     "changeLog": [
+      {
+       "version": "v1.0",
+       "note": "创建角色",
+       "at": 1700000000000
+      }
+     ],
+     "createdAt": 1700000000000,
+     "updatedAt": 1700000000000
+    },
+    "entry": {
+     "id": "mn",
+     "type": "mania",
+     "name": "纵火狂",
+     "rounds": 2,
+     "permanent": false
+    }
+   },
+   "expect": {
+    "id": "mn",
+    "type": "mania",
+    "name": "纵火狂",
+    "rounds": 2,
+    "permanent": false
+   },
+   "randUsed": 0,
+   "seed": 479889949,
+   "error": null
+  },
+  {
+   "name": "remove#1582",
+   "fn": "remove",
+   "args": {
+    "card": {
+     "id": "vgbzaehv",
+     "userId": "local",
+     "ruleSystemId": "coc7",
+     "characterName": "",
+     "playerName": "",
+     "avatar": "",
+     "basicInfo": {
+      "era": "现代",
+      "eraCustom": "",
+      "age": 30,
+      "gender": "男",
+      "genderCustom": "",
+      "residence": "",
+      "birthplace": "",
+      "occupationName": ""
+     },
+     "age": 30,
+     "occupationId": "",
+     "occupationPicks": {},
+     "customOccupation": null,
+     "attributes": {
+      "str": "",
+      "con": "",
+      "siz": "",
+      "dex": "",
+      "app": "",
+      "int": "",
+      "pow": "",
+      "edu": "",
+      "luck": ""
+     },
+     "attributeMode": "random",
+     "attributeHistory": [],
+     "pbCap": 480,
+     "pbIncludeLuck": true,
+     "fate": {
+      "n": 5,
+      "rolled": false,
+      "options": [],
+      "picked": -1,
+      "rolledAt": 0
+     },
+     "eduProgress": {
+      "base": null,
+      "done": 0,
+      "log": [],
+      "bonus": 0
+     },
+     "derivedStats": {},
+     "status": {
+      "currentHP": 0,
+      "maxHP": 0,
+      "currentMP": 0,
+      "maxMP": 0,
+      "currentSAN": 0,
+      "maxSAN": 99,
+      "currentLuck": 0,
+      "body": "正常",
+      "mental": "正常",
+      "dying": false,
+      "unconscious": false
+     },
+     "madness": [],
+     "baseMaxSAN": null,
+     "sanLoss": 0,
+     "skills": [],
+     "weapons": [],
+     "armors": [],
+     "vehicles": [],
+     "items": [],
+     "assets": {
+      "creditRating": 0,
+      "cash": 0,
+      "spendingLevel": "标准",
+      "assetsDescription": "",
+      "assets": [],
+      "currency": "$"
+     },
+     "background": {
+      "description": "",
+      "ideology": "",
+      "significantPeople": "",
+      "meaningfulPlaces": "",
+      "treasuredPossessions": "",
+      "traits": "",
+      "wounds": "",
+      "phobias": ""
+     },
+     "history": [],
+     "companions": [],
+     "mythos": {
+      "skill": 0,
+      "knowledge": "",
+      "entries": [],
+      "spells": []
+     },
+     "skillCap": 99,
+     "skillCapOcc": 99,
+     "skillCapInterest": 99,
+     "shareVisibility": "link",
+     "shareId": "",
+     "version": "v1.0",
+     "changeLog": [
+      {
+       "version": "v1.0",
+       "note": "创建角色",
+       "at": 1700000000000
+      }
+     ],
+     "createdAt": 1700000000000,
+     "updatedAt": 1700000000000
+    },
+    "id": "m2"
+   },
+   "expect": null,
+   "randUsed": 0,
+   "seed": 3134325710,
+   "error": null
+  },
+  {
+   "name": "advance#1583",
+   "fn": "advance",
+   "args": {
+    "card": {
+     "id": "4nrhr454",
+     "userId": "local",
+     "ruleSystemId": "coc7",
+     "characterName": "",
+     "playerName": "",
+     "avatar": "",
+     "basicInfo": {
+      "era": "现代",
+      "eraCustom": "",
+      "age": 30,
+      "gender": "男",
+      "genderCustom": "",
+      "residence": "",
+      "birthplace": "",
+      "occupationName": ""
+     },
+     "age": 30,
+     "occupationId": "",
+     "occupationPicks": {},
+     "customOccupation": null,
+     "attributes": {
+      "str": "",
+      "con": "",
+      "siz": "",
+      "dex": "",
+      "app": "",
+      "int": "",
+      "pow": "",
+      "edu": "",
+      "luck": ""
+     },
+     "attributeMode": "random",
+     "attributeHistory": [],
+     "pbCap": 480,
+     "pbIncludeLuck": true,
+     "fate": {
+      "n": 5,
+      "rolled": false,
+      "options": [],
+      "picked": -1,
+      "rolledAt": 0
+     },
+     "eduProgress": {
+      "base": null,
+      "done": 0,
+      "log": [],
+      "bonus": 0
+     },
+     "derivedStats": {},
+     "status": {
+      "currentHP": 0,
+      "maxHP": 0,
+      "currentMP": 0,
+      "maxMP": 0,
+      "currentSAN": 0,
+      "maxSAN": 99,
+      "currentLuck": 0,
+      "body": "正常",
+      "mental": "正常",
+      "dying": false,
+      "unconscious": false
+     },
+     "madness": [
+      {
+       "id": "m1",
+       "type": "phobia",
+       "name": "幽闭恐惧症",
+       "en": "Claustrophobia",
+       "desc": "x",
+       "rounds": 3,
+       "permanent": false,
+       "at": 1700000000000
+      },
+      {
+       "id": "m2",
+       "type": "phobia",
+       "name": "幽闭恐惧症",
+       "en": "Claustrophobia",
+       "desc": "x",
+       "rounds": 1,
+       "permanent": false,
+       "at": 1700000000000
+      },
+      {
+       "id": "m3",
+       "type": "phobia",
+       "name": "幽闭恐惧症",
+       "en": "Claustrophobia",
+       "desc": "x",
+       "rounds": 3,
+       "permanent": true,
+       "at": 1700000000000
+      }
+     ],
+     "baseMaxSAN": null,
+     "sanLoss": 0,
+     "skills": [],
+     "weapons": [],
+     "armors": [],
+     "vehicles": [],
+     "items": [],
+     "assets": {
+      "creditRating": 0,
+      "cash": 0,
+      "spendingLevel": "标准",
+      "assetsDescription": "",
+      "assets": [],
+      "currency": "$"
+     },
+     "background": {
+      "description": "",
+      "ideology": "",
+      "significantPeople": "",
+      "meaningfulPlaces": "",
+      "treasuredPossessions": "",
+      "traits": "",
+      "wounds": "",
+      "phobias": ""
+     },
+     "history": [],
+     "companions": [],
+     "mythos": {
+      "skill": 0,
+      "knowledge": "",
+      "entries": [],
+      "spells": []
+     },
+     "skillCap": 99,
+     "skillCapOcc": 99,
+     "skillCapInterest": 99,
+     "shareVisibility": "link",
+     "shareId": "",
+     "version": "v1.0",
+     "changeLog": [
+      {
+       "version": "v1.0",
+       "note": "创建角色",
+       "at": 1700000000000
+      }
+     ],
+     "createdAt": 1700000000000,
+     "updatedAt": 1700000000000
+    },
+    "n": 2
+   },
+   "expect": [
+    {
+     "id": "m2",
+     "type": "phobia",
+     "name": "幽闭恐惧症",
+     "en": "Claustrophobia",
+     "desc": "x",
+     "rounds": -1,
+     "permanent": false,
+     "at": 1700000000000
+    }
+   ],
+   "randUsed": 0,
+   "seed": 1493794175,
+   "error": null
+  },
+  {
+   "name": "summary#1584",
+   "fn": "summary",
+   "args": {
+    "card": {
+     "id": "4nrhr454",
+     "userId": "local",
+     "ruleSystemId": "coc7",
+     "characterName": "",
+     "playerName": "",
+     "avatar": "",
+     "basicInfo": {
+      "era": "现代",
+      "eraCustom": "",
+      "age": 30,
+      "gender": "男",
+      "genderCustom": "",
+      "residence": "",
+      "birthplace": "",
+      "occupationName": ""
+     },
+     "age": 30,
+     "occupationId": "",
+     "occupationPicks": {},
+     "customOccupation": null,
+     "attributes": {
+      "str": "",
+      "con": "",
+      "siz": "",
+      "dex": "",
+      "app": "",
+      "int": "",
+      "pow": "",
+      "edu": "",
+      "luck": ""
+     },
+     "attributeMode": "random",
+     "attributeHistory": [],
+     "pbCap": 480,
+     "pbIncludeLuck": true,
+     "fate": {
+      "n": 5,
+      "rolled": false,
+      "options": [],
+      "picked": -1,
+      "rolledAt": 0
+     },
+     "eduProgress": {
+      "base": null,
+      "done": 0,
+      "log": [],
+      "bonus": 0
+     },
+     "derivedStats": {},
+     "status": {
+      "currentHP": 0,
+      "maxHP": 0,
+      "currentMP": 0,
+      "maxMP": 0,
+      "currentSAN": 0,
+      "maxSAN": 99,
+      "currentLuck": 0,
+      "body": "正常",
+      "mental": "正常",
+      "dying": false,
+      "unconscious": false
+     },
+     "madness": [
+      {
+       "id": "m1",
+       "type": "phobia",
+       "name": "幽闭恐惧症",
+       "en": "Claustrophobia",
+       "desc": "x",
+       "rounds": 3,
+       "permanent": false,
+       "at": 1700000000000
+      },
+      {
+       "id": "m2",
+       "type": "phobia",
+       "name": "幽闭恐惧症",
+       "en": "Claustrophobia",
+       "desc": "x",
+       "rounds": 1,
+       "permanent": false,
+       "at": 1700000000000
+      },
+      {
+       "id": "m3",
+       "type": "phobia",
+       "name": "幽闭恐惧症",
+       "en": "Claustrophobia",
+       "desc": "x",
+       "rounds": 3,
+       "permanent": true,
+       "at": 1700000000000
+      }
+     ],
+     "baseMaxSAN": null,
+     "sanLoss": 0,
+     "skills": [],
+     "weapons": [],
+     "armors": [],
+     "vehicles": [],
+     "items": [],
+     "assets": {
+      "creditRating": 0,
+      "cash": 0,
+      "spendingLevel": "标准",
+      "assetsDescription": "",
+      "assets": [],
+      "currency": "$"
+     },
+     "background": {
+      "description": "",
+      "ideology": "",
+      "significantPeople": "",
+      "meaningfulPlaces": "",
+      "treasuredPossessions": "",
+      "traits": "",
+      "wounds": "",
+      "phobias": ""
+     },
+     "history": [],
+     "companions": [],
+     "mythos": {
+      "skill": 0,
+      "knowledge": "",
+      "entries": [],
+      "spells": []
+     },
+     "skillCap": 99,
+     "skillCapOcc": 99,
+     "skillCapInterest": 99,
+     "shareVisibility": "link",
+     "shareId": "",
+     "version": "v1.0",
+     "changeLog": [
+      {
+       "version": "v1.0",
+       "note": "创建角色",
+       "at": 1700000000000
+      }
+     ],
+     "createdAt": 1700000000000,
+     "updatedAt": 1700000000000
+    }
+   },
+   "expect": "【恐惧症】幽闭恐惧症（3 轮）　【恐惧症】幽闭恐惧症（1 轮）　【恐惧症】幽闭恐惧症（永久）",
+   "randUsed": 0,
+   "seed": 4148229936,
+   "error": null
+  },
+  {
+   "name": "fading#1585",
+   "fn": "fading",
+   "args": {
+    "card": {
+     "id": "4nrhr454",
+     "userId": "local",
+     "ruleSystemId": "coc7",
+     "characterName": "",
+     "playerName": "",
+     "avatar": "",
+     "basicInfo": {
+      "era": "现代",
+      "eraCustom": "",
+      "age": 30,
+      "gender": "男",
+      "genderCustom": "",
+      "residence": "",
+      "birthplace": "",
+      "occupationName": ""
+     },
+     "age": 30,
+     "occupationId": "",
+     "occupationPicks": {},
+     "customOccupation": null,
+     "attributes": {
+      "str": "",
+      "con": "",
+      "siz": "",
+      "dex": "",
+      "app": "",
+      "int": "",
+      "pow": "",
+      "edu": "",
+      "luck": ""
+     },
+     "attributeMode": "random",
+     "attributeHistory": [],
+     "pbCap": 480,
+     "pbIncludeLuck": true,
+     "fate": {
+      "n": 5,
+      "rolled": false,
+      "options": [],
+      "picked": -1,
+      "rolledAt": 0
+     },
+     "eduProgress": {
+      "base": null,
+      "done": 0,
+      "log": [],
+      "bonus": 0
+     },
+     "derivedStats": {},
+     "status": {
+      "currentHP": 0,
+      "maxHP": 0,
+      "currentMP": 0,
+      "maxMP": 0,
+      "currentSAN": 0,
+      "maxSAN": 99,
+      "currentLuck": 0,
+      "body": "正常",
+      "mental": "正常",
+      "dying": false,
+      "unconscious": false
+     },
+     "madness": [
+      {
+       "id": "m1",
+       "type": "phobia",
+       "name": "幽闭恐惧症",
+       "en": "Claustrophobia",
+       "desc": "x",
+       "rounds": 3,
+       "permanent": false,
+       "at": 1700000000000
+      },
+      {
+       "id": "m2",
+       "type": "phobia",
+       "name": "幽闭恐惧症",
+       "en": "Claustrophobia",
+       "desc": "x",
+       "rounds": 1,
+       "permanent": false,
+       "at": 1700000000000
+      },
+      {
+       "id": "m3",
+       "type": "phobia",
+       "name": "幽闭恐惧症",
+       "en": "Claustrophobia",
+       "desc": "x",
+       "rounds": 3,
+       "permanent": true,
+       "at": 1700000000000
+      }
+     ],
+     "baseMaxSAN": null,
+     "sanLoss": 0,
+     "skills": [],
+     "weapons": [],
+     "armors": [],
+     "vehicles": [],
+     "items": [],
+     "assets": {
+      "creditRating": 0,
+      "cash": 0,
+      "spendingLevel": "标准",
+      "assetsDescription": "",
+      "assets": [],
+      "currency": "$"
+     },
+     "background": {
+      "description": "",
+      "ideology": "",
+      "significantPeople": "",
+      "meaningfulPlaces": "",
+      "treasuredPossessions": "",
+      "traits": "",
+      "wounds": "",
+      "phobias": ""
+     },
+     "history": [],
+     "companions": [],
+     "mythos": {
+      "skill": 0,
+      "knowledge": "",
+      "entries": [],
+      "spells": []
+     },
+     "skillCap": 99,
+     "skillCapOcc": 99,
+     "skillCapInterest": 99,
+     "shareVisibility": "link",
+     "shareId": "",
+     "version": "v1.0",
+     "changeLog": [
+      {
+       "version": "v1.0",
+       "note": "创建角色",
+       "at": 1700000000000
+      }
+     ],
+     "createdAt": 1700000000000,
+     "updatedAt": 1700000000000
+    },
+    "within": 2
+   },
+   "expect": [
+    {
+     "id": "m2",
+     "type": "phobia",
+     "name": "幽闭恐惧症",
+     "en": "Claustrophobia",
+     "desc": "x",
+     "rounds": 1,
+     "permanent": false,
+     "at": 1700000000000
+    }
+   ],
+   "randUsed": 0,
+   "seed": 2507698401,
+   "error": null
+  },
+  {
+   "name": "hasName#1586",
+   "fn": "hasName",
+   "args": {
+    "card": {
+     "id": "4nrhr454",
+     "userId": "local",
+     "ruleSystemId": "coc7",
+     "characterName": "",
+     "playerName": "",
+     "avatar": "",
+     "basicInfo": {
+      "era": "现代",
+      "eraCustom": "",
+      "age": 30,
+      "gender": "男",
+      "genderCustom": "",
+      "residence": "",
+      "birthplace": "",
+      "occupationName": ""
+     },
+     "age": 30,
+     "occupationId": "",
+     "occupationPicks": {},
+     "customOccupation": null,
+     "attributes": {
+      "str": "",
+      "con": "",
+      "siz": "",
+      "dex": "",
+      "app": "",
+      "int": "",
+      "pow": "",
+      "edu": "",
+      "luck": ""
+     },
+     "attributeMode": "random",
+     "attributeHistory": [],
+     "pbCap": 480,
+     "pbIncludeLuck": true,
+     "fate": {
+      "n": 5,
+      "rolled": false,
+      "options": [],
+      "picked": -1,
+      "rolledAt": 0
+     },
+     "eduProgress": {
+      "base": null,
+      "done": 0,
+      "log": [],
+      "bonus": 0
+     },
+     "derivedStats": {},
+     "status": {
+      "currentHP": 0,
+      "maxHP": 0,
+      "currentMP": 0,
+      "maxMP": 0,
+      "currentSAN": 0,
+      "maxSAN": 99,
+      "currentLuck": 0,
+      "body": "正常",
+      "mental": "正常",
+      "dying": false,
+      "unconscious": false
+     },
+     "madness": [
+      {
+       "id": "m1",
+       "type": "phobia",
+       "name": "幽闭恐惧症",
+       "en": "Claustrophobia",
+       "desc": "x",
+       "rounds": 3,
+       "permanent": false,
+       "at": 1700000000000
+      },
+      {
+       "id": "m2",
+       "type": "phobia",
+       "name": "幽闭恐惧症",
+       "en": "Claustrophobia",
+       "desc": "x",
+       "rounds": 1,
+       "permanent": false,
+       "at": 1700000000000
+      },
+      {
+       "id": "m3",
+       "type": "phobia",
+       "name": "幽闭恐惧症",
+       "en": "Claustrophobia",
+       "desc": "x",
+       "rounds": 3,
+       "permanent": true,
+       "at": 1700000000000
+      }
+     ],
+     "baseMaxSAN": null,
+     "sanLoss": 0,
+     "skills": [],
+     "weapons": [],
+     "armors": [],
+     "vehicles": [],
+     "items": [],
+     "assets": {
+      "creditRating": 0,
+      "cash": 0,
+      "spendingLevel": "标准",
+      "assetsDescription": "",
+      "assets": [],
+      "currency": "$"
+     },
+     "background": {
+      "description": "",
+      "ideology": "",
+      "significantPeople": "",
+      "meaningfulPlaces": "",
+      "treasuredPossessions": "",
+      "traits": "",
+      "wounds": "",
+      "phobias": ""
+     },
+     "history": [],
+     "companions": [],
+     "mythos": {
+      "skill": 0,
+      "knowledge": "",
+      "entries": [],
+      "spells": []
+     },
+     "skillCap": 99,
+     "skillCapOcc": 99,
+     "skillCapInterest": 99,
+     "shareVisibility": "link",
+     "shareId": "",
+     "version": "v1.0",
+     "changeLog": [
+      {
+       "version": "v1.0",
+       "note": "创建角色",
+       "at": 1700000000000
+      }
+     ],
+     "createdAt": 1700000000000,
+     "updatedAt": 1700000000000
+    },
+    "type": "phobia",
+    "name": "幽闭恐惧症"
+   },
+   "expect": true,
+   "randUsed": 0,
+   "seed": 867166866,
+   "error": null
+  },
+  {
+   "name": "add#1587",
+   "fn": "add",
+   "args": {
+    "card": {
+     "id": "4nrhr454",
+     "userId": "local",
+     "ruleSystemId": "coc7",
+     "characterName": "",
+     "playerName": "",
+     "avatar": "",
+     "basicInfo": {
+      "era": "现代",
+      "eraCustom": "",
+      "age": 30,
+      "gender": "男",
+      "genderCustom": "",
+      "residence": "",
+      "birthplace": "",
+      "occupationName": ""
+     },
+     "age": 30,
+     "occupationId": "",
+     "occupationPicks": {},
+     "customOccupation": null,
+     "attributes": {
+      "str": "",
+      "con": "",
+      "siz": "",
+      "dex": "",
+      "app": "",
+      "int": "",
+      "pow": "",
+      "edu": "",
+      "luck": ""
+     },
+     "attributeMode": "random",
+     "attributeHistory": [],
+     "pbCap": 480,
+     "pbIncludeLuck": true,
+     "fate": {
+      "n": 5,
+      "rolled": false,
+      "options": [],
+      "picked": -1,
+      "rolledAt": 0
+     },
+     "eduProgress": {
+      "base": null,
+      "done": 0,
+      "log": [],
+      "bonus": 0
+     },
+     "derivedStats": {},
+     "status": {
+      "currentHP": 0,
+      "maxHP": 0,
+      "currentMP": 0,
+      "maxMP": 0,
+      "currentSAN": 0,
+      "maxSAN": 99,
+      "currentLuck": 0,
+      "body": "正常",
+      "mental": "正常",
+      "dying": false,
+      "unconscious": false
+     },
+     "madness": [
+      {
+       "id": "m1",
+       "type": "phobia",
+       "name": "幽闭恐惧症",
+       "en": "Claustrophobia",
+       "desc": "x",
+       "rounds": 3,
+       "permanent": false,
+       "at": 1700000000000
+      },
+      {
+       "id": "m2",
+       "type": "phobia",
+       "name": "幽闭恐惧症",
+       "en": "Claustrophobia",
+       "desc": "x",
+       "rounds": 1,
+       "permanent": false,
+       "at": 1700000000000
+      },
+      {
+       "id": "m3",
+       "type": "phobia",
+       "name": "幽闭恐惧症",
+       "en": "Claustrophobia",
+       "desc": "x",
+       "rounds": 3,
+       "permanent": true,
+       "at": 1700000000000
+      }
+     ],
+     "baseMaxSAN": null,
+     "sanLoss": 0,
+     "skills": [],
+     "weapons": [],
+     "armors": [],
+     "vehicles": [],
+     "items": [],
+     "assets": {
+      "creditRating": 0,
+      "cash": 0,
+      "spendingLevel": "标准",
+      "assetsDescription": "",
+      "assets": [],
+      "currency": "$"
+     },
+     "background": {
+      "description": "",
+      "ideology": "",
+      "significantPeople": "",
+      "meaningfulPlaces": "",
+      "treasuredPossessions": "",
+      "traits": "",
+      "wounds": "",
+      "phobias": ""
+     },
+     "history": [],
+     "companions": [],
+     "mythos": {
+      "skill": 0,
+      "knowledge": "",
+      "entries": [],
+      "spells": []
+     },
+     "skillCap": 99,
+     "skillCapOcc": 99,
+     "skillCapInterest": 99,
+     "shareVisibility": "link",
+     "shareId": "",
+     "version": "v1.0",
+     "changeLog": [
+      {
+       "version": "v1.0",
+       "note": "创建角色",
+       "at": 1700000000000
+      }
+     ],
+     "createdAt": 1700000000000,
+     "updatedAt": 1700000000000
+    },
+    "entry": {
+     "id": "mn",
+     "type": "mania",
+     "name": "纵火狂",
+     "rounds": 2,
+     "permanent": false
+    }
+   },
+   "expect": {
+    "id": "mn",
+    "type": "mania",
+    "name": "纵火狂",
+    "rounds": 2,
+    "permanent": false
+   },
+   "randUsed": 0,
+   "seed": 3521602627,
+   "error": null
+  },
+  {
+   "name": "remove#1588",
+   "fn": "remove",
+   "args": {
+    "card": {
+     "id": "4nrhr454",
+     "userId": "local",
+     "ruleSystemId": "coc7",
+     "characterName": "",
+     "playerName": "",
+     "avatar": "",
+     "basicInfo": {
+      "era": "现代",
+      "eraCustom": "",
+      "age": 30,
+      "gender": "男",
+      "genderCustom": "",
+      "residence": "",
+      "birthplace": "",
+      "occupationName": ""
+     },
+     "age": 30,
+     "occupationId": "",
+     "occupationPicks": {},
+     "customOccupation": null,
+     "attributes": {
+      "str": "",
+      "con": "",
+      "siz": "",
+      "dex": "",
+      "app": "",
+      "int": "",
+      "pow": "",
+      "edu": "",
+      "luck": ""
+     },
+     "attributeMode": "random",
+     "attributeHistory": [],
+     "pbCap": 480,
+     "pbIncludeLuck": true,
+     "fate": {
+      "n": 5,
+      "rolled": false,
+      "options": [],
+      "picked": -1,
+      "rolledAt": 0
+     },
+     "eduProgress": {
+      "base": null,
+      "done": 0,
+      "log": [],
+      "bonus": 0
+     },
+     "derivedStats": {},
+     "status": {
+      "currentHP": 0,
+      "maxHP": 0,
+      "currentMP": 0,
+      "maxMP": 0,
+      "currentSAN": 0,
+      "maxSAN": 99,
+      "currentLuck": 0,
+      "body": "正常",
+      "mental": "正常",
+      "dying": false,
+      "unconscious": false
+     },
+     "madness": [
+      {
+       "id": "m1",
+       "type": "phobia",
+       "name": "幽闭恐惧症",
+       "en": "Claustrophobia",
+       "desc": "x",
+       "rounds": 3,
+       "permanent": false,
+       "at": 1700000000000
+      },
+      {
+       "id": "m2",
+       "type": "phobia",
+       "name": "幽闭恐惧症",
+       "en": "Claustrophobia",
+       "desc": "x",
+       "rounds": 1,
+       "permanent": false,
+       "at": 1700000000000
+      },
+      {
+       "id": "m3",
+       "type": "phobia",
+       "name": "幽闭恐惧症",
+       "en": "Claustrophobia",
+       "desc": "x",
+       "rounds": 3,
+       "permanent": true,
+       "at": 1700000000000
+      }
+     ],
+     "baseMaxSAN": null,
+     "sanLoss": 0,
+     "skills": [],
+     "weapons": [],
+     "armors": [],
+     "vehicles": [],
+     "items": [],
+     "assets": {
+      "creditRating": 0,
+      "cash": 0,
+      "spendingLevel": "标准",
+      "assetsDescription": "",
+      "assets": [],
+      "currency": "$"
+     },
+     "background": {
+      "description": "",
+      "ideology": "",
+      "significantPeople": "",
+      "meaningfulPlaces": "",
+      "treasuredPossessions": "",
+      "traits": "",
+      "wounds": "",
+      "phobias": ""
+     },
+     "history": [],
+     "companions": [],
+     "mythos": {
+      "skill": 0,
+      "knowledge": "",
+      "entries": [],
+      "spells": []
+     },
+     "skillCap": 99,
+     "skillCapOcc": 99,
+     "skillCapInterest": 99,
+     "shareVisibility": "link",
+     "shareId": "",
+     "version": "v1.0",
+     "changeLog": [
+      {
+       "version": "v1.0",
+       "note": "创建角色",
+       "at": 1700000000000
+      }
+     ],
+     "createdAt": 1700000000000,
+     "updatedAt": 1700000000000
+    },
+    "id": "m2"
+   },
+   "expect": {
+    "id": "m2",
+    "type": "phobia",
+    "name": "幽闭恐惧症",
+    "en": "Claustrophobia",
+    "desc": "x",
+    "rounds": 1,
+    "permanent": false,
+    "at": 1700000000000
+   },
+   "randUsed": 0,
+   "seed": 1881071092,
+   "error": null
+  },
+  {
+   "name": "advance#1589",
+   "fn": "advance",
+   "args": {
+    "card": {
+     "id": "verbpdk2",
+     "userId": "local",
+     "ruleSystemId": "coc7",
+     "characterName": "",
+     "playerName": "",
+     "avatar": "",
+     "basicInfo": {
+      "era": "现代",
+      "eraCustom": "",
+      "age": 30,
+      "gender": "男",
+      "genderCustom": "",
+      "residence": "",
+      "birthplace": "",
+      "occupationName": ""
+     },
+     "age": 30,
+     "occupationId": "",
+     "occupationPicks": {},
+     "customOccupation": null,
+     "attributes": {
+      "str": "",
+      "con": "",
+      "siz": "",
+      "dex": "",
+      "app": "",
+      "int": "",
+      "pow": "",
+      "edu": "",
+      "luck": ""
+     },
+     "attributeMode": "random",
+     "attributeHistory": [],
+     "pbCap": 480,
+     "pbIncludeLuck": true,
+     "fate": {
+      "n": 5,
+      "rolled": false,
+      "options": [],
+      "picked": -1,
+      "rolledAt": 0
+     },
+     "eduProgress": {
+      "base": null,
+      "done": 0,
+      "log": [],
+      "bonus": 0
+     },
+     "derivedStats": {},
+     "status": {
+      "currentHP": 0,
+      "maxHP": 0,
+      "currentMP": 0,
+      "maxMP": 0,
+      "currentSAN": 0,
+      "maxSAN": 99,
+      "currentLuck": 0,
+      "body": "正常",
+      "mental": "正常",
+      "dying": false,
+      "unconscious": false
+     },
+     "madness": [
+      {
+       "id": "m4",
+       "type": "phobia",
+       "name": "幽闭恐惧症",
+       "en": "Claustrophobia",
+       "desc": "x",
+       "rounds": null,
+       "permanent": false,
+       "at": 1700000000000
+      }
+     ],
+     "baseMaxSAN": null,
+     "sanLoss": 0,
+     "skills": [],
+     "weapons": [],
+     "armors": [],
+     "vehicles": [],
+     "items": [],
+     "assets": {
+      "creditRating": 0,
+      "cash": 0,
+      "spendingLevel": "标准",
+      "assetsDescription": "",
+      "assets": [],
+      "currency": "$"
+     },
+     "background": {
+      "description": "",
+      "ideology": "",
+      "significantPeople": "",
+      "meaningfulPlaces": "",
+      "treasuredPossessions": "",
+      "traits": "",
+      "wounds": "",
+      "phobias": ""
+     },
+     "history": [],
+     "companions": [],
+     "mythos": {
+      "skill": 0,
+      "knowledge": "",
+      "entries": [],
+      "spells": []
+     },
+     "skillCap": 99,
+     "skillCapOcc": 99,
+     "skillCapInterest": 99,
+     "shareVisibility": "link",
+     "shareId": "",
+     "version": "v1.0",
+     "changeLog": [
+      {
+       "version": "v1.0",
+       "note": "创建角色",
+       "at": 1700000000000
+      }
+     ],
+     "createdAt": 1700000000000,
+     "updatedAt": 1700000000000
+    },
+    "n": 3
+   },
+   "expect": [],
+   "randUsed": 0,
+   "seed": 240539557,
+   "error": null
+  },
+  {
+   "name": "summary#1590",
+   "fn": "summary",
+   "args": {
+    "card": {
+     "id": "verbpdk2",
+     "userId": "local",
+     "ruleSystemId": "coc7",
+     "characterName": "",
+     "playerName": "",
+     "avatar": "",
+     "basicInfo": {
+      "era": "现代",
+      "eraCustom": "",
+      "age": 30,
+      "gender": "男",
+      "genderCustom": "",
+      "residence": "",
+      "birthplace": "",
+      "occupationName": ""
+     },
+     "age": 30,
+     "occupationId": "",
+     "occupationPicks": {},
+     "customOccupation": null,
+     "attributes": {
+      "str": "",
+      "con": "",
+      "siz": "",
+      "dex": "",
+      "app": "",
+      "int": "",
+      "pow": "",
+      "edu": "",
+      "luck": ""
+     },
+     "attributeMode": "random",
+     "attributeHistory": [],
+     "pbCap": 480,
+     "pbIncludeLuck": true,
+     "fate": {
+      "n": 5,
+      "rolled": false,
+      "options": [],
+      "picked": -1,
+      "rolledAt": 0
+     },
+     "eduProgress": {
+      "base": null,
+      "done": 0,
+      "log": [],
+      "bonus": 0
+     },
+     "derivedStats": {},
+     "status": {
+      "currentHP": 0,
+      "maxHP": 0,
+      "currentMP": 0,
+      "maxMP": 0,
+      "currentSAN": 0,
+      "maxSAN": 99,
+      "currentLuck": 0,
+      "body": "正常",
+      "mental": "正常",
+      "dying": false,
+      "unconscious": false
+     },
+     "madness": [
+      {
+       "id": "m4",
+       "type": "phobia",
+       "name": "幽闭恐惧症",
+       "en": "Claustrophobia",
+       "desc": "x",
+       "rounds": null,
+       "permanent": false,
+       "at": 1700000000000
+      }
+     ],
+     "baseMaxSAN": null,
+     "sanLoss": 0,
+     "skills": [],
+     "weapons": [],
+     "armors": [],
+     "vehicles": [],
+     "items": [],
+     "assets": {
+      "creditRating": 0,
+      "cash": 0,
+      "spendingLevel": "标准",
+      "assetsDescription": "",
+      "assets": [],
+      "currency": "$"
+     },
+     "background": {
+      "description": "",
+      "ideology": "",
+      "significantPeople": "",
+      "meaningfulPlaces": "",
+      "treasuredPossessions": "",
+      "traits": "",
+      "wounds": "",
+      "phobias": ""
+     },
+     "history": [],
+     "companions": [],
+     "mythos": {
+      "skill": 0,
+      "knowledge": "",
+      "entries": [],
+      "spells": []
+     },
+     "skillCap": 99,
+     "skillCapOcc": 99,
+     "skillCapInterest": 99,
+     "shareVisibility": "link",
+     "shareId": "",
+     "version": "v1.0",
+     "changeLog": [
+      {
+       "version": "v1.0",
+       "note": "创建角色",
+       "at": 1700000000000
+      }
+     ],
+     "createdAt": 1700000000000,
+     "updatedAt": 1700000000000
+    }
+   },
+   "expect": "【恐惧症】幽闭恐惧症（0 轮）",
+   "randUsed": 0,
+   "seed": 2894975318,
+   "error": null
+  },
+  {
+   "name": "fading#1591",
+   "fn": "fading",
+   "args": {
+    "card": {
+     "id": "verbpdk2",
+     "userId": "local",
+     "ruleSystemId": "coc7",
+     "characterName": "",
+     "playerName": "",
+     "avatar": "",
+     "basicInfo": {
+      "era": "现代",
+      "eraCustom": "",
+      "age": 30,
+      "gender": "男",
+      "genderCustom": "",
+      "residence": "",
+      "birthplace": "",
+      "occupationName": ""
+     },
+     "age": 30,
+     "occupationId": "",
+     "occupationPicks": {},
+     "customOccupation": null,
+     "attributes": {
+      "str": "",
+      "con": "",
+      "siz": "",
+      "dex": "",
+      "app": "",
+      "int": "",
+      "pow": "",
+      "edu": "",
+      "luck": ""
+     },
+     "attributeMode": "random",
+     "attributeHistory": [],
+     "pbCap": 480,
+     "pbIncludeLuck": true,
+     "fate": {
+      "n": 5,
+      "rolled": false,
+      "options": [],
+      "picked": -1,
+      "rolledAt": 0
+     },
+     "eduProgress": {
+      "base": null,
+      "done": 0,
+      "log": [],
+      "bonus": 0
+     },
+     "derivedStats": {},
+     "status": {
+      "currentHP": 0,
+      "maxHP": 0,
+      "currentMP": 0,
+      "maxMP": 0,
+      "currentSAN": 0,
+      "maxSAN": 99,
+      "currentLuck": 0,
+      "body": "正常",
+      "mental": "正常",
+      "dying": false,
+      "unconscious": false
+     },
+     "madness": [
+      {
+       "id": "m4",
+       "type": "phobia",
+       "name": "幽闭恐惧症",
+       "en": "Claustrophobia",
+       "desc": "x",
+       "rounds": null,
+       "permanent": false,
+       "at": 1700000000000
+      }
+     ],
+     "baseMaxSAN": null,
+     "sanLoss": 0,
+     "skills": [],
+     "weapons": [],
+     "armors": [],
+     "vehicles": [],
+     "items": [],
+     "assets": {
+      "creditRating": 0,
+      "cash": 0,
+      "spendingLevel": "标准",
+      "assetsDescription": "",
+      "assets": [],
+      "currency": "$"
+     },
+     "background": {
+      "description": "",
+      "ideology": "",
+      "significantPeople": "",
+      "meaningfulPlaces": "",
+      "treasuredPossessions": "",
+      "traits": "",
+      "wounds": "",
+      "phobias": ""
+     },
+     "history": [],
+     "companions": [],
+     "mythos": {
+      "skill": 0,
+      "knowledge": "",
+      "entries": [],
+      "spells": []
+     },
+     "skillCap": 99,
+     "skillCapOcc": 99,
+     "skillCapInterest": 99,
+     "shareVisibility": "link",
+     "shareId": "",
+     "version": "v1.0",
+     "changeLog": [
+      {
+       "version": "v1.0",
+       "note": "创建角色",
+       "at": 1700000000000
+      }
+     ],
+     "createdAt": 1700000000000,
+     "updatedAt": 1700000000000
+    },
+    "within": 2
+   },
+   "expect": [
+    {
+     "id": "m4",
+     "type": "phobia",
+     "name": "幽闭恐惧症",
+     "en": "Claustrophobia",
+     "desc": "x",
+     "rounds": null,
+     "permanent": false,
+     "at": 1700000000000
+    }
+   ],
+   "randUsed": 0,
+   "seed": 1254443783,
+   "error": null
+  },
+  {
+   "name": "hasName#1592",
+   "fn": "hasName",
+   "args": {
+    "card": {
+     "id": "verbpdk2",
+     "userId": "local",
+     "ruleSystemId": "coc7",
+     "characterName": "",
+     "playerName": "",
+     "avatar": "",
+     "basicInfo": {
+      "era": "现代",
+      "eraCustom": "",
+      "age": 30,
+      "gender": "男",
+      "genderCustom": "",
+      "residence": "",
+      "birthplace": "",
+      "occupationName": ""
+     },
+     "age": 30,
+     "occupationId": "",
+     "occupationPicks": {},
+     "customOccupation": null,
+     "attributes": {
+      "str": "",
+      "con": "",
+      "siz": "",
+      "dex": "",
+      "app": "",
+      "int": "",
+      "pow": "",
+      "edu": "",
+      "luck": ""
+     },
+     "attributeMode": "random",
+     "attributeHistory": [],
+     "pbCap": 480,
+     "pbIncludeLuck": true,
+     "fate": {
+      "n": 5,
+      "rolled": false,
+      "options": [],
+      "picked": -1,
+      "rolledAt": 0
+     },
+     "eduProgress": {
+      "base": null,
+      "done": 0,
+      "log": [],
+      "bonus": 0
+     },
+     "derivedStats": {},
+     "status": {
+      "currentHP": 0,
+      "maxHP": 0,
+      "currentMP": 0,
+      "maxMP": 0,
+      "currentSAN": 0,
+      "maxSAN": 99,
+      "currentLuck": 0,
+      "body": "正常",
+      "mental": "正常",
+      "dying": false,
+      "unconscious": false
+     },
+     "madness": [
+      {
+       "id": "m4",
+       "type": "phobia",
+       "name": "幽闭恐惧症",
+       "en": "Claustrophobia",
+       "desc": "x",
+       "rounds": null,
+       "permanent": false,
+       "at": 1700000000000
+      }
+     ],
+     "baseMaxSAN": null,
+     "sanLoss": 0,
+     "skills": [],
+     "weapons": [],
+     "armors": [],
+     "vehicles": [],
+     "items": [],
+     "assets": {
+      "creditRating": 0,
+      "cash": 0,
+      "spendingLevel": "标准",
+      "assetsDescription": "",
+      "assets": [],
+      "currency": "$"
+     },
+     "background": {
+      "description": "",
+      "ideology": "",
+      "significantPeople": "",
+      "meaningfulPlaces": "",
+      "treasuredPossessions": "",
+      "traits": "",
+      "wounds": "",
+      "phobias": ""
+     },
+     "history": [],
+     "companions": [],
+     "mythos": {
+      "skill": 0,
+      "knowledge": "",
+      "entries": [],
+      "spells": []
+     },
+     "skillCap": 99,
+     "skillCapOcc": 99,
+     "skillCapInterest": 99,
+     "shareVisibility": "link",
+     "shareId": "",
+     "version": "v1.0",
+     "changeLog": [
+      {
+       "version": "v1.0",
+       "note": "创建角色",
+       "at": 1700000000000
+      }
+     ],
+     "createdAt": 1700000000000,
+     "updatedAt": 1700000000000
+    },
+    "type": "phobia",
+    "name": "幽闭恐惧症"
+   },
+   "expect": true,
+   "randUsed": 0,
+   "seed": 3908879544,
+   "error": null
+  },
+  {
+   "name": "add#1593",
+   "fn": "add",
+   "args": {
+    "card": {
+     "id": "verbpdk2",
+     "userId": "local",
+     "ruleSystemId": "coc7",
+     "characterName": "",
+     "playerName": "",
+     "avatar": "",
+     "basicInfo": {
+      "era": "现代",
+      "eraCustom": "",
+      "age": 30,
+      "gender": "男",
+      "genderCustom": "",
+      "residence": "",
+      "birthplace": "",
+      "occupationName": ""
+     },
+     "age": 30,
+     "occupationId": "",
+     "occupationPicks": {},
+     "customOccupation": null,
+     "attributes": {
+      "str": "",
+      "con": "",
+      "siz": "",
+      "dex": "",
+      "app": "",
+      "int": "",
+      "pow": "",
+      "edu": "",
+      "luck": ""
+     },
+     "attributeMode": "random",
+     "attributeHistory": [],
+     "pbCap": 480,
+     "pbIncludeLuck": true,
+     "fate": {
+      "n": 5,
+      "rolled": false,
+      "options": [],
+      "picked": -1,
+      "rolledAt": 0
+     },
+     "eduProgress": {
+      "base": null,
+      "done": 0,
+      "log": [],
+      "bonus": 0
+     },
+     "derivedStats": {},
+     "status": {
+      "currentHP": 0,
+      "maxHP": 0,
+      "currentMP": 0,
+      "maxMP": 0,
+      "currentSAN": 0,
+      "maxSAN": 99,
+      "currentLuck": 0,
+      "body": "正常",
+      "mental": "正常",
+      "dying": false,
+      "unconscious": false
+     },
+     "madness": [
+      {
+       "id": "m4",
+       "type": "phobia",
+       "name": "幽闭恐惧症",
+       "en": "Claustrophobia",
+       "desc": "x",
+       "rounds": null,
+       "permanent": false,
+       "at": 1700000000000
+      }
+     ],
+     "baseMaxSAN": null,
+     "sanLoss": 0,
+     "skills": [],
+     "weapons": [],
+     "armors": [],
+     "vehicles": [],
+     "items": [],
+     "assets": {
+      "creditRating": 0,
+      "cash": 0,
+      "spendingLevel": "标准",
+      "assetsDescription": "",
+      "assets": [],
+      "currency": "$"
+     },
+     "background": {
+      "description": "",
+      "ideology": "",
+      "significantPeople": "",
+      "meaningfulPlaces": "",
+      "treasuredPossessions": "",
+      "traits": "",
+      "wounds": "",
+      "phobias": ""
+     },
+     "history": [],
+     "companions": [],
+     "mythos": {
+      "skill": 0,
+      "knowledge": "",
+      "entries": [],
+      "spells": []
+     },
+     "skillCap": 99,
+     "skillCapOcc": 99,
+     "skillCapInterest": 99,
+     "shareVisibility": "link",
+     "shareId": "",
+     "version": "v1.0",
+     "changeLog": [
+      {
+       "version": "v1.0",
+       "note": "创建角色",
+       "at": 1700000000000
+      }
+     ],
+     "createdAt": 1700000000000,
+     "updatedAt": 1700000000000
+    },
+    "entry": {
+     "id": "mn",
+     "type": "mania",
+     "name": "纵火狂",
+     "rounds": 2,
+     "permanent": false
+    }
+   },
+   "expect": {
+    "id": "mn",
+    "type": "mania",
+    "name": "纵火狂",
+    "rounds": 2,
+    "permanent": false
+   },
+   "randUsed": 0,
+   "seed": 2268348009,
+   "error": null
+  },
+  {
+   "name": "remove#1594",
+   "fn": "remove",
+   "args": {
+    "card": {
+     "id": "verbpdk2",
+     "userId": "local",
+     "ruleSystemId": "coc7",
+     "characterName": "",
+     "playerName": "",
+     "avatar": "",
+     "basicInfo": {
+      "era": "现代",
+      "eraCustom": "",
+      "age": 30,
+      "gender": "男",
+      "genderCustom": "",
+      "residence": "",
+      "birthplace": "",
+      "occupationName": ""
+     },
+     "age": 30,
+     "occupationId": "",
+     "occupationPicks": {},
+     "customOccupation": null,
+     "attributes": {
+      "str": "",
+      "con": "",
+      "siz": "",
+      "dex": "",
+      "app": "",
+      "int": "",
+      "pow": "",
+      "edu": "",
+      "luck": ""
+     },
+     "attributeMode": "random",
+     "attributeHistory": [],
+     "pbCap": 480,
+     "pbIncludeLuck": true,
+     "fate": {
+      "n": 5,
+      "rolled": false,
+      "options": [],
+      "picked": -1,
+      "rolledAt": 0
+     },
+     "eduProgress": {
+      "base": null,
+      "done": 0,
+      "log": [],
+      "bonus": 0
+     },
+     "derivedStats": {},
+     "status": {
+      "currentHP": 0,
+      "maxHP": 0,
+      "currentMP": 0,
+      "maxMP": 0,
+      "currentSAN": 0,
+      "maxSAN": 99,
+      "currentLuck": 0,
+      "body": "正常",
+      "mental": "正常",
+      "dying": false,
+      "unconscious": false
+     },
+     "madness": [
+      {
+       "id": "m4",
+       "type": "phobia",
+       "name": "幽闭恐惧症",
+       "en": "Claustrophobia",
+       "desc": "x",
+       "rounds": null,
+       "permanent": false,
+       "at": 1700000000000
+      }
+     ],
+     "baseMaxSAN": null,
+     "sanLoss": 0,
+     "skills": [],
+     "weapons": [],
+     "armors": [],
+     "vehicles": [],
+     "items": [],
+     "assets": {
+      "creditRating": 0,
+      "cash": 0,
+      "spendingLevel": "标准",
+      "assetsDescription": "",
+      "assets": [],
+      "currency": "$"
+     },
+     "background": {
+      "description": "",
+      "ideology": "",
+      "significantPeople": "",
+      "meaningfulPlaces": "",
+      "treasuredPossessions": "",
+      "traits": "",
+      "wounds": "",
+      "phobias": ""
+     },
+     "history": [],
+     "companions": [],
+     "mythos": {
+      "skill": 0,
+      "knowledge": "",
+      "entries": [],
+      "spells": []
+     },
+     "skillCap": 99,
+     "skillCapOcc": 99,
+     "skillCapInterest": 99,
+     "shareVisibility": "link",
+     "shareId": "",
+     "version": "v1.0",
+     "changeLog": [
+      {
+       "version": "v1.0",
+       "note": "创建角色",
+       "at": 1700000000000
+      }
+     ],
+     "createdAt": 1700000000000,
+     "updatedAt": 1700000000000
+    },
+    "id": "m2"
+   },
+   "expect": null,
+   "randUsed": 0,
+   "seed": 627816474,
+   "error": null
+  },
+  {
+   "name": "fromPicked#1595",
+   "fn": "fromPicked",
+   "args": {
+    "card": {
+     "id": "bkc9n1e1",
+     "userId": "local",
+     "ruleSystemId": "coc7",
+     "characterName": "",
+     "playerName": "",
+     "avatar": "",
+     "basicInfo": {
+      "era": "现代",
+      "eraCustom": "",
+      "age": 30,
+      "gender": "男",
+      "genderCustom": "",
+      "residence": "",
+      "birthplace": "",
+      "occupationName": ""
+     },
+     "age": 30,
+     "occupationId": "",
+     "occupationPicks": {},
+     "customOccupation": null,
+     "attributes": {
+      "str": "",
+      "con": "",
+      "siz": "",
+      "dex": "",
+      "app": "",
+      "int": "",
+      "pow": "",
+      "edu": "",
+      "luck": ""
+     },
+     "attributeMode": "random",
+     "attributeHistory": [],
+     "pbCap": 480,
+     "pbIncludeLuck": true,
+     "fate": {
+      "n": 5,
+      "rolled": false,
+      "options": [],
+      "picked": -1,
+      "rolledAt": 0
+     },
+     "eduProgress": {
+      "base": null,
+      "done": 0,
+      "log": [],
+      "bonus": 0
+     },
+     "derivedStats": {},
+     "status": {
+      "currentHP": 0,
+      "maxHP": 0,
+      "currentMP": 0,
+      "maxMP": 0,
+      "currentSAN": 0,
+      "maxSAN": 99,
+      "currentLuck": 0,
+      "body": "正常",
+      "mental": "正常",
+      "dying": false,
+      "unconscious": false
+     },
+     "madness": [],
+     "baseMaxSAN": null,
+     "sanLoss": 0,
+     "skills": [],
+     "weapons": [],
+     "armors": [],
+     "vehicles": [],
+     "items": [],
+     "assets": {
+      "creditRating": 0,
+      "cash": 0,
+      "spendingLevel": "标准",
+      "assetsDescription": "",
+      "assets": [],
+      "currency": "$"
+     },
+     "background": {
+      "description": "",
+      "ideology": "",
+      "significantPeople": "",
+      "meaningfulPlaces": "",
+      "treasuredPossessions": "",
+      "traits": "",
+      "wounds": "",
+      "phobias": ""
+     },
+     "history": [],
+     "companions": [],
+     "mythos": {
+      "skill": 0,
+      "knowledge": "",
+      "entries": [],
+      "spells": []
+     },
+     "skillCap": 99,
+     "skillCapOcc": 99,
+     "skillCapInterest": 99,
+     "shareVisibility": "link",
+     "shareId": "",
+     "version": "v1.0",
+     "changeLog": [
+      {
+       "version": "v1.0",
+       "note": "创建角色",
+       "at": 1700000000000
+      }
+     ],
+     "createdAt": 1700000000000,
+     "updatedAt": 1700000000000
+    },
+    "picked": [
+     {
+      "name": "幽闭恐惧症",
+      "kind": "恐惧症"
+     },
+     {
+      "name": "喜暗狂",
+      "kind": "狂躁症"
+     },
+     {
+      "name": "失忆",
+      "kind": "疯狂发作",
+      "sum": true
+     },
+     {
+      "name": "",
+      "kind": "恐惧症"
+     }
+    ]
+   },
+   "expect": 3,
+   "randUsed": 3,
+   "seed": 3282252235,
+   "error": null
+  },
+  {
+   "name": "clear#1596",
+   "fn": "clear",
+   "args": {
+    "card": {
+     "id": "orj6cf7f",
+     "userId": "local",
+     "ruleSystemId": "coc7",
+     "characterName": "",
+     "playerName": "",
+     "avatar": "",
+     "basicInfo": {
+      "era": "现代",
+      "eraCustom": "",
+      "age": 30,
+      "gender": "男",
+      "genderCustom": "",
+      "residence": "",
+      "birthplace": "",
+      "occupationName": ""
+     },
+     "age": 30,
+     "occupationId": "",
+     "occupationPicks": {},
+     "customOccupation": null,
+     "attributes": {
+      "str": "",
+      "con": "",
+      "siz": "",
+      "dex": "",
+      "app": "",
+      "int": "",
+      "pow": "",
+      "edu": "",
+      "luck": ""
+     },
+     "attributeMode": "random",
+     "attributeHistory": [],
+     "pbCap": 480,
+     "pbIncludeLuck": true,
+     "fate": {
+      "n": 5,
+      "rolled": false,
+      "options": [],
+      "picked": -1,
+      "rolledAt": 0
+     },
+     "eduProgress": {
+      "base": null,
+      "done": 0,
+      "log": [],
+      "bonus": 0
+     },
+     "derivedStats": {},
+     "status": {
+      "currentHP": 0,
+      "maxHP": 0,
+      "currentMP": 0,
+      "maxMP": 0,
+      "currentSAN": 0,
+      "maxSAN": 99,
+      "currentLuck": 0,
+      "body": "正常",
+      "mental": "正常",
+      "dying": false,
+      "unconscious": false
+     },
+     "madness": [
+      {
+       "id": "m1",
+       "type": "phobia",
+       "name": "幽闭恐惧症",
+       "en": "Claustrophobia",
+       "desc": "x",
+       "rounds": 3,
+       "permanent": false,
+       "at": 1700000000000
+      }
+     ],
+     "baseMaxSAN": null,
+     "sanLoss": 0,
+     "skills": [],
+     "weapons": [],
+     "armors": [],
+     "vehicles": [],
+     "items": [],
+     "assets": {
+      "creditRating": 0,
+      "cash": 0,
+      "spendingLevel": "标准",
+      "assetsDescription": "",
+      "assets": [],
+      "currency": "$"
+     },
+     "background": {
+      "description": "",
+      "ideology": "",
+      "significantPeople": "",
+      "meaningfulPlaces": "",
+      "treasuredPossessions": "",
+      "traits": "",
+      "wounds": "",
+      "phobias": ""
+     },
+     "history": [],
+     "companions": [],
+     "mythos": {
+      "skill": 0,
+      "knowledge": "",
+      "entries": [],
+      "spells": []
+     },
+     "skillCap": 99,
+     "skillCapOcc": 99,
+     "skillCapInterest": 99,
+     "shareVisibility": "link",
+     "shareId": "",
+     "version": "v1.0",
+     "changeLog": [
+      {
+       "version": "v1.0",
+       "note": "创建角色",
+       "at": 1700000000000
+      }
+     ],
+     "createdAt": 1700000000000,
+     "updatedAt": 1700000000000
+    }
+   },
+   "expect": [],
+   "randUsed": 0,
+   "seed": 1641720700,
+   "error": null
+  }
+ ]
+}

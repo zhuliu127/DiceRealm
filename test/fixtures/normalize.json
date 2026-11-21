@@ -1,0 +1,3445 @@
+{
+ "domain": "normalize",
+ "oracle": "coc7th-card-app/web/js",
+ "note": "由 tool/oracle/dump_fixtures.js 生成；请勿手改。",
+ "count": 25,
+ "cases": [
+  {
+   "name": "normalize#1597",
+   "fn": "normalize",
+   "args": {
+    "card": {}
+   },
+   "expect": {
+    "pbCap": 480,
+    "id": "da7i0hry",
+    "userId": "local",
+    "ruleSystemId": "coc7",
+    "characterName": "",
+    "playerName": "",
+    "avatar": "",
+    "basicInfo": {
+     "era": "现代",
+     "eraCustom": "",
+     "age": "",
+     "gender": "男",
+     "genderCustom": "",
+     "residence": "",
+     "birthplace": "",
+     "occupationName": ""
+    },
+    "age": "",
+    "occupationId": "",
+    "occupationPicks": {},
+    "customOccupation": null,
+    "attributes": {
+     "str": "",
+     "con": "",
+     "siz": "",
+     "dex": "",
+     "app": "",
+     "int": "",
+     "pow": "",
+     "edu": "",
+     "luck": ""
+    },
+    "attributeMode": "random",
+    "attributeHistory": [],
+    "pbIncludeLuck": true,
+    "fate": {
+     "n": 5,
+     "rolled": false,
+     "options": [],
+     "picked": -1,
+     "rolledAt": 0
+    },
+    "eduProgress": {
+     "base": null,
+     "done": 0,
+     "log": [],
+     "bonus": 0
+    },
+    "derivedStats": {},
+    "status": {
+     "currentHP": 0,
+     "maxHP": 0,
+     "currentMP": 0,
+     "maxMP": 0,
+     "currentSAN": 0,
+     "maxSAN": 99,
+     "currentLuck": 0,
+     "body": "正常",
+     "mental": [
+      "正常"
+     ],
+     "dying": false,
+     "unconscious": false
+    },
+    "madness": [],
+    "baseMaxSAN": null,
+    "sanLoss": 0,
+    "skills": [],
+    "weapons": [],
+    "armors": [],
+    "vehicles": [],
+    "items": [],
+    "assets": {
+     "creditRating": 0,
+     "cash": 0,
+     "spendingLevel": "标准",
+     "assetsDescription": "",
+     "assets": [],
+     "currency": "$"
+    },
+    "background": {
+     "description": "",
+     "ideology": "",
+     "significantPeople": "",
+     "meaningfulPlaces": "",
+     "treasuredPossessions": "",
+     "traits": "",
+     "wounds": "",
+     "phobias": ""
+    },
+    "history": [],
+    "companions": [],
+    "mythos": {
+     "skill": 0,
+     "knowledge": "",
+     "entries": [],
+     "spells": []
+    },
+    "skillCap": 99,
+    "skillCapOcc": 99,
+    "skillCapInterest": 99,
+    "shareVisibility": "link",
+    "shareId": "",
+    "version": "v1.0",
+    "changeLog": [
+     {
+      "version": "v1.0",
+      "note": "创建角色",
+      "at": 1700000000000
+     }
+    ],
+    "createdAt": 1700000000000,
+    "updatedAt": 1700000000000
+   },
+   "randUsed": 8,
+   "seed": 1189165,
+   "error": null
+  },
+  {
+   "name": "normalize#1598",
+   "fn": "normalize",
+   "args": {
+    "card": {
+     "characterName": "老卡",
+     "playerName": "老王"
+    }
+   },
+   "expect": {
+    "characterName": "老卡",
+    "playerName": "老王",
+    "pbCap": 480,
+    "id": "e75x4zk9",
+    "userId": "local",
+    "ruleSystemId": "coc7",
+    "avatar": "",
+    "basicInfo": {
+     "era": "现代",
+     "eraCustom": "",
+     "age": "",
+     "gender": "男",
+     "genderCustom": "",
+     "residence": "",
+     "birthplace": "",
+     "occupationName": ""
+    },
+    "age": "",
+    "occupationId": "",
+    "occupationPicks": {},
+    "customOccupation": null,
+    "attributes": {
+     "str": "",
+     "con": "",
+     "siz": "",
+     "dex": "",
+     "app": "",
+     "int": "",
+     "pow": "",
+     "edu": "",
+     "luck": ""
+    },
+    "attributeMode": "random",
+    "attributeHistory": [],
+    "pbIncludeLuck": true,
+    "fate": {
+     "n": 5,
+     "rolled": false,
+     "options": [],
+     "picked": -1,
+     "rolledAt": 0
+    },
+    "eduProgress": {
+     "base": null,
+     "done": 0,
+     "log": [],
+     "bonus": 0
+    },
+    "derivedStats": {},
+    "status": {
+     "currentHP": 0,
+     "maxHP": 0,
+     "currentMP": 0,
+     "maxMP": 0,
+     "currentSAN": 0,
+     "maxSAN": 99,
+     "currentLuck": 0,
+     "body": "正常",
+     "mental": [
+      "正常"
+     ],
+     "dying": false,
+     "unconscious": false
+    },
+    "madness": [],
+    "baseMaxSAN": null,
+    "sanLoss": 0,
+    "skills": [],
+    "weapons": [],
+    "armors": [],
+    "vehicles": [],
+    "items": [],
+    "assets": {
+     "creditRating": 0,
+     "cash": 0,
+     "spendingLevel": "标准",
+     "assetsDescription": "",
+     "assets": [],
+     "currency": "$"
+    },
+    "background": {
+     "description": "",
+     "ideology": "",
+     "significantPeople": "",
+     "meaningfulPlaces": "",
+     "treasuredPossessions": "",
+     "traits": "",
+     "wounds": "",
+     "phobias": ""
+    },
+    "history": [],
+    "companions": [],
+    "mythos": {
+     "skill": 0,
+     "knowledge": "",
+     "entries": [],
+     "spells": []
+    },
+    "skillCap": 99,
+    "skillCapOcc": 99,
+    "skillCapInterest": 99,
+    "shareVisibility": "link",
+    "shareId": "",
+    "version": "v1.0",
+    "changeLog": [
+     {
+      "version": "v1.0",
+      "note": "创建角色",
+      "at": 1700000000000
+     }
+    ],
+    "createdAt": 1700000000000,
+    "updatedAt": 1700000000000
+   },
+   "randUsed": 8,
+   "seed": 2655624926,
+   "error": null
+  },
+  {
+   "name": "normalize#1599",
+   "fn": "normalize",
+   "args": {
+    "card": {
+     "id": "x1",
+     "skillCap": 80
+    }
+   },
+   "expect": {
+    "id": "x1",
+    "skillCap": 80,
+    "skillCapOcc": 80,
+    "skillCapInterest": 80,
+    "pbCap": 480,
+    "userId": "local",
+    "ruleSystemId": "coc7",
+    "characterName": "",
+    "playerName": "",
+    "avatar": "",
+    "basicInfo": {
+     "era": "现代",
+     "eraCustom": "",
+     "age": "",
+     "gender": "男",
+     "genderCustom": "",
+     "residence": "",
+     "birthplace": "",
+     "occupationName": ""
+    },
+    "age": "",
+    "occupationId": "",
+    "occupationPicks": {},
+    "customOccupation": null,
+    "attributes": {
+     "str": "",
+     "con": "",
+     "siz": "",
+     "dex": "",
+     "app": "",
+     "int": "",
+     "pow": "",
+     "edu": "",
+     "luck": ""
+    },
+    "attributeMode": "random",
+    "attributeHistory": [],
+    "pbIncludeLuck": true,
+    "fate": {
+     "n": 5,
+     "rolled": false,
+     "options": [],
+     "picked": -1,
+     "rolledAt": 0
+    },
+    "eduProgress": {
+     "base": null,
+     "done": 0,
+     "log": [],
+     "bonus": 0
+    },
+    "derivedStats": {},
+    "status": {
+     "currentHP": 0,
+     "maxHP": 0,
+     "currentMP": 0,
+     "maxMP": 0,
+     "currentSAN": 0,
+     "maxSAN": 99,
+     "currentLuck": 0,
+     "body": "正常",
+     "mental": [
+      "正常"
+     ],
+     "dying": false,
+     "unconscious": false
+    },
+    "madness": [],
+    "baseMaxSAN": null,
+    "sanLoss": 0,
+    "skills": [],
+    "weapons": [],
+    "armors": [],
+    "vehicles": [],
+    "items": [],
+    "assets": {
+     "creditRating": 0,
+     "cash": 0,
+     "spendingLevel": "标准",
+     "assetsDescription": "",
+     "assets": [],
+     "currency": "$"
+    },
+    "background": {
+     "description": "",
+     "ideology": "",
+     "significantPeople": "",
+     "meaningfulPlaces": "",
+     "treasuredPossessions": "",
+     "traits": "",
+     "wounds": "",
+     "phobias": ""
+    },
+    "history": [],
+    "companions": [],
+    "mythos": {
+     "skill": 0,
+     "knowledge": "",
+     "entries": [],
+     "spells": []
+    },
+    "shareVisibility": "link",
+    "shareId": "",
+    "version": "v1.0",
+    "changeLog": [
+     {
+      "version": "v1.0",
+      "note": "创建角色",
+      "at": 1700000000000
+     }
+    ],
+    "createdAt": 1700000000000,
+    "updatedAt": 1700000000000
+   },
+   "randUsed": 8,
+   "seed": 1015093391,
+   "error": null
+  },
+  {
+   "name": "normalize#1600",
+   "fn": "normalize",
+   "args": {
+    "card": {
+     "id": "x2",
+     "skillCap": 80,
+     "skillCapOcc": 90,
+     "skillCapInterest": 70
+    }
+   },
+   "expect": {
+    "id": "x2",
+    "skillCap": 80,
+    "skillCapOcc": 90,
+    "skillCapInterest": 70,
+    "pbCap": 480,
+    "userId": "local",
+    "ruleSystemId": "coc7",
+    "characterName": "",
+    "playerName": "",
+    "avatar": "",
+    "basicInfo": {
+     "era": "现代",
+     "eraCustom": "",
+     "age": "",
+     "gender": "男",
+     "genderCustom": "",
+     "residence": "",
+     "birthplace": "",
+     "occupationName": ""
+    },
+    "age": "",
+    "occupationId": "",
+    "occupationPicks": {},
+    "customOccupation": null,
+    "attributes": {
+     "str": "",
+     "con": "",
+     "siz": "",
+     "dex": "",
+     "app": "",
+     "int": "",
+     "pow": "",
+     "edu": "",
+     "luck": ""
+    },
+    "attributeMode": "random",
+    "attributeHistory": [],
+    "pbIncludeLuck": true,
+    "fate": {
+     "n": 5,
+     "rolled": false,
+     "options": [],
+     "picked": -1,
+     "rolledAt": 0
+    },
+    "eduProgress": {
+     "base": null,
+     "done": 0,
+     "log": [],
+     "bonus": 0
+    },
+    "derivedStats": {},
+    "status": {
+     "currentHP": 0,
+     "maxHP": 0,
+     "currentMP": 0,
+     "maxMP": 0,
+     "currentSAN": 0,
+     "maxSAN": 99,
+     "currentLuck": 0,
+     "body": "正常",
+     "mental": [
+      "正常"
+     ],
+     "dying": false,
+     "unconscious": false
+    },
+    "madness": [],
+    "baseMaxSAN": null,
+    "sanLoss": 0,
+    "skills": [],
+    "weapons": [],
+    "armors": [],
+    "vehicles": [],
+    "items": [],
+    "assets": {
+     "creditRating": 0,
+     "cash": 0,
+     "spendingLevel": "标准",
+     "assetsDescription": "",
+     "assets": [],
+     "currency": "$"
+    },
+    "background": {
+     "description": "",
+     "ideology": "",
+     "significantPeople": "",
+     "meaningfulPlaces": "",
+     "treasuredPossessions": "",
+     "traits": "",
+     "wounds": "",
+     "phobias": ""
+    },
+    "history": [],
+    "companions": [],
+    "mythos": {
+     "skill": 0,
+     "knowledge": "",
+     "entries": [],
+     "spells": []
+    },
+    "shareVisibility": "link",
+    "shareId": "",
+    "version": "v1.0",
+    "changeLog": [
+     {
+      "version": "v1.0",
+      "note": "创建角色",
+      "at": 1700000000000
+     }
+    ],
+    "createdAt": 1700000000000,
+    "updatedAt": 1700000000000
+   },
+   "randUsed": 8,
+   "seed": 3669529152,
+   "error": null
+  },
+  {
+   "name": "normalize#1601",
+   "fn": "normalize",
+   "args": {
+    "card": {
+     "id": "x3",
+     "status": {
+      "mental": "临时疯狂"
+     }
+    }
+   },
+   "expect": {
+    "id": "x3",
+    "status": {
+     "currentHP": 0,
+     "maxHP": 0,
+     "currentMP": 0,
+     "maxMP": 0,
+     "currentSAN": 0,
+     "maxSAN": 99,
+     "currentLuck": 0,
+     "body": "正常",
+     "mental": [
+      "临时疯狂"
+     ],
+     "dying": false,
+     "unconscious": false
+    },
+    "pbCap": 480,
+    "userId": "local",
+    "ruleSystemId": "coc7",
+    "characterName": "",
+    "playerName": "",
+    "avatar": "",
+    "basicInfo": {
+     "era": "现代",
+     "eraCustom": "",
+     "age": "",
+     "gender": "男",
+     "genderCustom": "",
+     "residence": "",
+     "birthplace": "",
+     "occupationName": ""
+    },
+    "age": "",
+    "occupationId": "",
+    "occupationPicks": {},
+    "customOccupation": null,
+    "attributes": {
+     "str": "",
+     "con": "",
+     "siz": "",
+     "dex": "",
+     "app": "",
+     "int": "",
+     "pow": "",
+     "edu": "",
+     "luck": ""
+    },
+    "attributeMode": "random",
+    "attributeHistory": [],
+    "pbIncludeLuck": true,
+    "fate": {
+     "n": 5,
+     "rolled": false,
+     "options": [],
+     "picked": -1,
+     "rolledAt": 0
+    },
+    "eduProgress": {
+     "base": null,
+     "done": 0,
+     "log": [],
+     "bonus": 0
+    },
+    "derivedStats": {},
+    "madness": [],
+    "baseMaxSAN": null,
+    "sanLoss": 0,
+    "skills": [],
+    "weapons": [],
+    "armors": [],
+    "vehicles": [],
+    "items": [],
+    "assets": {
+     "creditRating": 0,
+     "cash": 0,
+     "spendingLevel": "标准",
+     "assetsDescription": "",
+     "assets": [],
+     "currency": "$"
+    },
+    "background": {
+     "description": "",
+     "ideology": "",
+     "significantPeople": "",
+     "meaningfulPlaces": "",
+     "treasuredPossessions": "",
+     "traits": "",
+     "wounds": "",
+     "phobias": ""
+    },
+    "history": [],
+    "companions": [],
+    "mythos": {
+     "skill": 0,
+     "knowledge": "",
+     "entries": [],
+     "spells": []
+    },
+    "skillCap": 99,
+    "skillCapOcc": 99,
+    "skillCapInterest": 99,
+    "shareVisibility": "link",
+    "shareId": "",
+    "version": "v1.0",
+    "changeLog": [
+     {
+      "version": "v1.0",
+      "note": "创建角色",
+      "at": 1700000000000
+     }
+    ],
+    "createdAt": 1700000000000,
+    "updatedAt": 1700000000000
+   },
+   "randUsed": 8,
+   "seed": 2028997617,
+   "error": null
+  },
+  {
+   "name": "normalize#1602",
+   "fn": "normalize",
+   "args": {
+    "card": {
+     "id": "x4",
+     "status": {
+      "mental": ""
+     }
+    }
+   },
+   "expect": {
+    "id": "x4",
+    "status": {
+     "currentHP": 0,
+     "maxHP": 0,
+     "currentMP": 0,
+     "maxMP": 0,
+     "currentSAN": 0,
+     "maxSAN": 99,
+     "currentLuck": 0,
+     "body": "正常",
+     "mental": [
+      "正常"
+     ],
+     "dying": false,
+     "unconscious": false
+    },
+    "pbCap": 480,
+    "userId": "local",
+    "ruleSystemId": "coc7",
+    "characterName": "",
+    "playerName": "",
+    "avatar": "",
+    "basicInfo": {
+     "era": "现代",
+     "eraCustom": "",
+     "age": "",
+     "gender": "男",
+     "genderCustom": "",
+     "residence": "",
+     "birthplace": "",
+     "occupationName": ""
+    },
+    "age": "",
+    "occupationId": "",
+    "occupationPicks": {},
+    "customOccupation": null,
+    "attributes": {
+     "str": "",
+     "con": "",
+     "siz": "",
+     "dex": "",
+     "app": "",
+     "int": "",
+     "pow": "",
+     "edu": "",
+     "luck": ""
+    },
+    "attributeMode": "random",
+    "attributeHistory": [],
+    "pbIncludeLuck": true,
+    "fate": {
+     "n": 5,
+     "rolled": false,
+     "options": [],
+     "picked": -1,
+     "rolledAt": 0
+    },
+    "eduProgress": {
+     "base": null,
+     "done": 0,
+     "log": [],
+     "bonus": 0
+    },
+    "derivedStats": {},
+    "madness": [],
+    "baseMaxSAN": null,
+    "sanLoss": 0,
+    "skills": [],
+    "weapons": [],
+    "armors": [],
+    "vehicles": [],
+    "items": [],
+    "assets": {
+     "creditRating": 0,
+     "cash": 0,
+     "spendingLevel": "标准",
+     "assetsDescription": "",
+     "assets": [],
+     "currency": "$"
+    },
+    "background": {
+     "description": "",
+     "ideology": "",
+     "significantPeople": "",
+     "meaningfulPlaces": "",
+     "treasuredPossessions": "",
+     "traits": "",
+     "wounds": "",
+     "phobias": ""
+    },
+    "history": [],
+    "companions": [],
+    "mythos": {
+     "skill": 0,
+     "knowledge": "",
+     "entries": [],
+     "spells": []
+    },
+    "skillCap": 99,
+    "skillCapOcc": 99,
+    "skillCapInterest": 99,
+    "shareVisibility": "link",
+    "shareId": "",
+    "version": "v1.0",
+    "changeLog": [
+     {
+      "version": "v1.0",
+      "note": "创建角色",
+      "at": 1700000000000
+     }
+    ],
+    "createdAt": 1700000000000,
+    "updatedAt": 1700000000000
+   },
+   "randUsed": 8,
+   "seed": 388466082,
+   "error": null
+  },
+  {
+   "name": "normalize#1603",
+   "fn": "normalize",
+   "args": {
+    "card": {
+     "id": "x5",
+     "status": {
+      "mental": [
+       "正常",
+       "永久疯狂",
+       "临时疯狂"
+      ]
+     }
+    }
+   },
+   "expect": {
+    "id": "x5",
+    "status": {
+     "currentHP": 0,
+     "maxHP": 0,
+     "currentMP": 0,
+     "maxMP": 0,
+     "currentSAN": 0,
+     "maxSAN": 99,
+     "currentLuck": 0,
+     "body": "正常",
+     "mental": [
+      "永久疯狂"
+     ],
+     "dying": false,
+     "unconscious": false
+    },
+    "pbCap": 480,
+    "userId": "local",
+    "ruleSystemId": "coc7",
+    "characterName": "",
+    "playerName": "",
+    "avatar": "",
+    "basicInfo": {
+     "era": "现代",
+     "eraCustom": "",
+     "age": "",
+     "gender": "男",
+     "genderCustom": "",
+     "residence": "",
+     "birthplace": "",
+     "occupationName": ""
+    },
+    "age": "",
+    "occupationId": "",
+    "occupationPicks": {},
+    "customOccupation": null,
+    "attributes": {
+     "str": "",
+     "con": "",
+     "siz": "",
+     "dex": "",
+     "app": "",
+     "int": "",
+     "pow": "",
+     "edu": "",
+     "luck": ""
+    },
+    "attributeMode": "random",
+    "attributeHistory": [],
+    "pbIncludeLuck": true,
+    "fate": {
+     "n": 5,
+     "rolled": false,
+     "options": [],
+     "picked": -1,
+     "rolledAt": 0
+    },
+    "eduProgress": {
+     "base": null,
+     "done": 0,
+     "log": [],
+     "bonus": 0
+    },
+    "derivedStats": {},
+    "madness": [],
+    "baseMaxSAN": null,
+    "sanLoss": 0,
+    "skills": [],
+    "weapons": [],
+    "armors": [],
+    "vehicles": [],
+    "items": [],
+    "assets": {
+     "creditRating": 0,
+     "cash": 0,
+     "spendingLevel": "标准",
+     "assetsDescription": "",
+     "assets": [],
+     "currency": "$"
+    },
+    "background": {
+     "description": "",
+     "ideology": "",
+     "significantPeople": "",
+     "meaningfulPlaces": "",
+     "treasuredPossessions": "",
+     "traits": "",
+     "wounds": "",
+     "phobias": ""
+    },
+    "history": [],
+    "companions": [],
+    "mythos": {
+     "skill": 0,
+     "knowledge": "",
+     "entries": [],
+     "spells": []
+    },
+    "skillCap": 99,
+    "skillCapOcc": 99,
+    "skillCapInterest": 99,
+    "shareVisibility": "link",
+    "shareId": "",
+    "version": "v1.0",
+    "changeLog": [
+     {
+      "version": "v1.0",
+      "note": "创建角色",
+      "at": 1700000000000
+     }
+    ],
+    "createdAt": 1700000000000,
+    "updatedAt": 1700000000000
+   },
+   "randUsed": 8,
+   "seed": 3042901843,
+   "error": null
+  },
+  {
+   "name": "normalize#1604",
+   "fn": "normalize",
+   "args": {
+    "card": {
+     "id": "x6",
+     "status": {
+      "mental": [
+       "临时疯狂",
+       null,
+       "",
+       "疯狂症状"
+      ]
+     }
+    }
+   },
+   "expect": {
+    "id": "x6",
+    "status": {
+     "currentHP": 0,
+     "maxHP": 0,
+     "currentMP": 0,
+     "maxMP": 0,
+     "currentSAN": 0,
+     "maxSAN": 99,
+     "currentLuck": 0,
+     "body": "正常",
+     "mental": [
+      "临时疯狂"
+     ],
+     "dying": false,
+     "unconscious": false
+    },
+    "pbCap": 480,
+    "userId": "local",
+    "ruleSystemId": "coc7",
+    "characterName": "",
+    "playerName": "",
+    "avatar": "",
+    "basicInfo": {
+     "era": "现代",
+     "eraCustom": "",
+     "age": "",
+     "gender": "男",
+     "genderCustom": "",
+     "residence": "",
+     "birthplace": "",
+     "occupationName": ""
+    },
+    "age": "",
+    "occupationId": "",
+    "occupationPicks": {},
+    "customOccupation": null,
+    "attributes": {
+     "str": "",
+     "con": "",
+     "siz": "",
+     "dex": "",
+     "app": "",
+     "int": "",
+     "pow": "",
+     "edu": "",
+     "luck": ""
+    },
+    "attributeMode": "random",
+    "attributeHistory": [],
+    "pbIncludeLuck": true,
+    "fate": {
+     "n": 5,
+     "rolled": false,
+     "options": [],
+     "picked": -1,
+     "rolledAt": 0
+    },
+    "eduProgress": {
+     "base": null,
+     "done": 0,
+     "log": [],
+     "bonus": 0
+    },
+    "derivedStats": {},
+    "madness": [],
+    "baseMaxSAN": null,
+    "sanLoss": 0,
+    "skills": [],
+    "weapons": [],
+    "armors": [],
+    "vehicles": [],
+    "items": [],
+    "assets": {
+     "creditRating": 0,
+     "cash": 0,
+     "spendingLevel": "标准",
+     "assetsDescription": "",
+     "assets": [],
+     "currency": "$"
+    },
+    "background": {
+     "description": "",
+     "ideology": "",
+     "significantPeople": "",
+     "meaningfulPlaces": "",
+     "treasuredPossessions": "",
+     "traits": "",
+     "wounds": "",
+     "phobias": ""
+    },
+    "history": [],
+    "companions": [],
+    "mythos": {
+     "skill": 0,
+     "knowledge": "",
+     "entries": [],
+     "spells": []
+    },
+    "skillCap": 99,
+    "skillCapOcc": 99,
+    "skillCapInterest": 99,
+    "shareVisibility": "link",
+    "shareId": "",
+    "version": "v1.0",
+    "changeLog": [
+     {
+      "version": "v1.0",
+      "note": "创建角色",
+      "at": 1700000000000
+     }
+    ],
+    "createdAt": 1700000000000,
+    "updatedAt": 1700000000000
+   },
+   "randUsed": 8,
+   "seed": 1402370308,
+   "error": null
+  },
+  {
+   "name": "normalize#1605",
+   "fn": "normalize",
+   "args": {
+    "card": {
+     "id": "x7",
+     "status": {
+      "body": "濒死",
+      "currentHP": 0,
+      "maxHP": 12
+     }
+    }
+   },
+   "expect": {
+    "id": "x7",
+    "status": {
+     "currentHP": 0,
+     "maxHP": 12,
+     "currentMP": 0,
+     "maxMP": 0,
+     "currentSAN": 0,
+     "maxSAN": 99,
+     "currentLuck": 0,
+     "body": "重伤",
+     "mental": [
+      "正常"
+     ],
+     "dying": true,
+     "unconscious": false
+    },
+    "pbCap": 480,
+    "userId": "local",
+    "ruleSystemId": "coc7",
+    "characterName": "",
+    "playerName": "",
+    "avatar": "",
+    "basicInfo": {
+     "era": "现代",
+     "eraCustom": "",
+     "age": "",
+     "gender": "男",
+     "genderCustom": "",
+     "residence": "",
+     "birthplace": "",
+     "occupationName": ""
+    },
+    "age": "",
+    "occupationId": "",
+    "occupationPicks": {},
+    "customOccupation": null,
+    "attributes": {
+     "str": "",
+     "con": "",
+     "siz": "",
+     "dex": "",
+     "app": "",
+     "int": "",
+     "pow": "",
+     "edu": "",
+     "luck": ""
+    },
+    "attributeMode": "random",
+    "attributeHistory": [],
+    "pbIncludeLuck": true,
+    "fate": {
+     "n": 5,
+     "rolled": false,
+     "options": [],
+     "picked": -1,
+     "rolledAt": 0
+    },
+    "eduProgress": {
+     "base": null,
+     "done": 0,
+     "log": [],
+     "bonus": 0
+    },
+    "derivedStats": {},
+    "madness": [],
+    "baseMaxSAN": null,
+    "sanLoss": 0,
+    "skills": [],
+    "weapons": [],
+    "armors": [],
+    "vehicles": [],
+    "items": [],
+    "assets": {
+     "creditRating": 0,
+     "cash": 0,
+     "spendingLevel": "标准",
+     "assetsDescription": "",
+     "assets": [],
+     "currency": "$"
+    },
+    "background": {
+     "description": "",
+     "ideology": "",
+     "significantPeople": "",
+     "meaningfulPlaces": "",
+     "treasuredPossessions": "",
+     "traits": "",
+     "wounds": "",
+     "phobias": ""
+    },
+    "history": [],
+    "companions": [],
+    "mythos": {
+     "skill": 0,
+     "knowledge": "",
+     "entries": [],
+     "spells": []
+    },
+    "skillCap": 99,
+    "skillCapOcc": 99,
+    "skillCapInterest": 99,
+    "shareVisibility": "link",
+    "shareId": "",
+    "version": "v1.0",
+    "changeLog": [
+     {
+      "version": "v1.0",
+      "note": "创建角色",
+      "at": 1700000000000
+     }
+    ],
+    "createdAt": 1700000000000,
+    "updatedAt": 1700000000000
+   },
+   "randUsed": 8,
+   "seed": 4056806069,
+   "error": null
+  },
+  {
+   "name": "normalize#1606",
+   "fn": "normalize",
+   "args": {
+    "card": {
+     "id": "x8",
+     "status": {
+      "body": "昏迷",
+      "currentHP": 12,
+      "maxHP": 12
+     }
+    }
+   },
+   "expect": {
+    "id": "x8",
+    "status": {
+     "currentHP": 12,
+     "maxHP": 12,
+     "currentMP": 0,
+     "maxMP": 0,
+     "currentSAN": 0,
+     "maxSAN": 99,
+     "currentLuck": 0,
+     "body": "正常",
+     "mental": [
+      "正常"
+     ],
+     "dying": false,
+     "unconscious": true,
+     "_inited": true,
+     "_luckTouched": false
+    },
+    "pbCap": 480,
+    "userId": "local",
+    "ruleSystemId": "coc7",
+    "characterName": "",
+    "playerName": "",
+    "avatar": "",
+    "basicInfo": {
+     "era": "现代",
+     "eraCustom": "",
+     "age": "",
+     "gender": "男",
+     "genderCustom": "",
+     "residence": "",
+     "birthplace": "",
+     "occupationName": ""
+    },
+    "age": "",
+    "occupationId": "",
+    "occupationPicks": {},
+    "customOccupation": null,
+    "attributes": {
+     "str": "",
+     "con": "",
+     "siz": "",
+     "dex": "",
+     "app": "",
+     "int": "",
+     "pow": "",
+     "edu": "",
+     "luck": ""
+    },
+    "attributeMode": "random",
+    "attributeHistory": [],
+    "pbIncludeLuck": true,
+    "fate": {
+     "n": 5,
+     "rolled": false,
+     "options": [],
+     "picked": -1,
+     "rolledAt": 0
+    },
+    "eduProgress": {
+     "base": null,
+     "done": 0,
+     "log": [],
+     "bonus": 0
+    },
+    "derivedStats": {},
+    "madness": [],
+    "baseMaxSAN": null,
+    "sanLoss": 0,
+    "skills": [],
+    "weapons": [],
+    "armors": [],
+    "vehicles": [],
+    "items": [],
+    "assets": {
+     "creditRating": 0,
+     "cash": 0,
+     "spendingLevel": "标准",
+     "assetsDescription": "",
+     "assets": [],
+     "currency": "$"
+    },
+    "background": {
+     "description": "",
+     "ideology": "",
+     "significantPeople": "",
+     "meaningfulPlaces": "",
+     "treasuredPossessions": "",
+     "traits": "",
+     "wounds": "",
+     "phobias": ""
+    },
+    "history": [],
+    "companions": [],
+    "mythos": {
+     "skill": 0,
+     "knowledge": "",
+     "entries": [],
+     "spells": []
+    },
+    "skillCap": 99,
+    "skillCapOcc": 99,
+    "skillCapInterest": 99,
+    "shareVisibility": "link",
+    "shareId": "",
+    "version": "v1.0",
+    "changeLog": [
+     {
+      "version": "v1.0",
+      "note": "创建角色",
+      "at": 1700000000000
+     }
+    ],
+    "createdAt": 1700000000000,
+    "updatedAt": 1700000000000
+   },
+   "randUsed": 8,
+   "seed": 2416274534,
+   "error": null
+  },
+  {
+   "name": "normalize#1607",
+   "fn": "normalize",
+   "args": {
+    "card": {
+     "id": "x9",
+     "status": {
+      "body": "昏迷",
+      "currentHP": 6,
+      "maxHP": 12
+     }
+    }
+   },
+   "expect": {
+    "id": "x9",
+    "status": {
+     "currentHP": 6,
+     "maxHP": 12,
+     "currentMP": 0,
+     "maxMP": 0,
+     "currentSAN": 0,
+     "maxSAN": 99,
+     "currentLuck": 0,
+     "body": "重伤",
+     "mental": [
+      "正常"
+     ],
+     "dying": false,
+     "unconscious": true,
+     "_inited": true,
+     "_luckTouched": false
+    },
+    "pbCap": 480,
+    "userId": "local",
+    "ruleSystemId": "coc7",
+    "characterName": "",
+    "playerName": "",
+    "avatar": "",
+    "basicInfo": {
+     "era": "现代",
+     "eraCustom": "",
+     "age": "",
+     "gender": "男",
+     "genderCustom": "",
+     "residence": "",
+     "birthplace": "",
+     "occupationName": ""
+    },
+    "age": "",
+    "occupationId": "",
+    "occupationPicks": {},
+    "customOccupation": null,
+    "attributes": {
+     "str": "",
+     "con": "",
+     "siz": "",
+     "dex": "",
+     "app": "",
+     "int": "",
+     "pow": "",
+     "edu": "",
+     "luck": ""
+    },
+    "attributeMode": "random",
+    "attributeHistory": [],
+    "pbIncludeLuck": true,
+    "fate": {
+     "n": 5,
+     "rolled": false,
+     "options": [],
+     "picked": -1,
+     "rolledAt": 0
+    },
+    "eduProgress": {
+     "base": null,
+     "done": 0,
+     "log": [],
+     "bonus": 0
+    },
+    "derivedStats": {},
+    "madness": [],
+    "baseMaxSAN": null,
+    "sanLoss": 0,
+    "skills": [],
+    "weapons": [],
+    "armors": [],
+    "vehicles": [],
+    "items": [],
+    "assets": {
+     "creditRating": 0,
+     "cash": 0,
+     "spendingLevel": "标准",
+     "assetsDescription": "",
+     "assets": [],
+     "currency": "$"
+    },
+    "background": {
+     "description": "",
+     "ideology": "",
+     "significantPeople": "",
+     "meaningfulPlaces": "",
+     "treasuredPossessions": "",
+     "traits": "",
+     "wounds": "",
+     "phobias": ""
+    },
+    "history": [],
+    "companions": [],
+    "mythos": {
+     "skill": 0,
+     "knowledge": "",
+     "entries": [],
+     "spells": []
+    },
+    "skillCap": 99,
+    "skillCapOcc": 99,
+    "skillCapInterest": 99,
+    "shareVisibility": "link",
+    "shareId": "",
+    "version": "v1.0",
+    "changeLog": [
+     {
+      "version": "v1.0",
+      "note": "创建角色",
+      "at": 1700000000000
+     }
+    ],
+    "createdAt": 1700000000000,
+    "updatedAt": 1700000000000
+   },
+   "randUsed": 8,
+   "seed": 775742999,
+   "error": null
+  },
+  {
+   "name": "normalize#1608",
+   "fn": "normalize",
+   "args": {
+    "card": {
+     "id": "x10",
+     "status": {
+      "body": "昏迷",
+      "currentHP": 5,
+      "maxHP": 12
+     }
+    }
+   },
+   "expect": {
+    "id": "x10",
+    "status": {
+     "currentHP": 5,
+     "maxHP": 12,
+     "currentMP": 0,
+     "maxMP": 0,
+     "currentSAN": 0,
+     "maxSAN": 99,
+     "currentLuck": 0,
+     "body": "轻伤",
+     "mental": [
+      "正常"
+     ],
+     "dying": false,
+     "unconscious": true,
+     "_inited": true,
+     "_luckTouched": false
+    },
+    "pbCap": 480,
+    "userId": "local",
+    "ruleSystemId": "coc7",
+    "characterName": "",
+    "playerName": "",
+    "avatar": "",
+    "basicInfo": {
+     "era": "现代",
+     "eraCustom": "",
+     "age": "",
+     "gender": "男",
+     "genderCustom": "",
+     "residence": "",
+     "birthplace": "",
+     "occupationName": ""
+    },
+    "age": "",
+    "occupationId": "",
+    "occupationPicks": {},
+    "customOccupation": null,
+    "attributes": {
+     "str": "",
+     "con": "",
+     "siz": "",
+     "dex": "",
+     "app": "",
+     "int": "",
+     "pow": "",
+     "edu": "",
+     "luck": ""
+    },
+    "attributeMode": "random",
+    "attributeHistory": [],
+    "pbIncludeLuck": true,
+    "fate": {
+     "n": 5,
+     "rolled": false,
+     "options": [],
+     "picked": -1,
+     "rolledAt": 0
+    },
+    "eduProgress": {
+     "base": null,
+     "done": 0,
+     "log": [],
+     "bonus": 0
+    },
+    "derivedStats": {},
+    "madness": [],
+    "baseMaxSAN": null,
+    "sanLoss": 0,
+    "skills": [],
+    "weapons": [],
+    "armors": [],
+    "vehicles": [],
+    "items": [],
+    "assets": {
+     "creditRating": 0,
+     "cash": 0,
+     "spendingLevel": "标准",
+     "assetsDescription": "",
+     "assets": [],
+     "currency": "$"
+    },
+    "background": {
+     "description": "",
+     "ideology": "",
+     "significantPeople": "",
+     "meaningfulPlaces": "",
+     "treasuredPossessions": "",
+     "traits": "",
+     "wounds": "",
+     "phobias": ""
+    },
+    "history": [],
+    "companions": [],
+    "mythos": {
+     "skill": 0,
+     "knowledge": "",
+     "entries": [],
+     "spells": []
+    },
+    "skillCap": 99,
+    "skillCapOcc": 99,
+    "skillCapInterest": 99,
+    "shareVisibility": "link",
+    "shareId": "",
+    "version": "v1.0",
+    "changeLog": [
+     {
+      "version": "v1.0",
+      "note": "创建角色",
+      "at": 1700000000000
+     }
+    ],
+    "createdAt": 1700000000000,
+    "updatedAt": 1700000000000
+   },
+   "randUsed": 8,
+   "seed": 3430178760,
+   "error": null
+  },
+  {
+   "name": "normalize#1609",
+   "fn": "normalize",
+   "args": {
+    "card": {
+     "id": "x11",
+     "status": {
+      "dying": "yes",
+      "unconscious": 1
+     }
+    }
+   },
+   "expect": {
+    "id": "x11",
+    "status": {
+     "currentHP": 0,
+     "maxHP": 0,
+     "currentMP": 0,
+     "maxMP": 0,
+     "currentSAN": 0,
+     "maxSAN": 99,
+     "currentLuck": 0,
+     "body": "正常",
+     "mental": [
+      "正常"
+     ],
+     "dying": true,
+     "unconscious": true
+    },
+    "pbCap": 480,
+    "userId": "local",
+    "ruleSystemId": "coc7",
+    "characterName": "",
+    "playerName": "",
+    "avatar": "",
+    "basicInfo": {
+     "era": "现代",
+     "eraCustom": "",
+     "age": "",
+     "gender": "男",
+     "genderCustom": "",
+     "residence": "",
+     "birthplace": "",
+     "occupationName": ""
+    },
+    "age": "",
+    "occupationId": "",
+    "occupationPicks": {},
+    "customOccupation": null,
+    "attributes": {
+     "str": "",
+     "con": "",
+     "siz": "",
+     "dex": "",
+     "app": "",
+     "int": "",
+     "pow": "",
+     "edu": "",
+     "luck": ""
+    },
+    "attributeMode": "random",
+    "attributeHistory": [],
+    "pbIncludeLuck": true,
+    "fate": {
+     "n": 5,
+     "rolled": false,
+     "options": [],
+     "picked": -1,
+     "rolledAt": 0
+    },
+    "eduProgress": {
+     "base": null,
+     "done": 0,
+     "log": [],
+     "bonus": 0
+    },
+    "derivedStats": {},
+    "madness": [],
+    "baseMaxSAN": null,
+    "sanLoss": 0,
+    "skills": [],
+    "weapons": [],
+    "armors": [],
+    "vehicles": [],
+    "items": [],
+    "assets": {
+     "creditRating": 0,
+     "cash": 0,
+     "spendingLevel": "标准",
+     "assetsDescription": "",
+     "assets": [],
+     "currency": "$"
+    },
+    "background": {
+     "description": "",
+     "ideology": "",
+     "significantPeople": "",
+     "meaningfulPlaces": "",
+     "treasuredPossessions": "",
+     "traits": "",
+     "wounds": "",
+     "phobias": ""
+    },
+    "history": [],
+    "companions": [],
+    "mythos": {
+     "skill": 0,
+     "knowledge": "",
+     "entries": [],
+     "spells": []
+    },
+    "skillCap": 99,
+    "skillCapOcc": 99,
+    "skillCapInterest": 99,
+    "shareVisibility": "link",
+    "shareId": "",
+    "version": "v1.0",
+    "changeLog": [
+     {
+      "version": "v1.0",
+      "note": "创建角色",
+      "at": 1700000000000
+     }
+    ],
+    "createdAt": 1700000000000,
+    "updatedAt": 1700000000000
+   },
+   "randUsed": 8,
+   "seed": 1789647225,
+   "error": null
+  },
+  {
+   "name": "normalize#1610",
+   "fn": "normalize",
+   "args": {
+    "card": {
+     "id": "x12",
+     "eduProgress": {
+      "log": [
+       {
+        "before": 50,
+        "gain": 6
+       },
+       {
+        "before": 56,
+        "gain": 3
+       }
+      ]
+     }
+    }
+   },
+   "expect": {
+    "id": "x12",
+    "eduProgress": {
+     "log": [
+      {
+       "before": 50,
+       "gain": 6
+      },
+      {
+       "before": 56,
+       "gain": 3
+      }
+     ],
+     "bonus": 9,
+     "done": 2
+    },
+    "pbCap": 480,
+    "userId": "local",
+    "ruleSystemId": "coc7",
+    "characterName": "",
+    "playerName": "",
+    "avatar": "",
+    "basicInfo": {
+     "era": "现代",
+     "eraCustom": "",
+     "age": "",
+     "gender": "男",
+     "genderCustom": "",
+     "residence": "",
+     "birthplace": "",
+     "occupationName": ""
+    },
+    "age": "",
+    "occupationId": "",
+    "occupationPicks": {},
+    "customOccupation": null,
+    "attributes": {
+     "str": "",
+     "con": "",
+     "siz": "",
+     "dex": "",
+     "app": "",
+     "int": "",
+     "pow": "",
+     "edu": "",
+     "luck": ""
+    },
+    "attributeMode": "random",
+    "attributeHistory": [],
+    "pbIncludeLuck": true,
+    "fate": {
+     "n": 5,
+     "rolled": false,
+     "options": [],
+     "picked": -1,
+     "rolledAt": 0
+    },
+    "derivedStats": {},
+    "status": {
+     "currentHP": 0,
+     "maxHP": 0,
+     "currentMP": 0,
+     "maxMP": 0,
+     "currentSAN": 0,
+     "maxSAN": 99,
+     "currentLuck": 0,
+     "body": "正常",
+     "mental": [
+      "正常"
+     ],
+     "dying": false,
+     "unconscious": false
+    },
+    "madness": [],
+    "baseMaxSAN": null,
+    "sanLoss": 0,
+    "skills": [],
+    "weapons": [],
+    "armors": [],
+    "vehicles": [],
+    "items": [],
+    "assets": {
+     "creditRating": 0,
+     "cash": 0,
+     "spendingLevel": "标准",
+     "assetsDescription": "",
+     "assets": [],
+     "currency": "$"
+    },
+    "background": {
+     "description": "",
+     "ideology": "",
+     "significantPeople": "",
+     "meaningfulPlaces": "",
+     "treasuredPossessions": "",
+     "traits": "",
+     "wounds": "",
+     "phobias": ""
+    },
+    "history": [],
+    "companions": [],
+    "mythos": {
+     "skill": 0,
+     "knowledge": "",
+     "entries": [],
+     "spells": []
+    },
+    "skillCap": 99,
+    "skillCapOcc": 99,
+    "skillCapInterest": 99,
+    "shareVisibility": "link",
+    "shareId": "",
+    "version": "v1.0",
+    "changeLog": [
+     {
+      "version": "v1.0",
+      "note": "创建角色",
+      "at": 1700000000000
+     }
+    ],
+    "createdAt": 1700000000000,
+    "updatedAt": 1700000000000
+   },
+   "randUsed": 8,
+   "seed": 149115690,
+   "error": null
+  },
+  {
+   "name": "normalize#1611",
+   "fn": "normalize",
+   "args": {
+    "card": {
+     "id": "x13",
+     "eduProgress": {
+      "log": [],
+      "bonus": null
+     }
+    }
+   },
+   "expect": {
+    "id": "x13",
+    "eduProgress": {
+     "log": [],
+     "bonus": 0,
+     "done": 0
+    },
+    "pbCap": 480,
+    "userId": "local",
+    "ruleSystemId": "coc7",
+    "characterName": "",
+    "playerName": "",
+    "avatar": "",
+    "basicInfo": {
+     "era": "现代",
+     "eraCustom": "",
+     "age": "",
+     "gender": "男",
+     "genderCustom": "",
+     "residence": "",
+     "birthplace": "",
+     "occupationName": ""
+    },
+    "age": "",
+    "occupationId": "",
+    "occupationPicks": {},
+    "customOccupation": null,
+    "attributes": {
+     "str": "",
+     "con": "",
+     "siz": "",
+     "dex": "",
+     "app": "",
+     "int": "",
+     "pow": "",
+     "edu": "",
+     "luck": ""
+    },
+    "attributeMode": "random",
+    "attributeHistory": [],
+    "pbIncludeLuck": true,
+    "fate": {
+     "n": 5,
+     "rolled": false,
+     "options": [],
+     "picked": -1,
+     "rolledAt": 0
+    },
+    "derivedStats": {},
+    "status": {
+     "currentHP": 0,
+     "maxHP": 0,
+     "currentMP": 0,
+     "maxMP": 0,
+     "currentSAN": 0,
+     "maxSAN": 99,
+     "currentLuck": 0,
+     "body": "正常",
+     "mental": [
+      "正常"
+     ],
+     "dying": false,
+     "unconscious": false
+    },
+    "madness": [],
+    "baseMaxSAN": null,
+    "sanLoss": 0,
+    "skills": [],
+    "weapons": [],
+    "armors": [],
+    "vehicles": [],
+    "items": [],
+    "assets": {
+     "creditRating": 0,
+     "cash": 0,
+     "spendingLevel": "标准",
+     "assetsDescription": "",
+     "assets": [],
+     "currency": "$"
+    },
+    "background": {
+     "description": "",
+     "ideology": "",
+     "significantPeople": "",
+     "meaningfulPlaces": "",
+     "treasuredPossessions": "",
+     "traits": "",
+     "wounds": "",
+     "phobias": ""
+    },
+    "history": [],
+    "companions": [],
+    "mythos": {
+     "skill": 0,
+     "knowledge": "",
+     "entries": [],
+     "spells": []
+    },
+    "skillCap": 99,
+    "skillCapOcc": 99,
+    "skillCapInterest": 99,
+    "shareVisibility": "link",
+    "shareId": "",
+    "version": "v1.0",
+    "changeLog": [
+     {
+      "version": "v1.0",
+      "note": "创建角色",
+      "at": 1700000000000
+     }
+    ],
+    "createdAt": 1700000000000,
+    "updatedAt": 1700000000000
+   },
+   "randUsed": 8,
+   "seed": 2803551451,
+   "error": null
+  },
+  {
+   "name": "normalize#1612",
+   "fn": "normalize",
+   "args": {
+    "card": {
+     "id": "x14",
+     "fate": {
+      "n": 99,
+      "rolled": true,
+      "options": [],
+      "picked": 3
+     }
+    }
+   },
+   "expect": {
+    "id": "x14",
+    "fate": {
+     "n": 5,
+     "rolled": false,
+     "options": [],
+     "picked": -1
+    },
+    "pbCap": 480,
+    "userId": "local",
+    "ruleSystemId": "coc7",
+    "characterName": "",
+    "playerName": "",
+    "avatar": "",
+    "basicInfo": {
+     "era": "现代",
+     "eraCustom": "",
+     "age": "",
+     "gender": "男",
+     "genderCustom": "",
+     "residence": "",
+     "birthplace": "",
+     "occupationName": ""
+    },
+    "age": "",
+    "occupationId": "",
+    "occupationPicks": {},
+    "customOccupation": null,
+    "attributes": {
+     "str": "",
+     "con": "",
+     "siz": "",
+     "dex": "",
+     "app": "",
+     "int": "",
+     "pow": "",
+     "edu": "",
+     "luck": ""
+    },
+    "attributeMode": "random",
+    "attributeHistory": [],
+    "pbIncludeLuck": true,
+    "eduProgress": {
+     "base": null,
+     "done": 0,
+     "log": [],
+     "bonus": 0
+    },
+    "derivedStats": {},
+    "status": {
+     "currentHP": 0,
+     "maxHP": 0,
+     "currentMP": 0,
+     "maxMP": 0,
+     "currentSAN": 0,
+     "maxSAN": 99,
+     "currentLuck": 0,
+     "body": "正常",
+     "mental": [
+      "正常"
+     ],
+     "dying": false,
+     "unconscious": false
+    },
+    "madness": [],
+    "baseMaxSAN": null,
+    "sanLoss": 0,
+    "skills": [],
+    "weapons": [],
+    "armors": [],
+    "vehicles": [],
+    "items": [],
+    "assets": {
+     "creditRating": 0,
+     "cash": 0,
+     "spendingLevel": "标准",
+     "assetsDescription": "",
+     "assets": [],
+     "currency": "$"
+    },
+    "background": {
+     "description": "",
+     "ideology": "",
+     "significantPeople": "",
+     "meaningfulPlaces": "",
+     "treasuredPossessions": "",
+     "traits": "",
+     "wounds": "",
+     "phobias": ""
+    },
+    "history": [],
+    "companions": [],
+    "mythos": {
+     "skill": 0,
+     "knowledge": "",
+     "entries": [],
+     "spells": []
+    },
+    "skillCap": 99,
+    "skillCapOcc": 99,
+    "skillCapInterest": 99,
+    "shareVisibility": "link",
+    "shareId": "",
+    "version": "v1.0",
+    "changeLog": [
+     {
+      "version": "v1.0",
+      "note": "创建角色",
+      "at": 1700000000000
+     }
+    ],
+    "createdAt": 1700000000000,
+    "updatedAt": 1700000000000
+   },
+   "randUsed": 8,
+   "seed": 1163019916,
+   "error": null
+  },
+  {
+   "name": "normalize#1613",
+   "fn": "normalize",
+   "args": {
+    "card": {
+     "id": "x15",
+     "fate": {
+      "n": "abc",
+      "options": [
+       {},
+       {},
+       {}
+      ],
+      "picked": 2,
+      "rolled": true
+     }
+    }
+   },
+   "expect": {
+    "id": "x15",
+    "fate": {
+     "n": 5,
+     "options": [
+      {},
+      {},
+      {}
+     ],
+     "picked": 2,
+     "rolled": true
+    },
+    "pbCap": 480,
+    "userId": "local",
+    "ruleSystemId": "coc7",
+    "characterName": "",
+    "playerName": "",
+    "avatar": "",
+    "basicInfo": {
+     "era": "现代",
+     "eraCustom": "",
+     "age": "",
+     "gender": "男",
+     "genderCustom": "",
+     "residence": "",
+     "birthplace": "",
+     "occupationName": ""
+    },
+    "age": "",
+    "occupationId": "",
+    "occupationPicks": {},
+    "customOccupation": null,
+    "attributes": {
+     "str": "",
+     "con": "",
+     "siz": "",
+     "dex": "",
+     "app": "",
+     "int": "",
+     "pow": "",
+     "edu": "",
+     "luck": ""
+    },
+    "attributeMode": "random",
+    "attributeHistory": [],
+    "pbIncludeLuck": true,
+    "eduProgress": {
+     "base": null,
+     "done": 0,
+     "log": [],
+     "bonus": 0
+    },
+    "derivedStats": {},
+    "status": {
+     "currentHP": 0,
+     "maxHP": 0,
+     "currentMP": 0,
+     "maxMP": 0,
+     "currentSAN": 0,
+     "maxSAN": 99,
+     "currentLuck": 0,
+     "body": "正常",
+     "mental": [
+      "正常"
+     ],
+     "dying": false,
+     "unconscious": false
+    },
+    "madness": [],
+    "baseMaxSAN": null,
+    "sanLoss": 0,
+    "skills": [],
+    "weapons": [],
+    "armors": [],
+    "vehicles": [],
+    "items": [],
+    "assets": {
+     "creditRating": 0,
+     "cash": 0,
+     "spendingLevel": "标准",
+     "assetsDescription": "",
+     "assets": [],
+     "currency": "$"
+    },
+    "background": {
+     "description": "",
+     "ideology": "",
+     "significantPeople": "",
+     "meaningfulPlaces": "",
+     "treasuredPossessions": "",
+     "traits": "",
+     "wounds": "",
+     "phobias": ""
+    },
+    "history": [],
+    "companions": [],
+    "mythos": {
+     "skill": 0,
+     "knowledge": "",
+     "entries": [],
+     "spells": []
+    },
+    "skillCap": 99,
+    "skillCapOcc": 99,
+    "skillCapInterest": 99,
+    "shareVisibility": "link",
+    "shareId": "",
+    "version": "v1.0",
+    "changeLog": [
+     {
+      "version": "v1.0",
+      "note": "创建角色",
+      "at": 1700000000000
+     }
+    ],
+    "createdAt": 1700000000000,
+    "updatedAt": 1700000000000
+   },
+   "randUsed": 8,
+   "seed": 3817455677,
+   "error": null
+  },
+  {
+   "name": "normalize#1614",
+   "fn": "normalize",
+   "args": {
+    "card": {
+     "id": "x16",
+     "background": {
+      "phobias": "【恐惧症】幽闭恐惧症：怕黑"
+     }
+    }
+   },
+   "expect": {
+    "id": "x16",
+    "background": {
+     "description": "",
+     "ideology": "",
+     "significantPeople": "",
+     "meaningfulPlaces": "",
+     "treasuredPossessions": "",
+     "traits": "",
+     "wounds": "",
+     "phobias": "【恐惧症】幽闭恐惧症：怕黑"
+    },
+    "pbCap": 480,
+    "userId": "local",
+    "ruleSystemId": "coc7",
+    "characterName": "",
+    "playerName": "",
+    "avatar": "",
+    "basicInfo": {
+     "era": "现代",
+     "eraCustom": "",
+     "age": "",
+     "gender": "男",
+     "genderCustom": "",
+     "residence": "",
+     "birthplace": "",
+     "occupationName": ""
+    },
+    "age": "",
+    "occupationId": "",
+    "occupationPicks": {},
+    "customOccupation": null,
+    "attributes": {
+     "str": "",
+     "con": "",
+     "siz": "",
+     "dex": "",
+     "app": "",
+     "int": "",
+     "pow": "",
+     "edu": "",
+     "luck": ""
+    },
+    "attributeMode": "random",
+    "attributeHistory": [],
+    "pbIncludeLuck": true,
+    "fate": {
+     "n": 5,
+     "rolled": false,
+     "options": [],
+     "picked": -1,
+     "rolledAt": 0
+    },
+    "eduProgress": {
+     "base": null,
+     "done": 0,
+     "log": [],
+     "bonus": 0
+    },
+    "derivedStats": {},
+    "status": {
+     "currentHP": 0,
+     "maxHP": 0,
+     "currentMP": 0,
+     "maxMP": 0,
+     "currentSAN": 0,
+     "maxSAN": 99,
+     "currentLuck": 0,
+     "body": "正常",
+     "mental": [
+      "疯狂症状"
+     ],
+     "dying": false,
+     "unconscious": false
+    },
+    "madness": [
+     {
+      "id": "mloyw3v28i0rr",
+      "type": "phobia",
+      "name": "幽闭恐惧症",
+      "en": "Claustrophobia",
+      "desc": "对于处在封闭的空间中的恐惧。",
+      "permanent": true,
+      "rounds": 0,
+      "at": 1700000000000,
+      "bg": true
+     }
+    ],
+    "baseMaxSAN": null,
+    "sanLoss": 0,
+    "skills": [],
+    "weapons": [],
+    "armors": [],
+    "vehicles": [],
+    "items": [],
+    "assets": {
+     "creditRating": 0,
+     "cash": 0,
+     "spendingLevel": "标准",
+     "assetsDescription": "",
+     "assets": [],
+     "currency": "$"
+    },
+    "history": [],
+    "companions": [],
+    "mythos": {
+     "skill": 0,
+     "knowledge": "",
+     "entries": [],
+     "spells": []
+    },
+    "skillCap": 99,
+    "skillCapOcc": 99,
+    "skillCapInterest": 99,
+    "shareVisibility": "link",
+    "shareId": "",
+    "version": "v1.0",
+    "changeLog": [
+     {
+      "version": "v1.0",
+      "note": "创建角色",
+      "at": 1700000000000
+     }
+    ],
+    "createdAt": 1700000000000,
+    "updatedAt": 1700000000000
+   },
+   "randUsed": 9,
+   "seed": 2176924142,
+   "error": null
+  },
+  {
+   "name": "normalize#1615",
+   "fn": "normalize",
+   "args": {
+    "card": {
+     "id": "x17",
+     "background": {
+      "phobias": "【恐惧症】幽闭恐惧症：怕黑"
+     },
+     "madness": [
+      {
+       "id": "m0",
+       "type": "phobia",
+       "name": "幽闭恐惧症",
+       "permanent": true,
+       "bg": true,
+       "rounds": 0,
+       "at": 1
+      }
+     ]
+    }
+   },
+   "expect": {
+    "id": "x17",
+    "background": {
+     "description": "",
+     "ideology": "",
+     "significantPeople": "",
+     "meaningfulPlaces": "",
+     "treasuredPossessions": "",
+     "traits": "",
+     "wounds": "",
+     "phobias": "【恐惧症】幽闭恐惧症：怕黑"
+    },
+    "madness": [
+     {
+      "id": "m0",
+      "type": "phobia",
+      "name": "幽闭恐惧症",
+      "permanent": true,
+      "bg": true,
+      "rounds": 0,
+      "at": 1
+     }
+    ],
+    "pbCap": 480,
+    "userId": "local",
+    "ruleSystemId": "coc7",
+    "characterName": "",
+    "playerName": "",
+    "avatar": "",
+    "basicInfo": {
+     "era": "现代",
+     "eraCustom": "",
+     "age": "",
+     "gender": "男",
+     "genderCustom": "",
+     "residence": "",
+     "birthplace": "",
+     "occupationName": ""
+    },
+    "age": "",
+    "occupationId": "",
+    "occupationPicks": {},
+    "customOccupation": null,
+    "attributes": {
+     "str": "",
+     "con": "",
+     "siz": "",
+     "dex": "",
+     "app": "",
+     "int": "",
+     "pow": "",
+     "edu": "",
+     "luck": ""
+    },
+    "attributeMode": "random",
+    "attributeHistory": [],
+    "pbIncludeLuck": true,
+    "fate": {
+     "n": 5,
+     "rolled": false,
+     "options": [],
+     "picked": -1,
+     "rolledAt": 0
+    },
+    "eduProgress": {
+     "base": null,
+     "done": 0,
+     "log": [],
+     "bonus": 0
+    },
+    "derivedStats": {},
+    "status": {
+     "currentHP": 0,
+     "maxHP": 0,
+     "currentMP": 0,
+     "maxMP": 0,
+     "currentSAN": 0,
+     "maxSAN": 99,
+     "currentLuck": 0,
+     "body": "正常",
+     "mental": [
+      "疯狂症状"
+     ],
+     "dying": false,
+     "unconscious": false
+    },
+    "baseMaxSAN": null,
+    "sanLoss": 0,
+    "skills": [],
+    "weapons": [],
+    "armors": [],
+    "vehicles": [],
+    "items": [],
+    "assets": {
+     "creditRating": 0,
+     "cash": 0,
+     "spendingLevel": "标准",
+     "assetsDescription": "",
+     "assets": [],
+     "currency": "$"
+    },
+    "history": [],
+    "companions": [],
+    "mythos": {
+     "skill": 0,
+     "knowledge": "",
+     "entries": [],
+     "spells": []
+    },
+    "skillCap": 99,
+    "skillCapOcc": 99,
+    "skillCapInterest": 99,
+    "shareVisibility": "link",
+    "shareId": "",
+    "version": "v1.0",
+    "changeLog": [
+     {
+      "version": "v1.0",
+      "note": "创建角色",
+      "at": 1700000000000
+     }
+    ],
+    "createdAt": 1700000000000,
+    "updatedAt": 1700000000000
+   },
+   "randUsed": 8,
+   "seed": 536392607,
+   "error": null
+  },
+  {
+   "name": "normalize#1616",
+   "fn": "normalize",
+   "args": {
+    "card": {
+     "id": "x18",
+     "status": {
+      "currentHP": 7,
+      "currentSAN": 40
+     },
+     "derivedStats": {
+      "maxHP": 12
+     }
+    }
+   },
+   "expect": {
+    "id": "x18",
+    "status": {
+     "currentHP": 7,
+     "maxHP": 0,
+     "currentMP": 0,
+     "maxMP": 0,
+     "currentSAN": 40,
+     "maxSAN": 99,
+     "currentLuck": 0,
+     "body": "正常",
+     "mental": [
+      "正常"
+     ],
+     "dying": false,
+     "unconscious": false,
+     "_inited": true,
+     "_luckTouched": false
+    },
+    "derivedStats": {
+     "maxHP": 12
+    },
+    "pbCap": 480,
+    "userId": "local",
+    "ruleSystemId": "coc7",
+    "characterName": "",
+    "playerName": "",
+    "avatar": "",
+    "basicInfo": {
+     "era": "现代",
+     "eraCustom": "",
+     "age": "",
+     "gender": "男",
+     "genderCustom": "",
+     "residence": "",
+     "birthplace": "",
+     "occupationName": ""
+    },
+    "age": "",
+    "occupationId": "",
+    "occupationPicks": {},
+    "customOccupation": null,
+    "attributes": {
+     "str": "",
+     "con": "",
+     "siz": "",
+     "dex": "",
+     "app": "",
+     "int": "",
+     "pow": "",
+     "edu": "",
+     "luck": ""
+    },
+    "attributeMode": "random",
+    "attributeHistory": [],
+    "pbIncludeLuck": true,
+    "fate": {
+     "n": 5,
+     "rolled": false,
+     "options": [],
+     "picked": -1,
+     "rolledAt": 0
+    },
+    "eduProgress": {
+     "base": null,
+     "done": 0,
+     "log": [],
+     "bonus": 0
+    },
+    "madness": [],
+    "baseMaxSAN": null,
+    "sanLoss": 0,
+    "skills": [],
+    "weapons": [],
+    "armors": [],
+    "vehicles": [],
+    "items": [],
+    "assets": {
+     "creditRating": 0,
+     "cash": 0,
+     "spendingLevel": "标准",
+     "assetsDescription": "",
+     "assets": [],
+     "currency": "$"
+    },
+    "background": {
+     "description": "",
+     "ideology": "",
+     "significantPeople": "",
+     "meaningfulPlaces": "",
+     "treasuredPossessions": "",
+     "traits": "",
+     "wounds": "",
+     "phobias": ""
+    },
+    "history": [],
+    "companions": [],
+    "mythos": {
+     "skill": 0,
+     "knowledge": "",
+     "entries": [],
+     "spells": []
+    },
+    "skillCap": 99,
+    "skillCapOcc": 99,
+    "skillCapInterest": 99,
+    "shareVisibility": "link",
+    "shareId": "",
+    "version": "v1.0",
+    "changeLog": [
+     {
+      "version": "v1.0",
+      "note": "创建角色",
+      "at": 1700000000000
+     }
+    ],
+    "createdAt": 1700000000000,
+    "updatedAt": 1700000000000
+   },
+   "randUsed": 8,
+   "seed": 3190828368,
+   "error": null
+  },
+  {
+   "name": "normalize#1617",
+   "fn": "normalize",
+   "args": {
+    "card": {
+     "id": "x19",
+     "skills": "oops",
+     "weapons": null,
+     "items": 3
+    }
+   },
+   "expect": {
+    "id": "x19",
+    "skills": [],
+    "weapons": [],
+    "items": [],
+    "pbCap": 480,
+    "userId": "local",
+    "ruleSystemId": "coc7",
+    "characterName": "",
+    "playerName": "",
+    "avatar": "",
+    "basicInfo": {
+     "era": "现代",
+     "eraCustom": "",
+     "age": "",
+     "gender": "男",
+     "genderCustom": "",
+     "residence": "",
+     "birthplace": "",
+     "occupationName": ""
+    },
+    "age": "",
+    "occupationId": "",
+    "occupationPicks": {},
+    "customOccupation": null,
+    "attributes": {
+     "str": "",
+     "con": "",
+     "siz": "",
+     "dex": "",
+     "app": "",
+     "int": "",
+     "pow": "",
+     "edu": "",
+     "luck": ""
+    },
+    "attributeMode": "random",
+    "attributeHistory": [],
+    "pbIncludeLuck": true,
+    "fate": {
+     "n": 5,
+     "rolled": false,
+     "options": [],
+     "picked": -1,
+     "rolledAt": 0
+    },
+    "eduProgress": {
+     "base": null,
+     "done": 0,
+     "log": [],
+     "bonus": 0
+    },
+    "derivedStats": {},
+    "status": {
+     "currentHP": 0,
+     "maxHP": 0,
+     "currentMP": 0,
+     "maxMP": 0,
+     "currentSAN": 0,
+     "maxSAN": 99,
+     "currentLuck": 0,
+     "body": "正常",
+     "mental": [
+      "正常"
+     ],
+     "dying": false,
+     "unconscious": false
+    },
+    "madness": [],
+    "baseMaxSAN": null,
+    "sanLoss": 0,
+    "armors": [],
+    "vehicles": [],
+    "assets": {
+     "creditRating": 0,
+     "cash": 0,
+     "spendingLevel": "标准",
+     "assetsDescription": "",
+     "assets": [],
+     "currency": "$"
+    },
+    "background": {
+     "description": "",
+     "ideology": "",
+     "significantPeople": "",
+     "meaningfulPlaces": "",
+     "treasuredPossessions": "",
+     "traits": "",
+     "wounds": "",
+     "phobias": ""
+    },
+    "history": [],
+    "companions": [],
+    "mythos": {
+     "skill": 0,
+     "knowledge": "",
+     "entries": [],
+     "spells": []
+    },
+    "skillCap": 99,
+    "skillCapOcc": 99,
+    "skillCapInterest": 99,
+    "shareVisibility": "link",
+    "shareId": "",
+    "version": "v1.0",
+    "changeLog": [
+     {
+      "version": "v1.0",
+      "note": "创建角色",
+      "at": 1700000000000
+     }
+    ],
+    "createdAt": 1700000000000,
+    "updatedAt": 1700000000000
+   },
+   "randUsed": 8,
+   "seed": 1550296833,
+   "error": null
+  },
+  {
+   "name": "normalize#1618",
+   "fn": "normalize",
+   "args": {
+    "card": {
+     "id": "x20",
+     "basicInfo": null,
+     "attributes": "x",
+     "status": 5,
+     "assets": [],
+     "background": 0,
+     "mythos": null
+    }
+   },
+   "expect": {
+    "id": "x20",
+    "basicInfo": {
+     "era": "现代",
+     "eraCustom": "",
+     "age": "",
+     "gender": "男",
+     "genderCustom": "",
+     "residence": "",
+     "birthplace": "",
+     "occupationName": ""
+    },
+    "attributes": {
+     "0": "x",
+     "str": "",
+     "con": "",
+     "siz": "",
+     "dex": "",
+     "app": "",
+     "int": "",
+     "pow": "",
+     "edu": "",
+     "luck": ""
+    },
+    "status": {
+     "currentHP": 0,
+     "maxHP": 0,
+     "currentMP": 0,
+     "maxMP": 0,
+     "currentSAN": 0,
+     "maxSAN": 99,
+     "currentLuck": 0,
+     "body": "正常",
+     "mental": [
+      "正常"
+     ],
+     "dying": false,
+     "unconscious": false
+    },
+    "assets": {
+     "creditRating": 0,
+     "cash": 0,
+     "spendingLevel": "标准",
+     "assetsDescription": "",
+     "assets": [],
+     "currency": "$"
+    },
+    "background": {
+     "description": "",
+     "ideology": "",
+     "significantPeople": "",
+     "meaningfulPlaces": "",
+     "treasuredPossessions": "",
+     "traits": "",
+     "wounds": "",
+     "phobias": ""
+    },
+    "mythos": {
+     "skill": 0,
+     "knowledge": "",
+     "entries": [],
+     "spells": []
+    },
+    "pbCap": 480,
+    "userId": "local",
+    "ruleSystemId": "coc7",
+    "characterName": "",
+    "playerName": "",
+    "avatar": "",
+    "age": "",
+    "occupationId": "",
+    "occupationPicks": {},
+    "customOccupation": null,
+    "attributeMode": "random",
+    "attributeHistory": [],
+    "pbIncludeLuck": true,
+    "fate": {
+     "n": 5,
+     "rolled": false,
+     "options": [],
+     "picked": -1,
+     "rolledAt": 0
+    },
+    "eduProgress": {
+     "base": null,
+     "done": 0,
+     "log": [],
+     "bonus": 0
+    },
+    "derivedStats": {},
+    "madness": [],
+    "baseMaxSAN": null,
+    "sanLoss": 0,
+    "skills": [],
+    "weapons": [],
+    "armors": [],
+    "vehicles": [],
+    "items": [],
+    "history": [],
+    "companions": [],
+    "skillCap": 99,
+    "skillCapOcc": 99,
+    "skillCapInterest": 99,
+    "shareVisibility": "link",
+    "shareId": "",
+    "version": "v1.0",
+    "changeLog": [
+     {
+      "version": "v1.0",
+      "note": "创建角色",
+      "at": 1700000000000
+     }
+    ],
+    "createdAt": 1700000000000,
+    "updatedAt": 1700000000000
+   },
+   "randUsed": 8,
+   "seed": 4204732594,
+   "error": null
+  },
+  {
+   "name": "normalize#1619",
+   "fn": "normalize",
+   "args": {
+    "card": {
+     "id": "x21",
+     "status": {
+      "mental": [
+       "正常"
+      ]
+     },
+     "madness": [
+      {
+       "id": "m9",
+       "type": "phobia",
+       "name": "x",
+       "permanent": false,
+       "rounds": 2,
+       "at": 1
+      }
+     ]
+    }
+   },
+   "expect": {
+    "id": "x21",
+    "status": {
+     "currentHP": 0,
+     "maxHP": 0,
+     "currentMP": 0,
+     "maxMP": 0,
+     "currentSAN": 0,
+     "maxSAN": 99,
+     "currentLuck": 0,
+     "body": "正常",
+     "mental": [
+      "正常"
+     ],
+     "dying": false,
+     "unconscious": false
+    },
+    "madness": [
+     {
+      "id": "m9",
+      "type": "phobia",
+      "name": "x",
+      "permanent": false,
+      "rounds": 2,
+      "at": 1
+     }
+    ],
+    "pbCap": 480,
+    "userId": "local",
+    "ruleSystemId": "coc7",
+    "characterName": "",
+    "playerName": "",
+    "avatar": "",
+    "basicInfo": {
+     "era": "现代",
+     "eraCustom": "",
+     "age": "",
+     "gender": "男",
+     "genderCustom": "",
+     "residence": "",
+     "birthplace": "",
+     "occupationName": ""
+    },
+    "age": "",
+    "occupationId": "",
+    "occupationPicks": {},
+    "customOccupation": null,
+    "attributes": {
+     "str": "",
+     "con": "",
+     "siz": "",
+     "dex": "",
+     "app": "",
+     "int": "",
+     "pow": "",
+     "edu": "",
+     "luck": ""
+    },
+    "attributeMode": "random",
+    "attributeHistory": [],
+    "pbIncludeLuck": true,
+    "fate": {
+     "n": 5,
+     "rolled": false,
+     "options": [],
+     "picked": -1,
+     "rolledAt": 0
+    },
+    "eduProgress": {
+     "base": null,
+     "done": 0,
+     "log": [],
+     "bonus": 0
+    },
+    "derivedStats": {},
+    "baseMaxSAN": null,
+    "sanLoss": 0,
+    "skills": [],
+    "weapons": [],
+    "armors": [],
+    "vehicles": [],
+    "items": [],
+    "assets": {
+     "creditRating": 0,
+     "cash": 0,
+     "spendingLevel": "标准",
+     "assetsDescription": "",
+     "assets": [],
+     "currency": "$"
+    },
+    "background": {
+     "description": "",
+     "ideology": "",
+     "significantPeople": "",
+     "meaningfulPlaces": "",
+     "treasuredPossessions": "",
+     "traits": "",
+     "wounds": "",
+     "phobias": ""
+    },
+    "history": [],
+    "companions": [],
+    "mythos": {
+     "skill": 0,
+     "knowledge": "",
+     "entries": [],
+     "spells": []
+    },
+    "skillCap": 99,
+    "skillCapOcc": 99,
+    "skillCapInterest": 99,
+    "shareVisibility": "link",
+    "shareId": "",
+    "version": "v1.0",
+    "changeLog": [
+     {
+      "version": "v1.0",
+      "note": "创建角色",
+      "at": 1700000000000
+     }
+    ],
+    "createdAt": 1700000000000,
+    "updatedAt": 1700000000000
+   },
+   "randUsed": 8,
+   "seed": 2564201059,
+   "error": null
+  },
+  {
+   "name": "normalize#1620",
+   "fn": "normalize",
+   "args": {
+    "card": {
+     "id": "x22",
+     "status": {
+      "mental": [
+       "正常"
+      ]
+     },
+     "madness": [
+      {
+       "id": "m8",
+       "type": "mania",
+       "name": "y",
+       "permanent": true,
+       "rounds": 0,
+       "at": 1
+      }
+     ]
+    }
+   },
+   "expect": {
+    "id": "x22",
+    "status": {
+     "currentHP": 0,
+     "maxHP": 0,
+     "currentMP": 0,
+     "maxMP": 0,
+     "currentSAN": 0,
+     "maxSAN": 99,
+     "currentLuck": 0,
+     "body": "正常",
+     "mental": [
+      "疯狂症状"
+     ],
+     "dying": false,
+     "unconscious": false
+    },
+    "madness": [
+     {
+      "id": "m8",
+      "type": "mania",
+      "name": "y",
+      "permanent": true,
+      "rounds": 0,
+      "at": 1
+     }
+    ],
+    "pbCap": 480,
+    "userId": "local",
+    "ruleSystemId": "coc7",
+    "characterName": "",
+    "playerName": "",
+    "avatar": "",
+    "basicInfo": {
+     "era": "现代",
+     "eraCustom": "",
+     "age": "",
+     "gender": "男",
+     "genderCustom": "",
+     "residence": "",
+     "birthplace": "",
+     "occupationName": ""
+    },
+    "age": "",
+    "occupationId": "",
+    "occupationPicks": {},
+    "customOccupation": null,
+    "attributes": {
+     "str": "",
+     "con": "",
+     "siz": "",
+     "dex": "",
+     "app": "",
+     "int": "",
+     "pow": "",
+     "edu": "",
+     "luck": ""
+    },
+    "attributeMode": "random",
+    "attributeHistory": [],
+    "pbIncludeLuck": true,
+    "fate": {
+     "n": 5,
+     "rolled": false,
+     "options": [],
+     "picked": -1,
+     "rolledAt": 0
+    },
+    "eduProgress": {
+     "base": null,
+     "done": 0,
+     "log": [],
+     "bonus": 0
+    },
+    "derivedStats": {},
+    "baseMaxSAN": null,
+    "sanLoss": 0,
+    "skills": [],
+    "weapons": [],
+    "armors": [],
+    "vehicles": [],
+    "items": [],
+    "assets": {
+     "creditRating": 0,
+     "cash": 0,
+     "spendingLevel": "标准",
+     "assetsDescription": "",
+     "assets": [],
+     "currency": "$"
+    },
+    "background": {
+     "description": "",
+     "ideology": "",
+     "significantPeople": "",
+     "meaningfulPlaces": "",
+     "treasuredPossessions": "",
+     "traits": "",
+     "wounds": "",
+     "phobias": ""
+    },
+    "history": [],
+    "companions": [],
+    "mythos": {
+     "skill": 0,
+     "knowledge": "",
+     "entries": [],
+     "spells": []
+    },
+    "skillCap": 99,
+    "skillCapOcc": 99,
+    "skillCapInterest": 99,
+    "shareVisibility": "link",
+    "shareId": "",
+    "version": "v1.0",
+    "changeLog": [
+     {
+      "version": "v1.0",
+      "note": "创建角色",
+      "at": 1700000000000
+     }
+    ],
+    "createdAt": 1700000000000,
+    "updatedAt": 1700000000000
+   },
+   "randUsed": 8,
+   "seed": 923669524,
+   "error": null
+  },
+  {
+   "name": "normalize#1621",
+   "fn": "normalize",
+   "args": {
+    "card": {
+     "id": "x23",
+     "ruleSystemId": "coc7",
+     "characterName": "旧",
+     "playerName": "旧",
+     "age": "52",
+     "basicInfo": {
+      "age": "52",
+      "era": ""
+     },
+     "attributes": {
+      "str": "55",
+      "con": "60",
+      "siz": "65",
+      "dex": "50",
+      "app": "45",
+      "int": "70",
+      "pow": "60",
+      "edu": "75",
+      "luck": "40"
+     },
+     "skillCap": 75,
+     "status": {
+      "currentHP": 12,
+      "maxHP": 12,
+      "currentMP": 12,
+      "maxMP": 12,
+      "currentSAN": 60,
+      "maxSAN": 60,
+      "body": "濒死",
+      "mental": "临时疯狂"
+     },
+     "background": {
+      "phobias": "【恐惧症】幽闭恐惧症：怕黑\n【狂躁症】沐浴癖：描述"
+     }
+    }
+   },
+   "expect": {
+    "id": "x23",
+    "ruleSystemId": "coc7",
+    "characterName": "旧",
+    "playerName": "旧",
+    "age": "52",
+    "basicInfo": {
+     "era": "",
+     "eraCustom": "",
+     "age": "52",
+     "gender": "男",
+     "genderCustom": "",
+     "residence": "",
+     "birthplace": "",
+     "occupationName": ""
+    },
+    "attributes": {
+     "str": "55",
+     "con": "60",
+     "siz": "65",
+     "dex": "50",
+     "app": "45",
+     "int": "70",
+     "pow": "60",
+     "edu": "75",
+     "luck": "40"
+    },
+    "skillCap": 75,
+    "status": {
+     "currentHP": 12,
+     "maxHP": 12,
+     "currentMP": 12,
+     "maxMP": 12,
+     "currentSAN": 60,
+     "maxSAN": 60,
+     "currentLuck": 0,
+     "body": "重伤",
+     "mental": [
+      "临时疯狂",
+      "疯狂症状"
+     ],
+     "dying": true,
+     "unconscious": false,
+     "_inited": true,
+     "_luckTouched": false
+    },
+    "background": {
+     "description": "",
+     "ideology": "",
+     "significantPeople": "",
+     "meaningfulPlaces": "",
+     "treasuredPossessions": "",
+     "traits": "",
+     "wounds": "",
+     "phobias": "【恐惧症】幽闭恐惧症：怕黑\n【狂躁症】沐浴癖：描述"
+    },
+    "skillCapOcc": 75,
+    "skillCapInterest": 75,
+    "pbCap": 480,
+    "userId": "local",
+    "avatar": "",
+    "occupationId": "",
+    "occupationPicks": {},
+    "customOccupation": null,
+    "attributeMode": "random",
+    "attributeHistory": [],
+    "pbIncludeLuck": true,
+    "fate": {
+     "n": 5,
+     "rolled": false,
+     "options": [],
+     "picked": -1,
+     "rolledAt": 0
+    },
+    "eduProgress": {
+     "base": null,
+     "done": 0,
+     "log": [],
+     "bonus": 0
+    },
+    "derivedStats": {},
+    "madness": [
+     {
+      "id": "mloyw3v28k6dk",
+      "type": "phobia",
+      "name": "幽闭恐惧症",
+      "en": "Claustrophobia",
+      "desc": "对于处在封闭的空间中的恐惧。",
+      "permanent": true,
+      "rounds": 0,
+      "at": 1700000000000,
+      "bg": true
+     },
+     {
+      "id": "mloyw3v28kq2m",
+      "type": "mania",
+      "name": "沐浴癖",
+      "en": "Ablutomania",
+      "desc": "执着于清洗自己。",
+      "permanent": true,
+      "rounds": 0,
+      "at": 1700000000000,
+      "bg": true
+     }
+    ],
+    "baseMaxSAN": null,
+    "sanLoss": 0,
+    "skills": [],
+    "weapons": [],
+    "armors": [],
+    "vehicles": [],
+    "items": [],
+    "assets": {
+     "creditRating": 0,
+     "cash": 0,
+     "spendingLevel": "标准",
+     "assetsDescription": "",
+     "assets": [],
+     "currency": "$"
+    },
+    "history": [],
+    "companions": [],
+    "mythos": {
+     "skill": 0,
+     "knowledge": "",
+     "entries": [],
+     "spells": []
+    },
+    "shareVisibility": "link",
+    "shareId": "",
+    "version": "v1.0",
+    "changeLog": [
+     {
+      "version": "v1.0",
+      "note": "创建角色",
+      "at": 1700000000000
+     }
+    ],
+    "createdAt": 1700000000000,
+    "updatedAt": 1700000000000
+   },
+   "randUsed": 10,
+   "seed": 3578105285,
+   "error": null
+  }
+ ]
+}
