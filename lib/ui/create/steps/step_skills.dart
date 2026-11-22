@@ -893,6 +893,21 @@ class _PointSheetState extends State<_PointSheet> {
                 keyPrefix: 'int',
                 onStep: (d) => _apply('int', d),
               ),
+              // ★ 2.47.1 修：普通技能在「修改已保存角色」时也要有成长点。
+              //   2.47.0 把成长点写死在上面 `growthOnly` 分支里，导致除了
+              //   克苏鲁神话之外的技能全都看不到成长点（用户真机实测报障）。
+              //   成长点按需求只在这一档出现（车卡流程 allowGrowth=false）。
+              if (widget.allowGrowth) ...<Widget>[
+                const SizedBox(height: 10),
+                _PointStepper(
+                  label: '成长点',
+                  value: jsNum(skill['growth']),
+                  remain: null, // 成长点不来自点数池，没有「可用 N」的说法
+                  color: Palette.arcane,
+                  keyPrefix: 'growth',
+                  onStep: (d) => _apply('growth', d),
+                ),
+              ],
             ],
             if (_error != null) ...<Widget>[
               const SizedBox(height: 10),

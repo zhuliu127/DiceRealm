@@ -398,6 +398,169 @@ void main() {
   // ==========================================================
   const List<double> _scales = <double>[1.0, 1.3, 1.5, 2.0];
 
+  // ==========================================================
+  // E · 普通技能也有成长点（2.47.1 真机报障回归）
+  //
+  // 2.47.0 把「成长点」写死在 `growthOnly` 分支里，普通技能（如会计/侦查）
+  // 在「修改已保存角色」只看到职业点 + 兴趣点 —— 用户真机实测报障。
+  // 下列 N1/N2 钉死「普通技能也要有、车卡不许有」，N3~N5 钉死 domain 语义
+  // 在 UI 层同样成立（不受池限制、仍受上限），N6 防止修反把仅成长技能改坏。
+  // ==========================================================
+  group('E · 普通技能成长点', () {
+    testWidgets('N1 普通技能 + allowGrowth: true → occ/int/growth 三行同时出现',
+        (WidgetTester tester) async {
+      final card = _card();
+      final acc = _skill(card, 'accounting');
+      await _pumpSheet(
+        tester,
+        SkillPointSheet(card: card, skill: acc, allowGrowth: true),
+      );
+
+      expect(find.byKey(const Key('occ_plus')), findsOneWidget,
+          reason: '普通技能应保留职业点步进器');
+      expect(find.byKey(const Key('int_plus')), findsOneWidget,
+          reason: '普通技能应保留兴趣点步进器');
+      expect(find.byKey(const Key('growth_plus')), findsOneWidget,
+          reason: '2.47.0 回归点：普通技能在修改态必须有成长点步进器');
+      expect(find.byKey(const Key('growth_minus')), findsOneWidget);
+
+      expect(find.text('不限制'), findsOneWidget,
+          reason: '成长点不来自点数池，remain=null 应显示「不限制」');
+      expect(find.text('这项技能只能通过成长点提升。'), findsNothing,
+          reason: '普通技能不是仅成长技能，不该出现该提示');
+      expect(_textOf(tester, 'growth_value_text'), '0');
+    });
+
+    testWidgets('N2 普通技能 + allowGrowth: false（车卡）→ 只有 occ/int',
+        (WidgetTester tester) async {
+      final card = _card();
+      final acc = _skill(card, 'accounting');
+      await _pumpSheet(tester, SkillPointSheet(card: card, skill: acc));
+
+      expect(find.byKey(const Key('occ_plus')), findsOneWidget);
+      expect(find.byKey(const Key('int_plus')), findsOneWidget);
+      expect(find.byKey(const Key('growth_plus')), findsNothing,
+          reason: '车卡流程不允许出现成长点入口');
+      expect(find.byKey(const Key('growth_minus')), findsNothing);
+      expect(find.text('成长点'), findsNothing);
+    });
+
+    testWidgets('N3 成长点加减落账：+5 落 growth 与 total，-5 回 0',
+        (WidgetTester tester) async {
+      final card = _card();
+      final acc = _skill(card, 'accounting');
+      final base = jsNum(acc['base']);
+      await _pumpSheet(
+        tester,
+        SkillPointSheet(card: card, skill: acc, allowGrowth: true),
+      );
+
+      expect(jsNum(acc['growth']), 0);
+      await _tapKey(tester, 'growth_plus');
+      expect(jsNum(acc['growth']), 5, reason: '步长应为 genStep=5');
+      expect(jsNum(acc['total']), base + 5,
+          reason: 'growth 必须反映到最终值');
+      expect(_textOf(tester, 'growth_value_text'), '5');
+      expect(find.byKey(const Key('point_error')), findsNothing);
+
+      await _tapKey(tester, 'growth_minus');
+      expect(jsNum(acc['growth']), 0);
+      expect(jsNum(acc['total']), base);
+      expect(_textOf(tester, 'growth_value_text'), '0');
+    });
+
+    testWidgets('N4 点数池 remain=0 时成长点仍可加，不查池',
+        (WidgetTester tester) async {
+      final card = _card(attr: 0); // 属性全 0 → 职业池 / 兴趣池总量都是 0
+      final acc = _skill(card, 'accounting');
+      expect(jsNum(occupationPoints(card)['remain']), 0);
+      expect(jsNum(interestPoints(card)['remain']), 0);
+
+      await _pumpSheet(
+        tester,
+        SkillPointSheet(card: card, skill: acc, allowGrowth: true),
+      );
+      expect(find.text('可用 0'), findsNWidgets(2),
+          reason: '职业点、兴趣点两行都应显示「可用 0」');
+
+      await _tapKey(tester, 'growth_plus');
+      expect(find.byKey(const Key('point_error')), findsNothing,
+          reason: '成长点不来自点数池，池为 0 也不该被拒');
+      expect(jsNum(acc['growth']), 5);
+      expect(jsNum(acc['total']), jsNum(acc['base']) + 5);
+    });
+
+    testWidgets('N5 成长点仍受技能上限：total 到 cap 后再加报 point_error',
+        (WidgetTester tester) async {
+      final card = _card();
+      final acc = _skill(card, 'accounting');
+      final cap = capOf(card, acc);
+      acc['growth'] = cap - jsNum(acc['base']);
+      recompute(acc);
+      expect(jsNum(acc['total']), cap, reason: '夹具应把 total 顶到 cap');
+
+      await _pumpSheet(
+        tester,
+        SkillPointSheet(card: card, skill: acc, allowGrowth: true),
+      );
+      await _tapKey(tester, 'growth_plus');
+
+      expect(find.byKey(const Key('point_error')), findsOneWidget,
+          reason: '成长点也不能突破上限');
+      expect(_textOf(tester, 'point_error'), contains('最多到'));
+      expect(jsNum(acc['growth']), cap - jsNum(acc['base']),
+          reason: '被拒后成长值不变');
+      expect(jsNum(acc['total']), cap);
+    });
+
+    testWidgets('N6 growthOnly 回归钉死：true 只有 growth / false 只有车卡原文',
+        (WidgetTester tester) async {
+      final card = _card();
+      final cth = _skill(card, 'cthulhu');
+
+      await _pumpSheet(
+        tester,
+        SkillPointSheet(card: card, skill: cth, allowGrowth: true),
+      );
+      expect(find.byKey(const Key('growth_plus')), findsOneWidget);
+      expect(find.byKey(const Key('occ_plus')), findsNothing);
+      expect(find.byKey(const Key('int_plus')), findsNothing);
+      expect(find.text('这项技能只能通过成长点提升。'), findsOneWidget);
+
+      await _pumpSheet(tester, SkillPointSheet(card: card, skill: cth));
+      expect(
+        find.text('按规则书，这项技能在车卡时不能用职业点 / 兴趣点加点，只能通过「成长」获得。'),
+        findsOneWidget,
+        reason: '车卡文案必须一字不改',
+      );
+      expect(find.byKey(const Key('growth_plus')), findsNothing);
+      expect(find.byKey(const Key('occ_plus')), findsNothing);
+      expect(find.text('不限制'), findsNothing);
+    });
+
+    testWidgets('N7 三行弹层 360dp × 四档 textScaler 无溢出',
+        (WidgetTester tester) async {
+      final card = _card();
+      final acc = _skill(card, 'accounting');
+      addTearDown(
+          () => tester.platformDispatcher.clearTextScaleFactorTestValue());
+      for (final scale in _scales) {
+        tester.platformDispatcher.textScaleFactorTestValue = scale;
+        await _pumpSheet(
+          tester,
+          SkillPointSheet(card: card, skill: acc, allowGrowth: true),
+          size: const Size(360, 640),
+        );
+        expect(find.byKey(const Key('growth_plus')), findsOneWidget,
+            reason: 'textScaler $scale 下成长行未渲染，溢出断言会变成空转');
+        expect(tester.takeException(), isNull,
+            reason: '普通技能三行弹层（occ/int/growth）在 textScaler $scale 下溢出');
+        await tester.pumpWidget(const SizedBox.shrink());
+        await tester.pump();
+      }
+    });
+  });
+
   group('textScaler 溢出硬约束', () {
     testWidgets('SkillsEditor 主区', (WidgetTester tester) async {
       final card = _card();
