@@ -1,0 +1,187 @@
+================================================================================
+骰境 TRPG · 原生重写 P0（地基：数据 + 规则层）交付报告
+================================================================================
+日期        2026-11-08
+工程        dice-realm（Flutter 3.47.9 / Dart 3.13.7）
+源码（只读） coc7th-card-app/web/js
+本期范围    只做规则层（纯 Dart），不做任何 UI
+验收口径    dart analyze 无 issue；flutter test 全绿；lib/domain 无 package:flutter
+
+
+一、交付清单（路径 + 行数）
+--------------------------------------------------------------------------------
+lib/domain/                                  ← 纯 Dart，禁止 package:flutter
+  js_compat.dart                115   JS 语义替身（parseInt/Math.round/真值/JSON 取值）
+  character.dart                263   Character 数据类 + newCharacter + defaultSettings + uid
+  dice.dart                     100   D100 / 奖励惩罚骰 / 掷骰表达式 / 成功等级
+  rules_coc7.dart               785   属性表 / 年龄调整 / 派生 / DB 体格 / 技能上限 / 雷达 / 校验
+  occupation.dart              1112   职业技能文本解析 / 属性公式 / 职业点 / 职业相关校验
+  skillmodel.dart               336   技能实例 / 动态基础值 / syncSkills / 加点约束 / 统计
+  engine.dart                   352   recalc（含教育进步作废守卫）/ effAttrs / validate / checkList
+  madness.dart                  477   双疯狂表 / 恐惧症 100 / 狂躁症 100 / 背景症状桥
+  normalize.dart                241   store.js#normalize 的 8 项幂等迁移 + bodyForHp
+  data/skills.dart             1016   COC_SKILLS          54 条
+  data/occupations.dart        2998   COC_OCCUPATIONS    230 条
+  data/weapons.dart            1568   COC_WEAPONS        104 条
+  data/armors.dart             1030   COC_ARMORS          73 条
+  data/vehicles.dart            638   COC_VEHICLES        63 条
+  data/spells.dart              713   COC_SPELLS          61 条
+  data/madness.dart            1264   COC_MADNESS   恐惧 100 + 狂躁 100 + instantSymptoms
+  data/assets.dart              270   COC_ASSETS     livingLevels 6 + currencies
+
+test/
+  support/oracle.dart           165   预言机测试基础设施（同源 LCG / 固定时钟 / 逐字段比较）
+  oracle_dice_test.dart          33
+  oracle_rules_test.dart         73
+  oracle_occupation_test.dart    75
+  oracle_skillmodel_test.dart   116
+  oracle_engine_test.dart       137
+  oracle_madness_test.dart      135
+  oracle_normalize_test.dart    191   （含「normalize 幂等」property-based 断言）
+  domain_purity_test.dart        53   （CI 闸门：domain 层不得被 Flutter / dart:ui / dart:io 污染）
+  fixtures/*.json               7 个  1621 例期望值（约 1.9 MB）
+
+tool/oracle/
+  load.js                        95   把原 JS 原样载入 Node vm 沙箱（monkey-patch 随机源/时钟）
+  gen_data.js                   110   data/*.js → lib/domain/data/*.dart（键名逐字保留）
+  dump_fixtures.js              843   用 JS 算期望值 → test/fixtures/*.json
+
+Dart 规则层 3,781 行 + 数据表 9,497 行；测试 978 行；oracle 工具 1,048 行。
+
+
+二、⭐ 等价性测试：「JS 当预言机」
+--------------------------------------------------------------------------------
+做法（任务书第 3 条）：
+  1. tool/oracle/load.js 用 Node vm 建立沙箱，**不修改原码一个字符**地加载
+     8 个数据文件 + dice/rules-coc7/occupation/skillmodel/engine/madness/store。
+  2. 沙箱里 monkey-patch 两个不确定源：
+       Math.random → LCG(1664525/1013904223)，可按 case 复位 seed，并统计调用次数
+       Date.now    → 固定 1700000000000
+  3. 对确定性输入集调用规则函数，把返回值 dump 成 JSON，同时记录 seed 与 randUsed。
+  4. Dart 侧用**逐位相同**的 LCG 复现同一条随机序列；每个 case 结束时除了比对返回值，
+     还断言「随机数消耗个数」也一致 —— 消耗数不同说明两边的随机调用顺序已经分叉。
+  5. 比较是逐字段深比较，键集合必须完全相等（多一个 null 键也算不一致）。
+
+用例分布（共 1621 例，全部通过；2 例因原码自身抛异常跳过，见第四节 A）：
+  dice.json        283  成功等级 15 掷值 × 17 技能值 = 255（含 01 / 100 / 96-100 动态阈值），
+                        奖励/惩罚骰 -5..5，掷骰表达式 15 种
+  rules.json       477  年龄 adjustment 22 年龄 × 6 属性组（含 3 / 15 / 50 / 90 边界）+ 教育增益 5、
+                        派生属性 132、ageRule/ageProgressChecks 40、spreadLoss 9、dbBuild 27
+                        （含 444 以上外推）、skillCapOf 60（本职/兴趣/母语/信用/基础值兜底）、
+                        教育进步检定 9、随机属性 11、购点校验 7、雷达 2、三项校验器 21、
+                        属性名解析 7
+  occupation.json  507  **全部 230 个职业**的本职技能文本解析 + 解析结果回读，
+                        技能名解析 43（别名/长名优先/组名）、职业属性公式 60、职业点数 22×5、
+                        职业相关校验器 44、任选去重 4
+  skillmodel.json  117  动态基础值 25、实例构造/键规则 37、syncSkills 3、加点约束 20、统计 6
+  engine.json       70  recalc 16（含教育进步作废守卫 4 条路径）、校验清单 6×10、属性求和 18
+  madness.json     142  即时表 24、总结表 24、随机疯狂 12、背景文本 3、查表 39、数组操作 30
+  normalize.json    25  8 项迁移全覆盖（空对象 → 极端脏数据），另有独立「幂等」断言：
+                        25 张老卡 normalize 两遍，第二遍必须零变化
+
+结论：Dart 输出与 JS 输出**逐字段相等**，随机序列与时钟也完全对齐。
+
+
+三、自检结果（原始输出）
+--------------------------------------------------------------------------------
+$ dart analyze                    （在 dice-realm 下）
+Analyzing dice-realm...
+No issues found!
+
+$ flutter test
+00:00 +0: loading .../test/domain_purity_test.dart
+00:03 +141: All tests passed!          ← 141 个测试组（覆盖 1621 个 fixture 用例）
+
+$ grep -rn "package:flutter" lib/domain
+（无输出，符合硬性约束 1）
+
+$ node tool/oracle/dump_fixtures.js
+dice.json               283 例
+rules.json              477 例  ⚠️ 原码抛异常 2 例：validatePointBuy → ATT_MAP is not defined
+occupation.json         507 例
+skillmodel.json         117 例
+engine.json              70 例
+madness.json            142 例
+normalize.json           25 例
+
+
+四、原码里值得记录的坑（只记录，本次**一处都没改**）
+--------------------------------------------------------------------------------
+A. 【真 bug，会抛异常】rules-coc7.js:465 / 468 引用了不存在的变量 `ATT_MAP`
+   上下文是 `validatePointBuy` 的错误文案：`ATT_MAP[k].name`。文件顶部定义的是
+   `ATTR_MAP`。后果：只要用户把任何一项属性输成「不在 15-90」或「不是 5 的倍数」，
+   这个函数直接 ReferenceError 抛出，不是返回错误列表。
+   → Dart 侧按显然的意图实现（用 attrMap），这 2 个 case 无法与 JS 比对，已在
+     fixture 里标记 error 并跳过。**建议单独开一个修复单**（改一个字母即可）。
+   → 这也说明「购点校验」在现网很可能是靠外层 try/catch 兜着走的。
+
+B. 【高风险，会复活角色】engine.js:125-127 的补值守卫
+   `if (ready && st.currentHP === 0 && !st._hpTouched) st.currentHP = d.maxHP;`
+   `_hpTouched` 全项目**只在 app.js 的数字输入框里被写**（:1475-1479）。也就是说：
+   只要 HP 归零不是通过那个输入框发生的（跑团受伤、房间状态写回、导入存档），
+   下一次 recalc() 就会把 HP 补回满值 —— 濒死/死亡的角色可能被「治疗」。
+   Dart 侧照抄了这个行为（含 _hpTouched/_mpTouched/_sanTouched），**没有修**。
+   移植 P4/P5 时必须记住：房间侧写回状态前要么置 _hpTouched，要么绕开 recalc 的补值。
+
+C. 【语义分裂】SAN 上限有两套并存
+   `derived.maxSAN` = POW（rules-coc7.js#derived），`COC7.maxSan()` = 99 − 克苏鲁神话，
+   `status.maxSAN` = max(0, POW − sanLoss)。三者都不是同一个东西，且 recalc 里
+   `sanMythosCap` 只作提示、不再夹当前值。移植时千万别「统一」成一个。
+
+D. 【隐式 JS 行为】normalize 的 `Object.assign({}, base[k], c[k] || {})`
+   当 `c[k]` 是被历史 bug 写坏的字符串/数组时，JS 会把每个字符/下标当成字段键塞进去
+   （`attributes: 'x'` → 多出一个 `'0': 'x'`）。Dart 侧专门写了 `_jsObjectAssign`
+   复刻这个怪癖，否则脏数据迁移结果会与老版本不一致。
+
+E. 【注入点不全】madness.js#roll 的 `rounds` 用的是 `Math.random`，不是传入的 `rng`
+   可注入随机源只作用于「选哪一条症状」，持续轮数永远不可控。
+   影响：任何想「固定种子复现一次疯狂」的测试或回放都做不到完整可复现。
+   Dart 侧照抄（同样只用全局随机源）。
+
+F. 【解析边界】occupation.js#parseSingle 的 `tail` 分支会把括号后的文字当成子类名
+   `手艺（烹饪）额外说明` → `sub = '额外说明'`（而不是 烹饪）。
+   现网数据里没触发，但职业文本一旦这么写就会静默错标。
+
+G. 【有意的取舍，别当 bug 修】两条「看起来不一致」的规则
+   · 年龄扣减：str/con/dex（或 15-19 岁的 str/siz）有 **15 下限**，但 **APP 没有下限**，
+     `loss.app = min(raw.app, appLoss)` 可以扣到 0。
+   · 技能上限：`skillCapOf` 里 `if (base > cap) cap = min(base, 99)` —— 基础值高于
+     用户设的上限时**不报超上限**（基础值不是用点数买的）。母语/信用评级一律按 99。
+   · 任选去重只在 type==='free' 的块之间做，choice 之间重复不算错（注释说明：早先
+     不分类型导致 12 张彩蛋卡被误判不合格）。
+
+H. 【反直觉但必须保留】AGE_TABLE 的 15-19 岁那行 `movLoss: 0` 而 `note` 写着
+   「骰 2 次幸运取较大值」—— 幸运重掷**不在规则层实现**，只在 UI/随机卡里做。
+   所以规则层算 15 岁不会动 LUCK。
+
+I. 【顺序敏感】parseSkillText 的 11 个正则替换顺序、normalize 的迁移顺序
+   （迁移必须早于补默认值；背景症状入结构化必须最后）都是**语义的一部分**，
+   Dart 侧逐条保留并加了注释，后续任何人「整理正则」都会破坏 230 个职业的解析结果。
+
+
+五、刻意保留的结构差异（Dart 没有全局对象）
+--------------------------------------------------------------------------------
+1. JS 的 `COC7.validators.{occupationChoices, skillPoints, skillCap, creditRating}`
+   反向依赖 `CocOccupation`，构成全局环。Dart import 不能成环，故这 4 个校验器
+   放在 occupation.dart（函数名、文案、输出形状逐字不变）。engine.dart#validate
+   负责组合，对外行为与 `Engine.validate` 一致（有 fixture 覆盖）。
+2. `occupation.attrsFor()` 直接调 rules_coc7.effectiveAttrs（结果与 Engine.effAttrs
+   相同，后者只是多一层指纹缓存），避免 occupation → engine 的循环 import。
+3. 所有规则函数返回 `Map<String, Object?>`（键名与 JS 对象逐字一致）而不是强类型类，
+   唯一例外是 Character（包在 Map 外的视图）。这是为了让 oracle 比对不需要写映射层，
+   也为了让老存档「字段可缺省」的能力原样保留。
+4. `skillmodel._randBase36Suffix` 是 `Math.random().toString(36).slice(2,8)` 的近似
+   （逐位乘 36 截断，V8 用的是最短往返表示）。只在「自定义技能没给名字」的兜底分支
+   产生 6 位随机后缀，不参与任何规则计算，不影响存档兼容。
+
+
+六、复现方式
+--------------------------------------------------------------------------------
+  cd dice-realm
+  node tool/oracle/gen_data.js        # 重新生成数据表（仅当 web/js/data/*.js 变了）
+  node tool/oracle/dump_fixtures.js   # 重新生成期望值（仅当规则改了）
+  flutter test                        # 141 组 / 1621 例
+
+  注：本机跑 flutter test 需要 NO_PROXY=127.0.0.1,localhost，否则 flutter_tester
+      的 WebSocket 会被 HTTP_PROXY 拦掉（"Invalid WebSocket upgrade request"）。
+================================================================================

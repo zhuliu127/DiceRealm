@@ -1,0 +1,47 @@
+%% P5 时序图 A：点掷骰 → intent → Host 结算 → apply → plan → LocalLoopback → client.receive → 重建 UI
+%% 源：_p5_design.md §4.1
+
+sequenceDiagram
+    autonumber
+    actor U as 玩家
+    participant DB as GpDiceBar<br/>(块 12 PL / 块 11 KP)
+    participant LS as RoomUiLocal
+    participant C as RoomController
+    participant S as LocalLoopbackSession
+    participant H as RoomHost
+    participant R as RoomRulesPort<br/>(CocRules)
+    participant L as RoomLog
+    participant CL as RoomClient<br/>(本人)
+    participant CO as RoomClient<br/>(其他玩家)
+    participant V as view/ 纯函数
+    participant UI as AnimatedBuilder<br/>各块
+
+    U->>DB: 点 D100（惩罚骰 +2）
+    DB->>LS: setPenalty(2)（S3：互斥，bonus 归 0）
+    LS-->>DB: notifyListeners()（只重画骰子条）
+    U->>DB: 点「掷骰」
+    DB->>C: sendIntent('dice', {expr:'1D100', direct:true, bonus:0, penalty:2})
+    Note over C: gate 不拦（13 个 INTENT 不经 POLICY）<br/>只判角色：旁观者直接 notice 并 return
+    C->>S: sendIntent(op, p)
+    S->>H: intent(seat, {op:'dice', p})
+    Note over H: role = 按 seat 判定（host⇒kp）<br/>locked 判据：撕卡/疯狂发作/昏迷 → 只放行白名单
+    H->>R: diceDirect → rules.check({base, bonus:0, penalty:2, ...})
+    R-->>H: {value: 42, levelKey: 'hard', levelText: '困难成功', rolls, detail}
+    Note over H: ★ 客户端自报的 p['result'] 根本不进这条路径<br/>（F4 的同一保证）
+    H->>L: apply(RoomEvent(t:'dice', p, vis:'public'))
+    L-->>H: LogRecord(seq=17)
+    Note over H: reduceRoomState 落 state.dice<br/>_accumulatePrivate 只在 SEAT 时记账
+    H-->>S: SendPlan 列表（to:'*' 广播 + 在线玩家 skip）
+    S->>S: pumpPlans(plans)：sentLog.add(...)
+    par 广播到每个客户端
+        S->>CL: receive({k:'evt', seq:17, t:'dice', p})
+        CL->>CL: gate(17) —— 连续 → lastSeq=17
+        CL->>CL: reduceRoomState(state, evt, vis:null)
+        S->>CO: receive(同上)
+        CO->>CO: gate + reduce
+    end
+    S->>S: notifyListeners()（★ KP 侧 state 已变，也要通知）
+    S-->>UI: RoomScope 依赖变化 → 受影响块 rebuild
+    UI->>V: collectFeeds(state, limit:120)
+    V-->>UI: [FeedItem(kind:dice, text:'1D100 → 42 · 困难成功')]
+    UI-->>U: 记录栏出现骰子气泡（★ 结果来自权威端，UI 从未本地掷）

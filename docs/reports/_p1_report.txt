@@ -1,0 +1,125 @@
+================================================================================
+骰境 TRPG · 原生重写 P1（App 外壳 + 首页 + 新建角色全流程）交付报告
+================================================================================
+日期        2026-11-08
+工程        dice-realm（Flutter 3.47.9 / Dart 3.13.7）
+约束        lib/domain/ 只读（未改动一个字节）；无 WebView / 无 html 渲染
+
+
+一、交付清单（路径 + 行数）
+--------------------------------------------------------------------------------
+lib/main.dart                        19   入口：先读卡再起 UI
+lib/app.dart                         56   MaterialApp + 三条路由（/、/create、/card/<id>）
+lib/theme.dart                      217   深色主题（取色自 web/css/app.css 的 :root）+ AppBackground
+lib/repo/character_repo.dart        242   仓库：内存缓存 + JSON 文件后端 + 内存后端（测试）
+lib/repo/repo_scope.dart             39   RepoScope（InheritedNotifier）+ 路由名常量
+lib/ui/attr_meta.dart                29   属性 key / 中文名 / 缩写（取自 domain 属性表）
+lib/ui/widgets.dart                 283   SectionCard / StatTile / EmptyState / RippedBadge / Pill …
+lib/ui/card_view.dart                90   展示口径（职业名 / HP / SAN / bodyView / mentalText）
+lib/ui/home_page.dart               277   首页：已保存的角色卡 + 英灵殿 + FAB
+lib/ui/card_detail_page.dart        326   角色卡详情（只读：概要/状态/属性/派生/技能/背景）
+lib/ui/create/chargen_logic.dart    256   车卡纯逻辑（属性闸门 / 勾选 / 一键配点）
+lib/ui/create/create_flow_page.dart 350   5 步向导骨架：状态、步骤校验、保存
+lib/ui/create/steps/step_rules.dart 157   ① 规则系统
+lib/ui/create/steps/step_basics.dart357   ② 基础信息 + 可搜索职业选择器（230 个）
+lib/ui/create/steps/step_attrs.dart 338   ③ 属性分配（点数分配 / 随机掷骰）
+lib/ui/create/steps/step_skills.dart794   ④ 职业技能（四类要求块 + 加点弹层 + 一键分配）
+lib/ui/create/steps/step_summary.dart219  ⑤ 概要（派生值 + 10 项完成度检查）
+
+lib 合计 4,049 行（其中 P0 的 domain 层 13,278 行未计入）。
+
+test/support/app_harness.dart        52   临时目录仓库 / 内存仓库 / 大屏测试窗口
+test/repo_test.dart                 144   6 组：落盘、跨实例读回、英灵殿分区、删除、老结构迁移、坏 JSON
+test/chargen_logic_test.dart        166   13 组：属性闸门、体检、一键配点、勾选上限、年龄写回
+test/create_flow_widget_test.dart   206   7 组：全流程保存、非法属性拦截×2、点数未分配拦截、英灵殿×2、取消
+test 合计 568 行（P0 的 978 行 domain 测试未计入）。
+
+依赖新增：path_provider（用于应用文档目录）。未引入 WebView / html / 任何渲染引擎。
+
+
+二、测试与自检结果（原始输出）
+--------------------------------------------------------------------------------
+$ dart analyze
+Analyzing dice-realm...
+No issues found!
+
+$ flutter test
+00:08 +166: All tests passed!
+  · 140 组 = P0 的 domain oracle 等价性测试（1621 个用例，全等，未被破坏）
+  ·  26 组 = P1 新增（repo 6 / chargen_logic 13 / create_flow 7）
+
+$ flutter build apk --debug
+Running Gradle task 'assembleDebug'...   511.9s
+√ Built build\app\outputs\flutter-apk\app-debug.apk
+  路径：dice-realm/build/app/outputs/flutter-apk/app-debug.apk
+  大小：190,660,979 字节（约 181.8 MB；debug 含 3 个 ABI + 调试符号，属正常体积）
+
+  注：本机需 export ANDROID_HOME=/d/dev/android-sdk 才能构建（local.properties 里
+      有 sdk.dir，但 flutter 工具链仍要求环境变量）。未改动 android/ 下任何文件。
+
+
+三、实现要点（与老产品的关系）
+--------------------------------------------------------------------------------
+1. 数据契约一字未改
+   卡片仍然是 `newCharacter()` 造出来的那套 Map（字段名、嵌套、类型全同），
+   repo 落盘前统一走 domain 的 `normalize()` → `recalc()`：
+     · normalize 补齐老结构（幂等）
+     · recalc 重算 HP/MP/SAN/MOV/DB，保证存进去的卡是自洽的
+   所以老存档的 JSON 可以直接喂进来，新存档也能原样喂回老逻辑。
+
+2. 首页分区与撕卡口径
+   `isRippedCard()` 放在 repo 层：`status.body === '死亡'` 或 `mental` 含「永久疯狂」。
+   ⚠️ 与老产品 `app.js#isRippedCard` 的差异：老版只认「死亡」，本版按任务要求
+   把「永久疯狂」也算撕卡（规则上等同退场）。这是一处**有意的口径扩展**，
+   两处都读卡片上的权威字段，没有新增键名。
+
+3. 属性输入的前置闸门
+   原码 `validatePointBuy` 引用了未定义的 `ATT_MAP`（P0 报告坑 A），只要收到
+   「非 15-90 / 非 5 倍数」就抛 ReferenceError。UI 侧在 `attrFieldError()` 里先把
+   空值 / 非整数 / 越界 / 非 5 倍数全部拦下，**只有全部合法时才调用 domain 的校验**，
+   用户不会被带进异常路径（widget 测试 ②/②b 钉住这个行为）。
+
+4. 技能点「必须用完」与「一键分配」
+   本版把「点数必须用完」做成硬约束（与老产品一致）：剩余 > 0 且仍有技能能吃点数时，
+   下一步会被拦住并提示差多少。职业点动辄 200+，手机上逐项 +5 不现实，所以加了
+   「一键分配」（5 点一轮轮转，触到上限/点数用尽即停，仍然全部走 domain 的
+   `applyPoint`，不会超上限、不会给克苏鲁神话/信用评级加车卡点）。
+   若点数在规则上无法吸收（所有技能都到上限），则放行 —— 否则会死锁。
+
+5. 职业限定技能
+   四类要求块（fixed / choice / free / alt）全部支持：
+     · fixed 自动授予（occupationalSet 里已含）
+     · choice / alt 用芯片直接点选，超额时拒绝并提示
+     · free 打开可搜索的选择器（131 个技能，含组技能专攻）
+   选完即 `materializeOccupationalSkills()` 补齐技能实例，勾选结果写进
+   `occupationPicks[reqId]` —— 与老存档结构完全一致。
+
+6. 存储为什么要抽一层 CharacterStorage
+   widget 测试跑在 fake-async 区域里，**真实文件 I/O 的 Future 永远不会完成**，
+   整个用例会挂死（第一次跑就踩了：8 分钟后 "did not complete"）。
+   所以 repo 有「文件后端 / 内存后端」两个实现：真实运行用文件，widget 测试用内存，
+   真实落盘由 repo_test（普通 test）覆盖。这不是为了测试而测试 —— 它是让 UI 流程
+   可测的唯一办法。
+
+
+四、已知问题 / 留给后续
+--------------------------------------------------------------------------------
+1. `domain/character.dart#uid()` 是 8 位随机串（与原码同款），默认随机源是
+   微秒时间戳取模，**同一微秒内连续建卡会撞 id**（测试里连造 3 张卡就撞了）。
+   真实使用是用户点击触发，概率极低，但保存前已加兜底：id 已存在就换一个
+   （`CreateFlowPage._save`）。彻底修需要改 domain 的随机源 —— 那是只读区，
+   建议 P2 统一换成 Random.secure。
+2. 详情页目前只读（P2 做状态编辑 / 技能加点 / 导出）。删除入口也留到 P2，
+   避免 P1 引入「误删」风险。
+3. 背景（第 8 步）与「掷疯狂状态」未做（P2）。概要页不写 background 字段，
+   这些字段保持 newCharacter 的空值，结构合法。
+4. 首页只按 updatedAt 倒序，没有搜索/筛选（230 张卡以内够用）。
+
+
+五、复现
+--------------------------------------------------------------------------------
+  export ANDROID_HOME=/d/dev/android-sdk
+  cd dice-realm
+  flutter test                        # 166 组
+  flutter build apk --debug           # 约 8.5 分钟
+================================================================================

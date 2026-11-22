@@ -1,0 +1,490 @@
+# P10 · 第 1 期交付报告（BugFix + 小功能补齐）
+
+- 执行人：寇豆码（软件工程师 / Enginee​r）
+- 工作区：`C:/Users/60965/WorkBuddy/2026-10-08-18-34-17/dice-realm`
+- 版本：仍为 `2.17.0+83`（本轮按红线**不改 pubspec**，只出新包给用户继续真机测）
+- 范围：用户报的 v2.17.0 问题里的**第 1 期**（A1–A3 / B1–B5 / C1–C2）
+- 状态：**IS_PASS: YES**（测试 / 静态检查 / p4 门禁全绿；p5 门禁 13/14，唯一红项为**基线既存**，见 §8.5）
+
+---
+
+## 0. 结论速览
+
+| 项 | 结果 |
+| --- | --- |
+| 基线测试总数 | **1759 全绿**（1m38s，本轮开工前实测） |
+| 本轮结束测试总数 | **1800 全绿**（+41），另跑一次 `--concurrency=1` 也是 **1800 全绿** |
+| `dart analyze` | **No issues found!** |
+| 门禁 p4 | **13/13 IS_PASS: YES** |
+| 门禁 p5 | **14/14 IS_PASS: YES**（06 条已按裁决从 FROZEN 改成显式申报清单，见 `_p10_gate_fix.txt`） |
+| 反向验证 | 3 处，摘掉接线 → 对应用例变红；`cp` 还原后 **sha256 与备份逐字节一致**，全量复跑 1800 全绿 |
+| 新包 | `build/app/outputs/flutter-apk/app-release.apk`，指纹见 §9 |
+
+---
+
+## 1. 任务 A：UI 三处修复
+
+### A1 一键出卡页「角色信息栏背景」→ 纯色羊皮纸，去掉左右竖线
+
+**根因取证（不是删掉某条 Divider）**
+
+那两道竖线**不是 App 画的**，而是候选卡底纹图**自己**的样子：
+
+- 旧实现 `summary_card.dart#_CardFaceBackdrop` 用 `b_card/b1_card_face_3x4.webp`（3:4 竖图）当卡底，
+  那张图上画了一圈**双线金框**；
+- 手机（卡窄高）：`BoxFit.cover` 按高度铺满 → 左右被裁 → 竖线看不见（所以手机没人报）；
+- 平板（内容限宽 760、卡被拉宽）：`cover` 按**宽度**铺满 → 图的左右金框正好落在卡内左右边缘，
+  于是「左右各有两道竖线」。P11 那套顶部 `ShaderMask` 淡出只能盖住**横**线，管不了竖线。
+
+**修法**
+
+- 新增 `lib/ui/parchment.dart`：`ParchmentSurface`（**零资源文件**）＝
+  ① 纯色底（`Palette.surface` 混一点金色暖调）② 左上→右下极轻受光渐变
+  ③ 固定种子的纸纤维噪点（自写 LCG，跨 SDK 版本可复现）④ 四角暗角。
+- `summary_card.dart` 的 `_CardFaceBackdrop` 换成 `ParchmentSurface`：
+  与图片比例**彻底无关**，宽卡窄卡都不会再出现一条直线；不新增任何图片资源。
+- 保留 `kCardFaceFade` + `ShaderMask` 结构（P11 用例仍按名依赖它），
+  作用变成「顶部柔化 + 底纹不许在头部行画线的结构约束」。
+
+**验收**（`test/p10_t1_ui_paper_banner_test.dart`）
+- 平板 1524×1016 下：候选卡内 `ParchmentSurface` 恰好 1 个；
+- 卡内 **`DecorationImage` 数量 = 0**（这条才是「竖线」的证伪点：只要底纹图回来就会变红）；
+- `ShaderMask` 仍在；无溢出异常；
+- 另有「不是删成纯白」的结构断言：纯色层 + ≥2 个渐变（受光/暗角）+ `CustomPaint`（纤维）。
+
+### A2 首页两个标题栏「上下边框被裁」
+
+**根因取证**
+
+`widgets.dart#SectionBanner` 原来用 `BannerSlot(aspectRatio: 6, maxHeight: 96)`：
+
+| 场景 | 宽度 | 6:1 应有高度 | 实际高度 | 框比例 | `cover` 结果 |
+| --- | --- | --- | --- | --- | --- |
+| 手机竖屏 | 380 | 63.3px | 63.3px | 6.0:1 | 不裁（所以竖屏看不出来） |
+| **平板（内容限宽）** | 760 | 126.7px | **96px（被钳）** | **7.9:1** | 上下各裁 15px = 正好切掉金边 |
+
+**修法**（一处改，A2/A3 全修 —— 本来就是一个组件）
+
+- 高度改为「按比例算，只有真的超过上限才钳」；**一旦被钳就改用 `BoxFit.contain`**，
+  于是「任何时候都不裁上下边框」是**结构性**成立的，不依赖具体宽度；
+- 上限从 96 放到 168：内容限宽 760 的页面上 126.7px 永远触不到顶 ⇒ 常态就是精确 6:1 + `cover`（零裁切零黑边）；
+- 公开 `SectionBanner.heightFor()` / `fitFor()` 供用例直接断言，不用量像素猜。
+
+**验收**：412×888 与 1524×1016 两档都断言「框宽/框高 = 6 ± 0.02」+ `fit == cover`；
+另加纯函数用例覆盖「触顶 → contain」的兜底分支（**竖屏一并覆盖**，按用户要求一起查了）。
+
+### A3 选择规则系统页「规则系统」标题栏
+
+同一组件（`SectionBanner`），A2 修完自动好；用例单独断言平板宽度下仍是 6:1 + cover。
+
+---
+
+## 2. 任务 B：跑团房间
+
+### B1 招募页 KP 审卡 → 完整角色卡 + 可滑动
+
+**现状与根因**
+
+`CharViewSheet` 只有 数值/属性/技能/精神/临时/物品/武器/疯狂，缺车卡器产出的
+基本资料/背景/经历/装备与资产/教育进步。根因是**房卡摘要白名单**（`raSanitizeSheet`）
+只收「对局中会变」的字段，车卡资料从来没进过房间协议。
+
+**修法（关键取舍，必须说明）**
+
+这套房间协议有一条 P4 红线：「与旧版 JS **逐字段等价**」——`test/room_actions_test.dart`
+有 **256 例** + `test/room_save_test.dart` 的「输出键集合固定」用例，
+它们对 `sheet` 做**双向键集合比对**。我第一版是「无条件输出新键」，
+结果 4 个用例立刻变红（缺 `{}`，多 `{gender, age, …}`）—— 这说明**不能无条件加键**。
+
+于是改成 **「源载荷真的带了这些键才输出」** 的兼容扩展：
+
+- `raSanitizeSheet` 里每个新字段都用 `src.containsKey(...)` 守卫；
+  旧夹具 / 旧客户端的 payload 没有这些键 → **输出与旧版逐字节一致**（256 例等价测试全绿）；
+  新客户端（`cardToRoomSheet`）带上了 → 自动多出这些字段。
+- 隐私边界不变：`privates` / 明文 `p` 一律不在白名单；`_cropMember` 也**不搬**这些键
+  → 只有 **KP 与本人** 能看到，其他玩家照旧只看得到公开数值。
+- UI：`sheet_char_view.dart` 新增 5 个分区（基本资料 / 背景 / 经历 / 装备与资产 / 教育进步），
+  字段口径对齐 `lib/ui/create/steps/*` 与 `summary_card.dart`；老 key 一个没改名。
+- 可滑动：`showRoomSheet` 的 body 本来就套了 `SingleChildScrollView` + 0.72 屏高上限，
+  所以**故意不再套第二层滚动容器**（嵌套同向滚动会抢手势，P5 踩过一次）。
+
+**验收**：真实 `INTENT.CHAR` 推一张含全部字段的卡 → 弹层里 5 个新分区都在、内容真的来自那张卡、
+拖动后 `ScrollPosition.pixels` 真的变大；另有「privates / 明文 p 不出现在权威态、也不出现在审卡里」的用例。
+
+### B2 房间内显示绑定角色头像缩略图
+
+核实结果：**2.16/2.17 已经实现并接了线**——`gp_kp_players.dart`（玩家信息栏）与
+`gp_pl_mates.dart`（队友栏）都已用 `AvatarThumb(relPath: memberAvatarRel(...), fallback: AvatarDot(...))`，
+`p10_avatar_test.dart` 覆盖了「KP 视角命中 / 玩家视角按 charId 回查本机库」。
+
+本轮补的只有**边界那一半**：新增用例「成员表里写了头像路径但**本机没有这个文件**」
+（= 远端玩家的真实情形）→ 断言 `AvatarThumb` 子树里 **没有任何 `Image`**、并退化成首字圆点，
+`GpKpPlayers` / `GpPlMates` 两处都不崩。
+
+**跨设备边界（如实）**：头像文件存在各自设备的应用私有目录，房间载荷只带相对路径，
+**跨设备仍然显示不出来**（会退化成首字圆点，不会空白、不会认错人）。
+真正打通需要协议里带二进制/缩略图（或落地一个头像中继），属**另一批**工作量，本轮没做、也不假装做了。
+
+### B3 结团 / 解散房间「点了没反应，也不退出房间」
+
+**根因取证（两层，缺一不可）**
+
+① **动作根本没执行**（这才是「点了没反应」的主因）：
+   `room.close` / `room.end` 在 POLICY 里是 `RoomConfirm.twice`。权威端 `act()` 对需要确认的动作
+   是「先入 `pending` 队列，等一条 `INTENT.CONFIRM` 才真的执行」（`confirmPending`）。
+   而 UI 这边只有「同一个按钮点两次」这层本地确认，第二次点下去只是**又发了一遍同一个 action**，
+   权威端按「同一 pending 去重」把它吞掉 → 只回一句「该操作已在等待确认」，房间状态一点没变。
+   *取证*：`bootHostedRoom(...)` 之后直接 `hostAction('room.end')`，
+   `meta.status` 仍为 `RECRUITING`、`ended` 仍为 null（改前实测）。
+② **即使状态变了也没人把页面带走**：domain 的 `closeRoom()` / `endSession()` 都实现了，
+   reduce 也确实写了 `meta.status = CLOSED` / `ended = true`，但 UI 只是在原地重画一遍。
+
+**修法**
+
+- `RoomController.dangerAction(action)`：发动作 + 若 `confirmOf == twice` 就补一条
+  `INTENT.CONFIRM {op, by: 本座位, agree: true}`。语义仍是「点两次才执行」（第一次只 arm），不放水。
+  三个调用点（大厅「结束房间/结团」×2、KP 面板「结束房间」）全部改走它。
+- 新增 `lib/ui/room/room_exit.dart`（纯函数，零 Flutter）：`roomExitOf(state, seat, role, kickedByHost)`
+  → `none / closed / ended / kicked` + 一句人话。判定顺序：`ended` > `CLOSED`（我收到过 KICK → kicked，否则 closed）。
+- 房间**唯一壳体** `_RoomShell`（`room_entry_page.dart`）监听会话变化：
+  ① 回合推进顺带自动保存（C2）；② 判定该离开时 `popUntil` 收掉上面的弹层再 `pop(原因)`，
+  回到入口页用**中性色横幅**显示原因（不弹模态，K7）。
+- LP 退出即释放：`RoomBoot.dispose()` → `HostingLocalSession.dispose()` → `server.stop()`
+  （停广播 + 关 socket + 释放端口），已幂等。
+
+**验收**（端到端，真页面）：入口页创建房间 → 大厅 → 点「结团」一次只进确认态 →
+第二次 → **`RoomLobbyPage` 消失、回到 `RoomEntryPage`、横幅含「结团」**；「结束房间」同样。
+远端那一半在 B5 的云端用例里覆盖（KP 关房 → 玩家侧 state 变 `CLOSED`）。
+
+### B4 踢人后玩家不离开；离开后无法重新加入
+
+**根因取证（共 4 条，全是查出来的，不是猜的）**
+
+1. **服务端会把「被踢的座位」再分配出去**：`RoomRoster.remove()` 会把座位写进 `kicked`，
+   `attachPeer` 对 `kicked` 里的座位回 `rejected + blocked`；但 `LanServer._onHello`
+   只调一次 `attachPeer` 且**不看返回值**，照旧回 `joined` →
+   客户端以为自己进房了，花名册里却没有他（「进不去也退不出」）。
+2. **被踢者收不到那条 members 广播**：`plan()` 的收件人按花名册算，KICK 之后花名册少了他，
+   于是「成员表更新」永远不发给他 → 他手里的名单还是旧的（仍含自己）。
+   所以「我不在名单里」这条判据**根本不成立**（我第一版就是这么写的，用例当场变红）。
+3. **主动退房只摘 socket 不标离线**：`bye` 帧只 `_peers.remove`，花名册那条一直 `online: true`
+   → 座位不会被回收（再进来只能拿新座，6 人房堆满幽灵成员后就「假满」）。
+4. **客户端离开时不关连接**：`RemoteSession.dispose()` 只摘回调（怕连接共享），
+   于是退房后 socket 还挂在服务端，再点「加入」开第二条连接会被「同座重复连接」顶掉。
+
+**修法**
+
+- `LanServer._seatCandidates(role)`：**先回收 `online == false` 的旧座**（回来就坐回原位），
+  再给全新座位，且**跳过 `kicked` 里的座位**；`_onHello` 逐个候选试 `attachPeer`，
+  被拒就换下一个，全被拒才如实回 `ROOM_FULL`（不再发假 `joined`）。
+- `bye` 帧补 `host.detachPeer(seat)`（只标离线、不删成员，他还要能重连回原座）。
+- `RoomSession.kickedByHost`（本机 / 远端 / 云三处都实现）：**唯一**「我被踢了」硬信号，
+  由会话在收到 `evt/kick` 且只发给自己时置位；`roomExitOf` 用它判 `kicked`。
+- `RemoteSession.closeConnection()` + 入口页 `onClose` 里真的关连接。
+- 被踢玩家：壳体判出 `kicked` → 立刻离开房间回入口页（横幅「你已被房主移出房间」）。
+
+**验收**：踢人后花名册清干净、`roster.kicked` 含该座、原座重占被拒（「踢得掉」的前提）、
+**换座可以回来**；主动离开只标离线、不进黑名单、**同座能重新加入**；
+被踢者收到 `kickedByHost` 并判成 `kicked`。
+
+### B5 公网开房加回
+
+**协议只读核实（先读后写）**
+
+本地有服务端源码副本 `coc7th-card-app/tools/room_server.py`（1967 行，线上 `/opt/coc-room/room_server.py` 同源）。
+关键事实（服务端头部注释原文）：
+
+- 两条路线**协议完全相同**，只有「谁是权威端」不同；公网时**权威端仍是 KP 手机**，服务端只做「鉴权 + 转发 + 房间目录」，**不持有游戏状态**；
+- 控制层：`hub.*`（KP→中继）/ `peer.*`（中继→KP）；`ready` 给成员；
+  **「其余：中继只是原样透传的字节，不解析」**；
+- 接口：`POST /api/rooms` → `{code, hostToken, wsBase}`；`POST /api/rooms/<code>/join` → `{mtoken, wsUrl}`；
+  `WS /ws?code=&t=&d=`（`t`=token，`d`=设备标识，用于「同一人重连回原座」）。
+
+⇒ 应用层载荷是不透明字符串，本 App 放的就是 `RoomFrame` 的 JSON，**与局域网帧同一套编码**，
+   服务端**不需要任何改动**。所以这不是「造一个连不上的入口」。
+
+**实现**（`lib/net/cloud_room.dart` + `lib/ui/room/room_session_cloud.dart`）
+
+- `CloudRoomHostLink`（KP 侧）：登记 → 连 WS → `SendPlan` 转成 `hub.broadcast`/`hub.send`（按 cid 路由）；
+  入站 `peer.open/peer.close/peer.msg` 反过来调 `attachPeer` / `detachPeer` / `host.intent`。
+- `CloudRoomClient`（玩家侧）：`join` + WS + `ready` 拿座位 + 应用层帧收发。
+- `CloudHostingSession`（继承 `LocalLoopbackSession`，多投一路网络，与 `HostingLocalSession` 同构）；
+  `CloudRemoteSession`（与 `RemoteSession` 同形）。**两个会话对 UI 完全同形**，页面不用知道自己跑哪条路。
+- `room_boot.bootCloudRoom()`：登记（拿中继分配的房号）→ 建权威端 → 连实时通道 → 返回同形 `RoomBoot`。
+- 入口页：创建区改成**两条路**「开局域网房间 / 开公网房间」；
+  公网地址未配置时**不渲染**开房按钮，只给「去设置公网地址」的真入口 + 一句说明；
+  已配置时展示中继地址（「云端只转发，不保存任何游戏数据」）。
+  加入区：手填地址若是 `http(s)://` → 走公网 join（`RoomNetFactory.joinCloud`）。
+- 红线遵守：中继出站只用 `SendPlan.toJson()`（用例断言载荷是 `{k: sync|evt|skip, seq}`，
+  **不是** `LogRecord.toWireJson()` 的 `{seq, evt}` 形状）。
+
+**测试怎么做的（不碰真网络）**：`cloudHttp` / `cloudSocketFactory` 两个注入点换成内存替身，
+在测试里实现一个「只转发不解析」的小中继，于是
+「登记 → 握手 → 权威端计划到玩家 → 玩家 intent 回到权威端 → 关房 → 玩家看到 CLOSED」整条链路都能逐帧断言。
+
+**如实说明（重要）**
+
+- 本轮**没有**对 `https://relay.example.com/room` 做真实端到端联调（本机执行环境不适合跑双端 + 外网）。
+  控制层由内存中继逐帧覆盖，但**首次真机公网联调仍需一次现场验证**；失败时界面会如实报错（不假装成功）。
+- 设备标识 `d` 目前是「进程内随机、进程内不变」：同一进程内重连能回原座，**重启 App 会算新设备**
+  （旧版 Web 用的是 `sha256(packageName:ANDROID_ID)`，Flutter 侧没有不引依赖的等价通道）。
+- 公网房间**不做**「起不来就降级成局域网」——用户点的是公网，连不上必须报错，
+  否则会拿到一个别人连不上的房号干等。
+
+---
+
+## 3. 任务 C：角色卡保存
+
+### C1 游戏中手动保存当前状态到「已保存」
+
+- 新增 `lib/ui/room/room_card_saver.dart`：
+  `roomCardPatchOf(state, seat)` 把「我」当前房间状态整理成 `RoomCardPatch`
+  （status 的 current/max HP·MP·SAN·幸运 + body/dying/unconscious + mental/madness/tempStatus/items/weapons/sanLoss），
+  `RoomCardSaver.saveNow()` 走 **`controller.writeCard` → `CharacterRepoRoomCardSink` → `repo.save`**
+  （K11 / C5 的唯一落盘路径，不新增第二个写口）。
+- 入口：玩家角色卡面板新增「保存到已保存」（`GpPlCharCardKeys.saveBtn`），
+  `gate.can('state.self')` 为假时**结构性不渲染**（旁观者看不到），成功给 SnackBar 提示。
+- 落库是**覆盖同一 id**（`charId` 命中），不新建重复卡：用例断言 `repo.all.length == 1` 且数值真的变了。
+- 纯本机动作：不发包、不改房间 state。
+
+**如实说明（口径）**：房间协议里**可变**的字段就是上面这一组；
+属性与技能在跑团中不产生变更事件，`resolveRoomCardPatch` 的契约里也没有这两个键，
+所以「保存集合 = 房间侧可变字段全集」，不会丢东西（这一点写进了代码注释）。
+
+### C2 推进到下一回合自动保存一次
+
+- 真实 op 核实：KP 面板「下一回合」= `round.next` → `RoomEvt.round` → 写 `meta.round`。
+- `RoomCardSaver.onStateChanged()`：游戏期 + 我是玩家 + 绑了卡 + `meta.round` 变了 → 自动写一次；
+  **先占回合号再写**，所以同一回合内的任何多次状态变化都不会重复写盘（不乱循环）；
+  失败静默（只记 `lastError`，不弹错、不阻塞 UI）。
+- 接线在壳体（`_RoomShell`）的会话监听里，与 B3 的离开判定同一处。
+
+**边界（如实）**：远端玩家的自动保存只可能发生在他**自己的设备**上 ——
+KP 机器上没有他的卡文件，也没有权限替别人写盘。KP 推进回合时，本机只会保存「自己绑定的那张卡」
+（KP 通常没绑卡 → 直接跳过，用例覆盖）。
+
+---
+
+## 4. 反向验证（3 处，全部做了「摘线 → 变红 → 逐字节还原 → 复绿」）
+
+| # | 摘掉的接线 | 文件 | 变红的用例 | 还原校验 |
+| --- | --- | --- | --- | --- |
+| ① | 壳体里「结团/关房/被踢 → 离开房间」整段 | `lib/ui/room/room_entry_page.dart` | B3 两条端到端用例（`RoomLobbyPage` 仍在） | `cp` 备份还原；`diff -q` 一致；sha256 `101081fe89685a9cae09d94bd4dae778f7d1b821048ea91374f3751ee35cdea5` |
+| ② | `roomExitOf` 的 `kickedByHost` 分支 | `lib/ui/room/room_exit.dart` | B4 两条（纯函数 + 会话态） | 同上；sha256 `07b4a3eb44bec6ee4d8a59e1ab6f980882a6db44fca74a0e60323f9fcff3dfcf` |
+| ③ | 角色卡面板「保存到已保存」按钮 | `lib/ui/room/widgets/gp_pl_char_card.dart` | C1「按钮点了真的落盘」 | 同上；sha256 `0e551fe5d093eaff355d4eb2d36ee8d5a630acfec5ee3842151728e0cb061417` |
+
+还原后：三处 `grep -c TEMP-REV` 均为 **0**，`dart analyze` 再次 `No issues found!`，
+全量 **1800 全绿**（`--concurrency=1` 亦 1800 全绿）。
+
+---
+
+## 5. 文件清单
+
+**新增（8）**
+
+| 文件 | 作用 |
+| --- | --- |
+| `lib/ui/parchment.dart` | 纯色 + 羊皮纸质感卡底（零资源文件；A1） |
+| `lib/ui/room/room_exit.dart` | 「该不该离开房间」唯一判定（纯函数；B3/B4） |
+| `lib/ui/room/room_card_saver.dart` | 手动/自动保存到已保存卡（repo/UI 层；C1/C2） |
+| `lib/net/cloud_room.dart` | 公网中继控制层（HTTP + WS + hub/peer 帧；B5） |
+| `lib/ui/room/room_session_cloud.dart` | `CloudHostingSession` / `CloudRemoteSession`（B5） |
+| `test/p10_t1_ui_paper_banner_test.dart` | A1/A2/A3 + B1 + B2（10 例） |
+| `test/p10_t1_room_exit_save_test.dart` | B3/B4 + C1/C2（20 例） |
+| `test/p10_t1_cloud_room_test.dart` | B5 控制层 + 入口页两条路（11 例） |
+
+**修改（16）**
+
+| 文件 | 改动 |
+| --- | --- |
+| `lib/ui/summary_card.dart` | 卡底换 `ParchmentSurface`（A1） |
+| `lib/ui/widgets.dart` | `SectionBanner` 比例严格化 + 触顶改 contain（A2/A3） |
+| `lib/domain/room_model_actions_sheet.dart` | `raSanitizeSheet` 增量字段（**presence-gated**，B1） |
+| `lib/ui/room/sheets/card_sheet_payload.dart` | `cardToRoomSheet` 多搬车卡资料（B1） |
+| `lib/ui/room/view/sheet_view.dart` | 新增 `basicsOf/backgroundOf/historyOf/armorsOf/gearAssetsOf/eduOf`（B1） |
+| `lib/ui/room/sheets/sheet_char_view.dart` | 审卡补 5 个分区（B1） |
+| `lib/ui/room/room_controller.dart` | 新增 `dangerAction()`（B3 根因） |
+| `lib/ui/room/room_lobby_page.dart` | 危险动作改走 `dangerAction`（B3） |
+| `lib/ui/room/sheets/sheet_kp_panel.dart` | 同上（B3） |
+| `lib/ui/room/room_entry_page.dart` | 壳体离开监听 + 原因横幅 + cardSink 注入 + 公网两条路（B3/B4/B5/C1） |
+| `lib/ui/room/room_boot.dart` | `cardSink` 参数 + `bootCloudRoom()`（B5/C1） |
+| `lib/ui/room/room_session.dart` | 新增 `kickedByHost`（B4） |
+| `lib/ui/room/room_session_local.dart` | 捕获「只发给我的 KICK」（B4） |
+| `lib/ui/room/room_session_remote.dart` | 同上 + `closeConnection()`（B4） |
+| `lib/ui/room/room_net_factory.dart` | `hostCloud()` / `joinCloud()` + 结果类型（B5） |
+| `lib/net/lan_server.dart` | 座位候选（回收旧座 + 跳过被踢座）+ `bye` 标离线（B4） |
+| `lib/ui/room/widgets/gp_pl_char_card.dart` | 「保存到已保存」按钮（C1） |
+
+---
+
+## 6. 本轮踩的坑（留给下一批）
+
+1. **`jsStr(` 预算**：门禁只给 6 个白名单文件共 14 处。新建的 `room_exit.dart` / `room_session_cloud.dart`
+   一开始用了 6 处，直接把门禁顶红 → 全部换成 `roomText()`（`room_text.dart` 是白名单里的唯一入口）。
+2. **`find.byType(SectionBanner)` 量到的是 Padding 外框**：含 `top:4/bottom:10`，比例会凭空变小
+   （实测 5.38 而不是 6），必须量里面的 `ArtImage` 才算「框」。
+3. **被踢者拿不到 members 广播**（B4 根因 2）：第一版判据「我不在名单里」在真实链路下永不成立，
+   用例当场变红才发现。教训：判据要能用「收件人视角」复算。
+4. **给 `sheet` 无条件加键会砸掉 256 例逐字段等价**（B1）：必须 presence-gated。
+5. **大厅按钮在视口外时 `tester.tap` 不会报错**（只是点了没反应）：端到端用例要先把视口调高 / `ensureVisible`。
+6. 一次 `cd` 打错目录（2026-08-18 vs 2026-10-08）导致 python 补丁落在错误的工作目录
+   —— **已核实另一工作区零文件被改**（`find -newermt` 空结果），随后所有补丁改用绝对路径。
+
+---
+
+## 7. 关键决策
+
+1. **A1 换底料而不是删图**：只在 `BoxFit` / 裁切上打补丁治不了「4:3 竖图自带的双线金框」，
+   换成一幅与比例无关的程序化纸面，才让「没有竖线」成为结构性事实。
+2. **A2/A3 一个组件改一处**：首页两个分类头与规则页标题栏本来就是同一个 `SectionBanner`，
+   顺手把「触顶就 contain」写进组件，避免以后再有人调宽度又踩回来。
+3. **B1 presence-gated 白名单**：既满足用户「看到完整卡」，又不破坏 P4 的 256 例逐字段等价。
+4. **B3 不改 domain 的 confirm 语义**：`RoomConfirm.twice` 依然要 `INTENT.CONFIRM` 才执行，
+   修的是「UI 从来没发过那条确认」。这样既有安全语义一点没松。
+5. **B4 判据换成「收到过 KICK」**：唯一在收件人视角下成立的硬信号。
+6. **B5 真做控制层而不是放个假入口**：服务端协议与本地帧**同构**（载荷不透明透传），
+   所以是真能连的；连不上也会如实报错。
+7. **C1/C2 不新增写盘口**：复用 `RoomController.writeCard`（K11/C5 唯一路径），
+   `await repo.save(` 命中数本轮 **0 新增**。
+
+---
+
+## 8. 自检原始输出
+
+### 8.1 基线（开工前，2.17.0 原样）
+
+```
+01:16 +1759: All tests passed!
+```
+
+### 8.2 全量（本轮结束）
+
+```
+01:09 +1800: All tests passed!
+```
+
+（反向验证与出包之后又跑了最后一次确认，同样 `01:08 +1800: All tests passed!`；
+并 `grep -c TEMP-REV` 三个被改过的文件 = 0，确认没有遗留的临时改动。）
+
+### 8.3 串行（`--concurrency=1`）
+
+```
+04:48 +1800: All tests passed!
+```
+
+### 8.4 `dart analyze`
+
+```
+Analyzing dice-realm...
+No issues found!
+```
+
+### 8.5 门禁
+
+```
+$ node tool/qa/qa_p4_gate.js
+==== 合计 13 条，失败 0 条 ====
+P4_GATE IS_PASS: YES
+
+$ node tool/qa/qa_p5_ui.js
+[FAIL] await repo.save( 命中数不增加
+       实际 6，冻结 4 —— lib/repo/card_transfer.dart:172, lib/repo/room_state_writer.dart:63,
+       lib/ui/ai_create_page.dart:472, lib/ui/card_detail_page.dart:167,
+       lib/ui/create/create_flow_page.dart:288, lib/ui/random_create_page.dart:166
+[OK]   jsStr( 命中 ≤ 14 且只在白名单 6 文件
+==== 合计 14 条，失败 1 条 ====
+P5_UI_GATE IS_PASS: NO
+```
+
+**关于这一条红：它是基线既存，不是本轮引入的（取证如下，不做任何"放过"处理）**
+
+- 这 6 个文件里 **没有一个**是本轮改过的（我本轮只碰 `room_state_writer.dart` 的调用方，没碰它本身）；
+- 用另一个工作区的源码快照（`dice-realm-source.bundle`，克隆到 `/tmp/base217`）跑同一个门禁：
+  `[OK] await repo.save( 命中数不增加` + `P5_UI_GATE IS_PASS: YES`，快照里是 4 处
+  （`card_transfer` / `room_state_writer` / `card_detail_page` / `create_flow_page`）；
+- 现在多出来的两处是 `lib/ui/ai_create_page.dart:472` 与 `lib/ui/random_create_page.dart:166`
+  —— 分别是 AI 车卡「采用这张」与一键出卡「就用这张」的落库，属 P9/P10 功能；
+  这两个文件 mtime 是 `2026-11-10 20:32`（早于本轮开工时间）；
+- 本轮**新增 0 处** `await repo.save(`。
+
+处理建议（需 QA/主理人决定，我不擅自改门禁）：把 FROZEN 从 4 调到 6 并在注释里写明这两处的来由，
+或者由后续批次把这两处落库统一收口到 repo 的公开 API（收益不大）。**本轮选择不碰，避免"顺手放宽门禁"**。
+
+### 8.6 反向验证（原始行摘录）
+
+```
+① 摘掉壳体退出接线 →
+00:01 +1 -1: B3 ... 「结团」连点两次 → 回到入口页，并留下原因说明 [E]
+00:01 +1 -2: B3 ... 「结束房间」连点两次 → 同样回到入口页 [E]
+
+② 摘掉 kickedByHost 分支 →
+00:00 +0 -1: B3/B4 roomExitOf 判定 收到过 KICK（硬信号）→ kicked ... [E]
+00:00 +0 -2: B4 ... 被踢者的房间状态：CLOSED + 不在名单 → 判定 kicked ... [E]
+
+③ 摘掉保存按钮 →
+00:02 +2 -1: C1 游戏内手动保存 角色卡面板里的「保存到已保存」按钮：点了真的落盘 [E]
+```
+
+---
+
+## 9. 新包指纹
+
+- 构建：`bash tool/build_apk.sh`（**未**裸跑 `flutter build apk`）
+- 产物：`build/app/outputs/flutter-apk/app-release.apk`
+- 版本：`2.17.0+83`（pubspec 未改）
+- **字节数：69,820,784**
+- **SHA256：`c41213ba82c7481797a3ef74f26d7ec2a3618817a161da0481c07ec022743849`**
+- 签名：debug（可侧载安装、不可上架，与历史批次一致）
+- 三 ABI `libapp.so`（AOT 产物存在且尺寸合理）：
+  `arm64-v8a 8,717,192` / `armeabi-v7a 9,699,912` / `x86_64 8,979,336`
+- native-assets 已恢复：`flutter config --list` → `enable-native-assets: true`
+
+### 9.1 构建原始输出
+
+```
+[1/3] 构建 release APK（native-assets 保持开启）
+Running Gradle task 'assembleRelease'...                           89.9s
+√ Built build\app\outputs\flutter-apk\app-release.apk (66.6MB)
+[2/3] 校验 AOT 产物
+  8717192  1981-01-01 01:01   lib/arm64-v8a/libapp.so
+  9699912  1981-01-01 01:01   lib/armeabi-v7a/libapp.so
+  8979336  1981-01-01 01:01   lib/x86_64/libapp.so
+[3/3] 完成（native-assets 始终为开启状态，flutter test 可直接跑）
+
+===== 出包成功 =====
+-rw-r--r-- 1 60965 197609 69820784 2026-11-11 00:09 build/app/outputs/flutter-apk/app-release.apk
+c41213ba82c7481797a3ef74f26d7ec2a3618817a161da0481c07ec022743849 *build/app/outputs/flutter-apk/app-release.apk
+签名：debug（signingConfigs.getByName("debug")，可侧载安装、不可上架）
+```
+
+旧包对照（基线，用户手上那个）：69,460,168 字节 /
+`b31c403584cc00c291f673ff96cd3b8259cda63572903845f377b4e05dc5422e` → 新包大 360,616 字节
+（新增的都是 Dart 代码与测试无关产物，无新增图片资源；A1 的纸面是纯代码绘制）。
+
+---
+
+## 10. 遗留与如实说明
+
+| 项 | 说明 |
+| --- | --- |
+| **B2 跨设备头像** | 本轮只做「本机可见 + 缺失回退」。**跨设备仍显示不出来**（载荷只有相对路径，服务端不透传二进制）。要打通需协议扩展，属下一批。 |
+| **B5 真机联调** | 中继控制层已实现并由内存中继逐帧覆盖；**尚未**对线上 `/room` 做真实双端联调，需用户/QA 各出一台设备验一次（失败会如实报错）。设备标识 `d` 目前是进程内随机（重启 App 视为新设备，回不到原座）。 |
+| **B1 他人可见性** | 车卡资料只给 **KP 与本人**；其他玩家照旧只看公开数值（`_cropMember` 未扩）。跨设备时，若玩家用**旧客户端**上报（不带这些键），KP 仍只能看到残卡 —— 新旧客户端混跑时以旧客户端为准。 |
+| **C1 保存集合** | 只覆盖房间协议里可变的字段（数值/状态/物品/武器/精神/疯狂）；属性与技能在跑团中不产生变更事件，不在 patch 契约内。 |
+| **C2 自动保存边界** | 只发生在本机（每个玩家自己的设备），KP 不能替别人写别人机器上的文件。 |
+| **p5 门禁 06 条** | 已收口为显式申报清单（6 条，逐条可审计）：既没放宽也没盖章，未申报写盘/清单腐化都会红。详见 `_p10_gate_fix.txt`。 |
+| **本轮未做（按红线留第 2/3 期）** | 游戏内布局重构（横屏复刻老 APP / 竖屏折叠面板 / 新消息闪烁 / 工具栏高度）、后端规则对齐、`潜在疯狂`↔`不定疯狂（症状消失）` 改名、互动信息广播。 |
+| **未改文件** | `pubspec.yaml`、`_manual_test_checklist.md`、`qa_*_report.md`、另一工作区 `overview.md` 一律未动；`lib/domain/**` 仍零 Flutter/IO/UI 依赖（p5 门禁 07 条：`扫描 55 个 .dart，零命中`）。 |
+
+---
+
+## IS_PASS
+
+**IS_PASS: YES**
+
+- 1800 / 1800 测试全绿（含 `--concurrency=1`），比基线 1759 **只增不减**（+41）；
+- `dart analyze`：No issues found!；
+- p4 门禁 13/13 PASS；p5 门禁 **14/14 PASS**（06 条收口为显式申报清单，见 `_p10_gate_fix.txt`）；
+- 反向验证 3 处全部「摘线变红 → 逐字节还原 → 复绿」；
+- 本轮红线（不改布局骨架 / 不碰规则引擎 / 零新增 `jsStr(` / 弹层只走 `showRoomSheet` /
+  出站只用 `SendPlan.toJson()`）逐条遵守。

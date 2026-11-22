@@ -14,8 +14,10 @@ import 'package:flutter/material.dart';
 import '../../domain/character.dart';
 import '../../domain/js_compat.dart';
 import '../../domain/occupation.dart';
+import '../../domain/rules_coc7.dart';
 import '../../theme.dart';
 import '../create/chargen_logic.dart';
+import '../create/skill_groups.dart';
 import '../create/steps/step_skills.dart';
 import '../widgets.dart';
 import '../notice.dart';
@@ -42,7 +44,14 @@ class SkillsEditor extends StatelessWidget {
         if (ao != bo) return ao ? -1 : 1;
         return jsNum(b['total']).compareTo(jsNum(a['total']));
       });
-    final shown = rows.where((s) => jsNum(s['total']) > 0).toList();
+    // 克苏鲁神话基础值 0，未加点时 total 也是 0 —— 但它是「只能靠成长」的
+    // 可选项，必须一直列出来（否则修改角色时永远加不了成长点）。
+    // 信用评级同样「仅成长」，但它归「资产与信用评级」步骤管，这里排除。
+    final shown = rows.where((s) {
+      final id = jsStr(s['id']);
+      if (jsNum(s['total']) > 0) return true;
+      return isGrowthOnly(id) && id != 'credit';
+    }).toList();
 
     return SectionCard(
       title: '技能加点',
@@ -152,23 +161,40 @@ class _PointLine extends StatelessWidget {
           ),
         ),
         const Spacer(),
-        Text(
-          '$used / $total',
-          style: TextStyle(
-            fontSize: 12.5,
-            fontWeight: FontWeight.w700,
-            color: remain < 0
-                ? Palette.danger
-                : (remain == 0 ? Palette.success : color),
-            fontFeatures: const <FontFeature>[FontFeature.tabularFigures()],
-          ),
-        ),
-        const SizedBox(width: 8),
-        Text(
-          remain == 0 ? '已用完' : (remain < 0 ? '超出 ${-remain}' : '剩 $remain'),
-          style: TextStyle(
-            fontSize: 11,
-            color: remain < 0 ? Palette.danger : Palette.textMute,
+        // 大字号下（textScaler 2.0）这一行是最容易顶出边界的：
+        // 数字组整体等比缩小，保证既不换行也不溢出。
+        Flexible(
+          child: FittedBox(
+            fit: BoxFit.scaleDown,
+            alignment: Alignment.centerRight,
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: <Widget>[
+                Text(
+                  '$used / $total',
+                  style: TextStyle(
+                    fontSize: 12.5,
+                    fontWeight: FontWeight.w700,
+                    color: remain < 0
+                        ? Palette.danger
+                        : (remain == 0 ? Palette.success : color),
+                    fontFeatures: const <FontFeature>[
+                      FontFeature.tabularFigures(),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  remain == 0
+                      ? '已用完'
+                      : (remain < 0 ? '超出 ${-remain}' : '剩 $remain'),
+                  style: TextStyle(
+                    fontSize: 11,
+                    color: remain < 0 ? Palette.danger : Palette.textMute,
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ],
@@ -194,7 +220,8 @@ class _SkillRow extends StatelessWidget {
       context: context,
       isScrollControlled: true,
       backgroundColor: Palette.surface,
-      builder: (_) => SkillPointSheet(card: card, skill: skill),
+      builder: (_) =>
+          SkillPointSheet(card: card, skill: skill, allowGrowth: true),
     );
     onChanged();
   }
@@ -203,6 +230,7 @@ class _SkillRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final occ = jsNum(skill['occ']);
     final itr = jsNum(skill['int']);
+    final growth = jsNum(skill['growth']);
     return InkWell(
       key: Key('edit_skill_${jsStr(skill['key'])}'),
       onTap: () => _open(context),
@@ -235,11 +263,12 @@ class _SkillRow extends StatelessWidget {
                       color: isOcc ? Palette.text : Palette.textDim,
                     ),
                   ),
-                  if (occ > 0 || itr > 0)
+                  if (occ > 0 || itr > 0 || growth > 0)
                     Text(
                       <String>[
                         if (occ > 0) '职业 +$occ',
                         if (itr > 0) '兴趣 +$itr',
+                        if (growth > 0) '成长 +$growth',
                       ].join(' · '),
                       style: TextStyle(
                         fontSize: 10.5,
@@ -267,7 +296,7 @@ class _SkillRow extends StatelessWidget {
   }
 }
 
-class _AllSkillsSheet extends StatelessWidget {
+class _AllSkillsSheet extends StatefulWidget {
    const _AllSkillsSheet({
     required this.card,
     required this.rows,
@@ -279,8 +308,30 @@ class _AllSkillsSheet extends StatelessWidget {
   final VoidCallback onChanged;
 
   @override
+  State<_AllSkillsSheet> createState() => _AllSkillsSheetState();
+}
+
+class _AllSkillsSheetState extends State<_AllSkillsSheet> {
+  /// 模糊搜索关键词（复用车卡流程的 `skillMatchesKeyword`：姓名 / id /
+  /// 子类 / 描述 / 近义词全认，搜「克苏鲁」「神话」都能命中）。
+  String _kw = '';
+  final TextEditingController _search = TextEditingController();
+
+  @override
+  void dispose() {
+    _search.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final occSet = occupationalSet(card);
+    final occSet = occupationalSet(widget.card);
+    final searching = _kw.trim().isNotEmpty;
+    // 未搜索时保持原样：全量、原顺序。
+    final visible = searching
+        ? widget.rows.where((s) => skillMatchesKeyword(s, _kw)).toList()
+        : widget.rows;
+
     return SizedBox(
       height: MediaQuery.of(context).size.height * 0.85,
       child: Column(
@@ -304,7 +355,7 @@ class _AllSkillsSheet extends StatelessWidget {
                 ),
                 const SizedBox(width: 8),
                 Text(
-                  '${rows.length} 项',
+                  searching ? '命中 ${visible.length} 项' : '${widget.rows.length} 项',
                   style: TextStyle(
                     fontSize: 11.5,
                     color: Palette.textMute,
@@ -318,22 +369,63 @@ class _AllSkillsSheet extends StatelessWidget {
               ],
             ),
           ),
-          Expanded(
-            child: ListView.builder(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              itemCount: rows.length,
-              itemBuilder: (context, i) {
-                final s = rows[i];
-                return _SkillRow(
-                  card: card,
-                  skill: s,
-                  isOcc:
-                      occSet.containsKey(jsStr(s['key'])) ||
-                      occSet.containsKey(jsStr(s['id'])),
-                  onChanged: onChanged,
-                );
-              },
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+            child: TextField(
+              key: const Key('edit_all_skills_search'),
+              controller: _search,
+              decoration: InputDecoration(
+                hintText: '搜索技能名 / 类别',
+                prefixIcon: Icon(
+                  Icons.search,
+                  size: 18,
+                  color: Palette.textMute,
+                ),
+                suffixIcon: _kw.isEmpty
+                    ? null
+                    : IconButton(
+                        key: const Key('edit_all_skills_search_clear'),
+                        icon: const Icon(Icons.close, size: 16),
+                        onPressed: () {
+                          _search.clear();
+                          setState(() => _kw = '');
+                        },
+                      ),
+              ),
+              onChanged: (v) => setState(() => _kw = v),
             ),
+          ),
+          Expanded(
+            child: visible.isEmpty
+                ? Align(
+                    alignment: Alignment.topCenter,
+                    child: Padding(
+                      padding: const EdgeInsets.only(top: 24),
+                      child: Text(
+                        '没有匹配的技能',
+                        key: const Key('edit_all_skills_empty'),
+                        style: TextStyle(
+                          fontSize: 13,
+                          color: Palette.textMute,
+                        ),
+                      ),
+                    ),
+                  )
+                : ListView.builder(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    itemCount: visible.length,
+                    itemBuilder: (context, i) {
+                      final s = visible[i];
+                      return _SkillRow(
+                        card: widget.card,
+                        skill: s,
+                        isOcc:
+                            occSet.containsKey(jsStr(s['key'])) ||
+                            occSet.containsKey(jsStr(s['id'])),
+                        onChanged: widget.onChanged,
+                      );
+                    },
+                  ),
           ),
         ],
       ),

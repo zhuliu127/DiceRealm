@@ -1,0 +1,294 @@
+============================================================
+P10 第 3 期 A 批 —— 交付报告（工程师 寇豆码 / software-engineer-5）
+工程：C:/Users/60965/WorkBuddy/2026-10-08-18-34-17/dice-realm
+基线：2.17.0+83 / 全量 1853 组 0 红 / APK c3740fd7… 70,001,068 B
+============================================================
+
+【0】一句话结论
+- A（互动广播）：**底盘本来就是通的**（dice / sancheck 早已 PUBLIC 广播 + reduce 进
+  state.dice / state.logs）。用户「都没广播」的真实成因是**呈现层丢了两个身份信息**：
+  记录栏的骰行不印发言人、骰行不印技能名 —— 于是「一堆匿名数字」= 用户眼里的「没广播」。
+  本批补的是呈现（+18 个用例，其中 3 条反证钉死「暗骰绝不泄漏」）。
+- B（潜在疯狂）：找到并修掉**一个真 bug** —— 回合边界 disarm 判据用的是硬编码老取值
+  `'不定疯狂（症状消失）'`，用户改名成「潜在疯狂」之后**永远 disarm 不掉**。
+- C（自动头像 PNG）：补齐上一批欠账，新增 UI 层 PNG 生成器，与 SVG **同一份视觉参数**
+  （含 `warm` 调色也能从老卡 SVG 反解回来），实测体积远低于 20000 上限。
+- D（规则差异盘点）：产出 14 条结构化清单（见 §6），本批**未按清单改规则代码**。
+
+
+【1】A · 互动广播：路径表（改前 / 改后）
+
+判据来源：老 APP `core/room-model.js:55-80` 的 EVT 枚举 + `:1172` 的散播口径 +
+`room-panels.js:1583-1607` 的记录栏渲染。**注意**：老 APP 的 `sancheck` 是
+`INTENT`（`:122`），**不是** EVT —— 所以「SAN Check 广播」在老 APP 里也是
+「DICE(骰点) + LOG(结算说明)」两条，本工程与之一致，**没有也无需**新造事件名。
+
+| # | 路径 | 老 APP 行为 | 新 APP 改前 | 改前广播? | 改前能不能看出来? | 本批改动 |
+|---|------|-------------|-------------|-----------|------------------|----------|
+| 1 | 玩家快捷骰（工具栏 GpDiceBar，1D6/自定义） | DICE PUBLIC（全员） | `GpDiceBar._roll` → `intent(dice,direct)` → `diceDirect` → `diceRoll` → `emit(RoomEvt.dice, vis:public)` `room_model_actions_combat.dart:771-786` | ✅ 是 | ❌ 记录栏只有「1D6 → 3」，**没有昵称** | `gp_feeds.dart` FeedRow：骰行补「昵称：」 |
+| 2 | 玩家技能检定（骰子工具 / 场景检定面板） | DICE PUBLIC（带 `label`） | 同上，`diceDirect` 的 `expr=='1D100'` 分支 → `diceRoll`，`dice.label = 技能名` | ✅ 是 | ❌ 记录栏看不到「检定的是什么技能」（`diceLine` 没渲染 label） | `feed_view.dart#diceLine` 前置 `技能名：` |
+| 3 | SAN Check（玩家自助 / KP 定向） | DICE PUBLIC + LOG PUBLIC | `settleSanCheck` `room_model_actions_sheet.dart:1160-1200`：`diceRoll('SAN Check…')` + `emit(RoomEvt.log, kind:'check', vis:public)` | ✅ 是 | ✅ 是（文本含昵称 / 目标 SAN / 掷值 / 损失 / 变化） | 无（只加跨视角用例钉死） |
+| 4 | 暗骰（`secret:true` / KP `dice.dark`） | PRIVATE→本人+KP，公共只留脱敏提示 | `diceDirect` secret 分支 `:835-910`：两条 SEAT PRIVATE + 一条 PUBLIC「暗骰了一次（结果只有他/她与 KP 可见）」；`darkRoll` `:912-950` 同口径 | ✅ 按秘密口径广播（不泄漏） | ✅ | 无（加反证用例 A4/A5） |
+| 5 | KP 推送检定请求（`check.request`/`check.push`） | REQUEST SEAT（定向）+ LOG PUBLIC「KP 要求X检定」 | `checkRequest` `:1006-1085`：`emit(RoomEvt.request, vis:seat, to:t)` + `emit(RoomEvt.log, kind:'check-req', vis:public)` | ✅ 是 | ✅ 是 | 无 |
+| 6 | 对抗检定（非秘密） | CHECK PUBLIC（全体现行 + 进公共日志） | `emitOpposedCheck` `:1088-1110`：非秘密 → `emit(RoomEvt.check, vis:public)` | ✅ 是 | ✅ 是 | 无 |
+| 7 | 对抗检定（秘密） | PRIVATE→KP + 公共脱敏 LOG | 同函数 secret 分支 | ✅ 按秘密口径 | ✅「私密」标签 | 无 |
+| 8 | 战斗伤害 / 攻击 / 武器故障 | LOG PUBLIC | `:659-672` / `:737-757` / `:2114` | ✅ 是 | ✅ 是 | 无 |
+| 9 | 场景检定步骤引擎 | SCENECHECK PUBLIC | `:2401` / `:2458` / `:2583` | ✅ 是 | ✅ 是 | 无 |
+| 10 | 回合推进 / 回合强提醒 | ROUND / TURNALERT PUBLIC | `room_model_rollback.dart:352-392` | ✅ 是 | ✅ 是 | 无 |
+
+结论表（一句话）：**10 条路径里 10 条都在广播；问题 100% 在 1、2 两条的渲染**。
+
+改后效果（同一份 state，玩家 p2 的屏幕）：
+  改前  `[骰] 1D100 → 42 · 常规成功`
+  改后  `[骰] 甲：侦查：1D100 → 42 · 常规成功`
+  老 APP `🎲 甲 · 1D100 ＝ 42` / `常规成功 · 侦查`（两行，信息量一致）
+
+【1.1】秘密口径判定依据（K3 红线，逐条）
+- 判定只看**事件本身的性质**，不看「谁想看」：
+  · `diceDirect.secret == true`（工具栏「暗骰」开关）→ SEAT：本人 + KP 各一条
+    PRIVATE（完整结果），公共侧**只**一条「暗骰了一次（结果只有他/她与 KP 可见）」，
+    不含 total / levelText / 骰面明细；并且 payload 仍带 `secret:true`，
+    万一有人误改成 PUBLIC，`emit()` 的 `hasSecret` 闸门会立刻 `scrub()` + 记 warning。
+  · `dice.dark`（KP 暗骰）→ 只 SEAT 给 `kHostSeat`；公共只有「KP 暗骰了一次」。
+  · `check.opposed` + `secret` → PRIVATE→KP + 公共脱敏行（`redacted:true`）。
+  · 其余（快捷骰 / 技能检定 / SAN Check / 伤害 / 场景检定）→ PUBLIC，
+    与老 APP `:5803` 注释「非秘密 → 全体现行 + 进公共日志」一致。
+- `reduce` 侧的第二道闸：`room_model_reduce.dart:196-240` 对 `RoomEvt.check`
+  按 `evt.vis` 分流 —— PUBLIC 落完整行，非 PUBLIC **只落一句「KP 秘密进行了一次检定」**
+  （`redacted:true`），连 summary 都不进公共 state。
+- 出站只用 `SendPlan.toJson()`（已按 vis/to 裁剪），全程无 `LogRecord.toWireJson()`。
+
+【1.2】A 的测试（8 条，含 2 条反证）
+A1 快捷骰跨视角 + 记录栏渲染「甲：」（widget 真渲染）
+A2 技能检定跨视角 + `diceLine` 以「侦查：」开头 + 真渲染
+A3 SAN Check 跨视角：`state.dice` 有 SAN 骰、`state.logs` 有 kind=='check' 且含「理智损失」
+A4 反证：暗骰 → p2 的 `state.dice` 为空、`state.privates` 为空、公共只有脱敏句；
+   同时断言「本人与 KP 两边都收到了完整结果」（不是「谁都没收到」蒙对）
+A5 反证：KP 秘密对抗 → p2 的 check 行必须 `redacted`、不含「胜」、`state.dice` 为空
+跨视角不是「读权威端 state」，而是把 `SendPlan` 按 `to` 分发进**两个真实 RoomClient**
+（`'*'` → 两个都喂），断的是「另一个会话收到的东西」。
+
+
+【2】B ·「潜在疯狂」↔ 老 APP「不定疯狂（症状消失）」逐处核对表
+
+| # | 位置 | 内容 | 判定 |
+|---|------|------|------|
+| 1 | `domain/madness_state.dart:29` | `kMentalIndefinite='不定疯狂'` | ✅ |
+| 2 | `domain/madness_state.dart:30` | `kMentalPotential='潜在疯狂'` | ✅ 新名（用户改名） |
+| 3 | `domain/madness_state.dart:38-40` | `kMentalLegacyPotential='不定疯狂（症状消失）'`（历史取值） | ✅ 兼容保留 |
+| 4 | `domain/normalize.dart:150-160` | 老值 → 潜在疯狂；与不定疯狂互斥 | ✅ |
+| 5 | `domain/room_model_actions_room.dart:40-64` | `kRaMentalPotential` / `kRaMentalLegacyPotential` + 兼容取值表 | ✅ |
+| 6 | `domain/room_model_actions_sheet.dart:115-128` | 读入翻译 + 互斥（不定优先） | ✅ |
+| 7 | `domain/room_model_actions_sheet.dart:1274-1279` | 复发判据 `((isPotential && fadedArmed) \|\| (oneFifth>0 && lossTotal>=oneFifth))` | ✅ 与老 APP `:884-887`/`:984-1000` 等价 |
+| 8 | `domain/room_model_actions_sheet.dart:1282-1315` | 潜在 + 任意损失 → 不定 + **新生成一条症状**（走 `nextMentalState`，不另写 if） | ✅ |
+| 9 | `domain/room_model_actions_sheet.dart:1912` | 不定症状消退 → 潜在 + `fadedArm[target]=true`（武装） | ✅ |
+| 10 | `domain/room_model_actions_sheet.dart:1773-1790` | 治愈 / 成功精神分析 → 清掉不定与潜在 | ✅ |
+| 11 | **`domain/room_model_host_core.dart:198-206`** | 回合边界 disarm：**改前硬编码老取值** | ❌ **真 bug，本批已修** |
+| 12 | `domain/room_model_save.dart:166` | 存读档清 `fadedArm` | ✅ |
+| 13 | `lib/ui/**` 文案 | 全库零处把旧名给玩家看（B5 静态扫 197+ 文件，去注释后零命中） | ✅ |
+
+【2.1】B 的 bug 详情（唯一一处实质差异）
+改前 `room_model_host_core.dart#_onRoundBoundary`：
+    if (mental.contains('不定疯狂（症状消失）')) { fadedArm[seat] = false; }
+- 用户把状态改名为「潜在疯狂」后，**仍处潜在疯狂的座位永远命中不了这条 if**；
+- `fadedArm` 在回合边界被 `clear()` → 键缺失 → `fadedArm[seat] != false` 判为 **true**；
+- 结果：**「本回合任意损失即复发」跨回合一直生效**，而老 APP `room-model.js:984-1000`
+  的语义是「回合推进时对仍处 FADED 的座位显式置 false（disarm），使复发需重新累计
+  ≥ ceil(maxSAN/5)」。
+修法：改用状态机判据 `mental_state.isPotentialMadness(mental)`（内部先
+`normalizeMentalList` → 新旧两个取值一次覆盖），并写清注释。
+副作用：无（正常 / 临时疯狂的座位仍不会被写 false —— B3 用例钉死）。
+
+【2.2】B 的测试（5 条）
+B1 潜在疯狂 → 回合推进后 `fadedArm['p1']==false`（改前红）
+B2 老取值「不定疯狂（症状消失）」同样 disarm（老卡兼容）
+B3 正常人 / 只有 p2 潜在时，p1 的键**不出现**（不无脑置 false）
+B4 潜在 + 再损失 1 点 SAN → 复发为「不定疯狂」+ 新生成一条疯狂症 + 两者互斥
+B5 静态扫：玩家可见文案不含旧名（去注释 / 允许兼容取值表里的独立字面量）
+
+
+【3】C · 自动头像 PNG 化
+
+方案（三层，职责不混）：
+1. `domain/avatar.dart`（纯 Dart，零引擎）
+   - 新增 `AvatarSpec`（bgTop / bgBottom / foreground / initial / rotationDegrees / dots）
+     + `specOf(name, flavor)`：**取色与散列只算这一次**，SVG 与 PNG 都读它。
+   - `make()` 改为读 `specOf`，输出**逐字节不变**（既有 avatar oracle 全绿）。
+   - 新增 `isAutoAvatarSvg()` / `specFromSvg()`：从老卡里那条 SVG dataURI **反解**视觉参数
+     —— 这样「本机 SVG」与「远端 PNG」连 `warm` 调色都逐像素同源（用名字重算会丢 flavor）。
+2. `ui/widgets/auto_avatar_png.dart`（UI 层，可用 Flutter）
+   - `PictureRecorder + Canvas + TextPainter` 照抄 SVG 的 `viewBox="0 0 240 240"`：
+     渐变底（左上→右下）/ r=104 α.16 外环 / r=88 α.42 内环 / 上半弧 rotate(rot) /
+     `dots` 个 r=2.2 α.55 圆点 / serif 98px w700 首字（盒中心对到 (120,124)）。
+   - `toImage` → `toByteData(png)` → base64 → `data:image/png;base64,…`。
+   - 体积降级阶梯 128 → 96 → 64 → 48，任一档 ≤ 20000 即返回。
+   - 可注入端口 `autoAvatarPngEncoder`（T1：widget 测试换同步替身）。
+3. `ui/room/sheets/card_sheet_payload.dart#cardToRoomSheetForReport`（绑卡上报）
+   - ① 有上传头像 → 走既有 `avatarThumbEncoder`（64px PNG，原逻辑一字不动）；
+   - ② 没有 → `autoAvatarSpecOf(card)`（老卡 SVG 反解 / 无头像按名字现算）→ PNG；
+   - ③ 仍拿不到 → **删掉 `avatar` 键**（老 APP「没有头像 → 不占广播体积」）。
+
+体积实测（`test/...C4`，128px）：
+  · `data:image/png;base64,` 开头，PNG 魔数 `89 50 4E 47 0D 0A 1A 0A` 校验通过
+  · 长度 3xxx 字符量级（用例断言 `>500` 且 `≤20000`；远低于老 APP 的 20000 上限）
+  · `roomAvatarDataUri(uri) == uri` → 能被房间广播判据接受（这条正是改前 SVG 挂掉的地方）
+
+老卡兼容：`avatar.make()` 产出的 SVG 仍在卡里、**不被覆盖**（`ensure()` 原样返回，C7 钉死）；
+本机显示侧对 SVG 的既有降级（首字圆点）不变、不抛不空白；广播侧一律换成 PNG。
+
+C 的测试（8 条）：同源参数 4 个名字逐一相等 / warm 调色反解 / 判据分得清 PNG vs SVG /
+真 PNG 且 ≤20000 / 无头像→PNG（首字同源）/ 老卡 SVG→反解后转 PNG / 老卡不炸 / 生成失败降级删键。
+
+
+【4】反向验证（3 处，逐字节恢复）
+
+| # | 改动 | 期望 | 实测 | 恢复校验 |
+|---|------|------|------|----------|
+| ① | `diceRoll` 的 `emit(RoomEvt.dice, vis: public)` → `vis: kp`（等于摘掉普通掷骰的 PUBLIC 广播） | A1 跨视角用例红 | ✅ A1 红（本文件 3 红） | `cp` 回备份，`sha256=995a0307…`、`diff -q` 一致 |
+| ② | `settleSanCheck` 的公共结算 LOG `vis:public` → `vis:seat, to:kHostSeat` | A3 红、**A4（暗骰反向）仍绿** | ✅ A3 红且仅 A3 红；A4/A5 绿 | `sha256=692ea579…`、`diff -q` 一致 |
+| ③ | `autoAvatarPng` 的 `'data:image/png;base64,'` → `'data:image/png,'` | C4 红 | ✅ C4 红（仅此一条） | `sha256=a54dfdfc…`、`diff -q` 一致 |
+
+恢复后复跑：本文件 18/18 全绿；全量 1871 全绿。
+
+
+【5】验收原始输出
+
+-- 全量测试 --
+  改前基线：1853 组 0 红
+  改后：    1871 组 0 红（`00:01 +1871: All tests passed!`）
+  `flutter test --concurrency=1` 复跑：`04:34 +1871: All tests passed!`（与并发跑一致，无顺序依赖）
+  差额 = +18 = 新增 `test/p10_t3_broadcast_potential_png_test.dart` 18 条（A1-A5 / B1-B5 / C1-C8）
+         —— 账目算平：新增文件 18 条，无一条既有用例被删。
+  既有用例的**三处必要变更**（均为「口径有意变化」，判据本身不变）：
+    1. `test/p10_t2_avatar_test.dart` E 组 3 条：新增自动头像 PNG 那一步的替身
+       （`picture.toImage()` 真异步，fake-async 里永不完成 —— 与既有 `avatarThumbEncoder`
+       同一套注入规矩）；「没有可广播头像 → 删键」的判据一字未改。
+    2. `test/room_ui_entry_test.dart` / `room_ui_player_test.dart` / `room_ui_lobby_test.dart`：
+       各加一个 `setUp(_stubAutoAvatarPng)`（同一原因），断言一字未改。
+    3. `test/room_history_export_test.dart` K3 组：把「`DARK_ROLL_LABEL` 藏在**公开骰的 label** 里」
+       这个探针搬到 `privates` 正文（公开骰的 label 本来就是公开字段，老 APP
+       `room-panels.js:1601` 直接渲染），并**新增一条正例**断言技能名必须出现在导出正文里。
+
+-- dart analyze --
+  `Analyzing dice-realm... No issues found!`
+
+-- P4 门禁 --
+  `==== 合计 13 条，失败 0 条 ====` / `P4_GATE IS_PASS: YES`
+
+-- P5 UI 门禁 --
+  `==== 合计 14 条，失败 0 条 ====` / `P5_UI_GATE IS_PASS: YES`
+  （jsStr( 实测 14 处、白名单外 0 —— 预算未扩；`lib/domain` 纯 Dart 检查：
+   首轮曾因我在 `avatar.dart` 注释里写了 `dart:ui` 字面量而 FAIL，已改成「引擎」措辞。）
+
+-- 出包 --
+  `bash tool/build_apk.sh` → `√ Built build\app\outputs\flutter-apk\app-release.apk (66.8MB)`
+  三 ABI libapp.so：arm64-v8a 8,782,728 / armeabi-v7a 9,749,064 / x86_64 9,044,872
+  产物：70,001,068 字节
+  SHA256：531e80ac9d8fd7793b46a9741b7052c264847f2820f3275fd19d832464b07a59
+  签名：debug（可侧载、不可上架）
+  `flutter config --list` → `enable-native-assets: true` ✅（`tool/build_apk.sh:33` 出包前先置 true，出包后复查仍为 true）
+
+
+【6】D · 规则差异清单（结构化盘点，**本批未改任何规则代码**）
+
+口径：只挑**实质规则**（不列 UI 文案）。「等价」= 逐行读过两边的判据与顺序；
+「⚠未穷尽」= 抽查了主路径，但没做全量逐行比对，下一批若要动这块须先补对拍。
+
+| # | 规则点 | 老 APP 行为（行号） | 新 APP 现状（文件:行） | 是否等价 | 影响 | 建议优先级 |
+|---|--------|--------------------|------------------------|----------|------|-----------|
+| D01 | 先攻顺序 / 行动次数 | `room-model.js:2423-2450 _initiativeFallback`：manualOrder 优先 → effDex(=dex+50 若已备枪) 降序 → dex 降序；`actionsPerRound` 展开成多槽（slot/totalSlots） | `room_model_actions_combat.dart:106-150`：同上，含 `raNum(a['actionsPerRound'],1)>1 ? … : 1` 夹取 | ✅ 等价 | — | P3 |
+| D02 | 先攻是否走规则服务 | 同上注释要求「必须调用 CocRules.initiativeOrder()」 | `combatStart` 优先 `rules.initiativeOrder`，失败回落 `initiativeFallback` | ✅ 等价（回落分支也有） | — | P3 |
+| D03 | 伤害 → 身体状态（重伤/濒死/昏迷/死亡） | `:2216-2270` `deriveBodyFromHp`：净下降 ≥ 半血且 hp>0 → 重伤 + 掷「避免昏迷」CON；改前重伤且 hp≥半血 → 解除；hp≤0 → 归零分流；濒死回血 → 回重伤 | `room_model_actions_sheet.dart:817-880 settleWounds` + `raDeriveBodyFromHp`：同四条，`kRaUnset` 表达「不动」，三键整包比较 | ✅ 等价 | — | P2 |
+| D04 | 重伤瞬间 CON 失败 → 昏迷标记 | `:2265-2267`（`jChk.dead` → `unconsciousJ = true`） | `sheet.dart:855-857`（`chk['dead']==true` → `unconscious = true`） | ✅ 等价 | — | P3 |
+| D05 | 天/周恢复（1 回合 = 1 天；3 回合 = 1 周） | `:3690-3765 _onDayWeekTick`：非重伤每回合 +1HP；重伤不做日恢复、每满 3 回合掷 CON：成 1D3 / 极难 2D3 且清重伤 / 败无恢复；死亡·濒死·昏迷·无 HP 不恢复；`meta.hpWeek[seat]` 记基准、回退后重新计时 | `room_model_rollback.dart:440-530`：逐条同构（含 `raNum(base,0) > round → 重记基准`） | ✅ 等价 | — | P3 |
+| D06 | `madness.advance` 不得触发天/周恢复 | `:3711` 注释明确「advance 不 emit ROUND，绝不触发」 | 天/周恢复挂在 `RoomEvt.round` 的 `_onRoundBoundary`；`madness.advance` 走 `stateApply`，不 emit round | ✅ 等价（结构性保证） | — | P3 |
+| D07 | SAN 单次损失 ≥5 → INT 检定判「是否理解」 | `:5160-5271` | `sheet.dart:1230-1270`（`loss >= 5` → `temporaryInsanityCheck`） | ✅ 等价 | — | P2 |
+| D08 | 不定疯狂：本回合累计 ≥ ceil(maxSAN/5) | `:5271` 统一式 | `sheet.dart:1272-1279`（`oneFifth=(maxSAN/5).ceil()`，`lossTotal` 累计） | ✅ 等价 | — | P2 |
+| D09 | 潜在疯狂复发（`_fadedArm`） | `:884-887` 武装 / `:984-1000` 回合边界 disarm | `host_core.dart:118-119,198-212` + `sheet.dart:1274-1279,1912` | ❌ **改前不等价（硬编码老取值 → 永不 disarm）** | 复发判据跨回合失效 | **P0（本批已修）** |
+| D10 | 临时/不定疯狂期间不掉 SAN、不获新症状 | `:5160` 前置 + `state.self` 守卫 `:2079-2110` | `sheet.dart:557-590`（玩家不得自行降级）+ `:1207-1232`（`blockedFromNewSymptom` 再守一道）+ `:1744` | ✅ 等价（新 APP 多一道旁路守卫） | — | P3 |
+| D11 | 治愈 / 精神分析 | `:4979-5111`：清不定+潜在+本次发作症状，回 1D3 SAN；目标处临时/不定时不受 SAN 减损 | `sheet.dart:1666-1800`（`hadIndef` → `curedParts.add('不定疯狂')`，潜在一并清） | ✅ 等价 | — | P2 |
+| D12 | SAN 归零 → 永久疯狂（撕卡，只能聊天） | `:5180` 附近 | `sheet.dart:1215-1225`（`san<=0` → `kRaMentalPermanent` + 公共 warn） | ✅ 等价 | — | P2 |
+| D13 | 技能表上限 200（信用评级不被截断） | `:7283-7298 sanitizeSkills`：`out.length < 200`，注释说明 120 会截掉排最后的「信用评级」 | `room_model_actions_sheet.dart:85`：`if (skills.length >= 200) break;` 同上限；`occupation.dart:47,1117` 有「信用评级」占位与合规校验 | ✅ 等价 | — | P3 |
+| D14 | 对抗检定（非对称 / 攻击对抗 / 秘密口径 / 绑定伤害） | `:5803-5992`：`_emitOpposedCheck` 秘密口径、`reaction/rounds/fallback/damage` 装配、`decidedBy` | `room_model_actions_combat.dart:1088-1110`（口径同构）+ `room_rules_opposed.dart`（判定核心） | ⚠ 未穷尽（口径与载荷形状等价，判定细节未逐行对拍） | 若判定细节有偏，对抗手感会变 | **P1** |
+
+D 的另外两条**非规则但值得下一批处理**的发现（不改代码，只登记）：
+- `room_model_actions_combat.dart:82-83`：`case 'check.push'` 直接 `return checkRequest(seat, p)`
+  —— 与 `check.request` 同一实现。老 APP 里 `check.push` 是「KP 代玩家推一次检定」的别名还是
+  另一条语义，需下一批核（目前无 UI 入口调用它）。
+- `room_model_actions_combat.dart:963 rollCheckRequest(...)`：**全库零调用点**（死代码）。
+  老 APP `:3106-3131` 的「按权威端存的技能/难度替该玩家掷一次」在本工程没有入口 ——
+  玩家侧一律走 `diceDirect`（权威复算）。建议下一批要么接线要么删掉，别留着当假入口。
+
+最高优先级前 3（下一批施工顺序建议）：
+  P0 — D09 潜在疯狂复发武装（**本批已修**，无需再做，列此仅为账目）
+  P1 — D14 对抗检定判定细节对拍（唯一「⚠未穷尽」的规则点）
+  P2 — D03/D07/D08/D11/D12 深化对拍（战斗伤害与疯狂链是玩家最容易感知的）
+  P3 — D01/D02/D04/D05/D06/D13 已读为等价，留作回归对拍的靶子
+
+
+【7】自己踩的坑（照抄给下一位，省时间）
+1. **本批最大的坑：一开始以为「广播没接通」**。实际 `diceDirect → diceRoll → emit(dice, public)`
+   与 `settleSanCheck` 的双事件早就通了。我先写了个一次性探针（`intent('p1', dice direct)`
+   → 打印 p2 的 `syncFor` + plan 的 `to`），10 分钟就证明「通了」，避免了去改一堆不需要改的
+   domain 代码。**教训：先证明症状，再动手。**
+2. **`RoomEvt.sanCheck` 根本不存在**。侦察笔记里说「有但没 emit」，实际 `'sancheck'` 是
+   `RoomIntent`（老 APP `:122` 也是 INTENT）。所以「不许新造事件名」这条自动满足了 ——
+   SAN Check 的广播口径就是 DICE + LOG，别去给 EVT 枚举加第 28 项（会打穿「恰好 27 项」的
+   覆盖矩阵断言）。
+3. **`dart:ui` 字面量不能出现在 `lib/domain/**` 的注释里**（P5 门禁扫注释）。我被这条打了
+   两次（`avatar.dart`、`card_sheet_payload.dart`），措辞改成「引擎」即可。
+4. **`picture.toImage()` / `toByteData()` 在 widget 测试的 fake-async 区域里永不完成**。
+   凡是新增「引擎真异步」的生成器，必须同时给它一个可注入端口，并在既有 widget 用例里加
+   替身 `setUp`；否则会以「某条 send 没发生」的形式挂掉（症状是 `lastWhere` 抛 No element，
+   完全不提头像，极难联想）。C4 用例本身用 `tester.runAsync` 跑真编解码。
+5. **改渲染文案会撞「秘密探针」类测试**。`room_history_export_test` 把 `DARK_ROLL_LABEL` 藏在
+   **公开骰的 label** 里当秘密探针 —— 那是旧行为下「label 反正不显示」的副产物。
+   正确的修法是「把探针搬到真秘密字段 + 加一条正例钉住新行为」，而不是删断言。
+
+
+【8】文件清单（新增 / 修改）
+新增：
+  lib/ui/widgets/auto_avatar_png.dart                      （自动头像 → PNG dataURI 生成器 + 可注入端口）
+  test/p10_t3_broadcast_potential_png_test.dart            （18 条：A1-A5 / B1-B5 / C1-C8）
+  _p10_transport4.txt                                      （本报告）
+修改：
+  lib/domain/avatar.dart                                   （+AvatarSpec/specOf/specFromSvg/isAutoAvatarSvg；make 读 specOf，输出字节不变）
+  lib/domain/room_model_host_core.dart                     （+import madness_state；回合边界 disarm 改用 isPotentialMadness —— B 的 bug 修复）
+  lib/ui/room/view/feed_view.dart                          （diceLine 前置技能名）
+  lib/ui/room/widgets/gp_feeds.dart                        （记录栏骰行显示发言人）
+  lib/ui/room/sheets/card_sheet_payload.dart               （无上传头像 → 自动头像 PNG 化后上报）
+  test/p10_t2_avatar_test.dart                             （E 组 3 条加自动头像 PNG 替身）
+  test/room_ui_entry_test.dart                             （+setUp 替身）
+  test/room_ui_player_test.dart                            （+setUp 替身）
+  test/room_ui_lobby_test.dart                             （+setUp 替身）
+  test/room_history_export_test.dart                       （K3 探针搬到 privates + 新增「技能名必须可见」正例）
+
+未改动（按红线）：pubspec.yaml / `_manual_test_checklist.md` / `qa_*_report.md` /
+  另一工作区 overview.md / `tool/qa/*` / kRoomPolicy（仍是 61 条）/ `RoomEvt.values`（仍是 27 项）/
+  jsStr( 白名单（仍 14 处）
+
+
+【9】遗留 / 没做完的（如实报）
+1. **A 的「加回来」是呈现口径的补齐，不是新铸事件**。如果用户第 4 次反馈仍说「看不到广播」，
+   那大概率是**记录栏这块在他的机型/布局下没展开或太小**（P10 第 2 期 B 把记录塞进折叠档），
+   下一批应先查布局而不是再改 domain。本条已尽量在报告里写清，避免下一批重复诊断。
+2. **D14 对抗检定判定细节未逐行对拍**（唯一「⚠未穷尽」项），列 P1。
+3. `check.push` 别名语义 / `rollCheckRequest` 死代码：只登记，未动（属规则大改，按指示留下一批）。
+4. 自动头像 PNG 的**体积实测**只在测试里断言（`>500` 且 `≤20000`），没打印精确字符数；
+   128px 实际值在 3xxx 量级，远低于上限，不需要降档。
+5. 未跑 adb / 模拟器 / 真机（按分工由用户统一测）。
+
+
+【10】全局一致性审查
+- 跨文件导入：新增 `ui/widgets/auto_avatar_png.dart` 只被 `card_sheet_payload.dart` 与两个
+  测试引用；`domain/avatar.dart` 新增 API 被 `card_sheet_payload.dart` / 测试引用；
+  `host_core` 新增 `madness_state` 依赖，无环（madness_state → character → js_compat，纯终结）。
+- 接口契约：`autoAvatarPngEncoder` 与既有 `avatarThumbEncoder` 同形（可注入 Function），
+  不引入全局可变状态竞争（测试 addTearDown 还原）。
+- 数据流：`AvatarSpec` 是唯一真相，SVG/PNG 两条渲染路径不可能散成两套调色板
+  （C1/C2 逐字段断言）。
+- 无重复实现：没有第二套 diceLine / 没有第二套 disarm 判据。
+- 秘密数据流：三条 SEAT 路径（暗骰 / KP 暗骰 / 秘密对抗）全部有反证用例，且 reduce 侧
+  有第二道 `redacted` 闸。
+
+**IS_PASS: YES**

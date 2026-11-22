@@ -1,0 +1,305 @@
+# P10 第 2 期 A 批 · 交付报告（头像跨设备 + 推回合自动保存对齐老 APP）
+
+任务号 #5 · 负责人：工程师 寇豆码 · 模式：快速（一次写完代码 + 测试 + 报告 + 自检）
+工程：`C:/Users/60965/WorkBuddy/2026-10-08-18-34-17/dice-realm`
+基线：`2.17.0+83` / 全量 1800 组 0 红 / APK `c41213ba…3849` / 69,820,784 字节
+
+---
+
+## 一、做了什么（对用户两条点名需求）
+
+### 需求 1：「显示头像缩略图让游戏中的玩家栏里面也显示头像」
+
+**真因**（第 1 期遗留）：头像文件落在**本机私有目录**（`avatars/<cardId>.png`），
+角色卡里只存**相对路径**；房间协议不传二进制。于是：
+- 绑卡上报时 `sheet.avatar` 是一条本机相对路径 `avatars/c1.png`；
+- domain 的 `sanitizeSheet` 只收 `data:image/(png|jpe?g|webp);base64,` 且 ≤20000 → **判成 `''`**；
+- 远端那台设备既没有文件、也没有 dataURI → 玩家栏永远退化成首字圆点。
+
+**本批做法**（严格照老 APP v2.13.7 口径，不另设计）：
+
+1. **新增 `lib/repo/avatar_thumb.dart`** —— 头像缩略图生成（纯 `dart:ui`）：
+   - 解码 → **短边居中裁正方形**（`side = min(w,h)`，`sx=(w-side)/2`）→ 缩到 **64×64** → 编码
+   - 与老 APP 逐行同口径，只有编码格式不同（见「关键决策」）
+   - 输入：本机相对路径（读 `avatarStore` 的绝对文件）**或**已是 `data:image/*;base64,` 的值
+   - 无头像 / 文件不存在 / 解码失败 / 超限 → **空串**（绝不抛、绝不返回半截）
+   - 体积超 20000 → 按 `64 → 48 → 32` 阶梯降尺寸
+2. **新增 `lib/domain/avatar_uri.dart`** —— 头像 dataURI 的**纯字符串判据**
+   （`^data:image/(png|jpe?g|webp);base64,` + `length ≤ 20000`，逐字对齐老 APP
+   `room-model.js:7306`）+ 同步 base64 解码。放 domain 是因为**视图层
+   `feed_view.dart` 也要用同一份规则**，但它不该被引擎依赖污染。
+3. **绑卡上报带缩略图**：`card_sheet_payload.dart` 新增
+   `cardToRoomSheetForReport(card)` —— 先把 `card.raw.avatar` 压成缩略 dataURI，
+   再放进 `sheet.avatar`；**没有就 `remove('avatar')`（键不存在，不是空串）**，
+   完全复刻老 APP `reportSheet` 的 `delete sum.avatar`。
+   `sheet_bind_char.dart` 的「绑定 / 清空」改成 `await` 这条路径（生成完才发 `INTENT.CHAR`，
+   顺序同老 APP 的「在回调里才 sendIntent」）。
+4. **`AvatarThumb` 支持 dataURI**（`lib/ui/widgets/avatar_picker.dart`）：三层优先级
+   - ① 本机相对路径 → `FileImage`（**原图高清，512px，优先**）
+   - ② `data:image/*;base64,` → `MemoryImage`（**同步解码**，列表几十行也不挂 Future）
+   - ③ 都没有 / 解码失败 → `AvatarDot` 首字圆点
+5. **玩家栏（用户点名）**：`memberAvatarRel` → 新增 `memberAvatarValue`，并在
+   `gp_pl_mates.dart`（玩家侧队友栏）+ `gp_kp_players.dart`（KP 侧玩家栏）切过去。
+   取数顺序：**本机文件真的存在 → 走文件；否则用 `sheet.avatar` 的 dataURI；都没有才圆点**。
+6. **聊天 / 公开记录条目头像**（对齐老 APP `feedAvatarForSeat` + `feedAvatar`）：
+   `FeedItem` 新增 `avatar` 字段，`collectFeeds`/`collectChats` 按 `seat` 反查成员
+   `sheet.avatar`（只认合规 dataURI，超 20000 置空）；`FeedRow` 左侧渲染 18px 缩略图
+   （没有头像就**不渲染整块**，不留空位）。
+7. **只给你看（私密）条目头像**：`GpPrivatesRow` 左侧画 **KP 头像**
+   （私密信息由权威端下发；私密行只有 `{seq,title,text,at,kind}` 五键，故意不带 seat，
+   所以按 `kHostSeat` 反查成员表；拿不到就是空串 → 不渲染，绝不虚构发送者）。
+
+### 需求 2：「推进回合玩家自动保存角色功能，老 app 都实现了」
+
+第 1 期已落了一半（`RoomCardSaver` 按 `meta.round` 去重保存），本批**换成老 APP 的唯一触发源**：
+
+1. `RoomEvt.tempCommit = 'tempcommit'` 常量与 `advanceRoundInto` 里的
+   `round → 边界检定 → 天/周恢复 → **最后** tempCommit` 顺序**第 1 期已在位**
+   （`room_model_rollback.dart:384-393`），本批**逐条复核并对每条都补了钉子用例**。
+2. **会话层新增信号** `RoomSession.lastTempCommitRound`（默认 0），三个客户端实现各自
+   在 `_captureNotice` 里抓 `EVT.TEMP_COMMIT` 的 `p.round`：
+   `LocalLoopbackSession` / `RemoteSession` / `CloudRemoteSession`。
+   （与 `kickedByHost` 同一套路：连接层只通知、不改状态。）
+3. **`RoomCardSaver.onStateChanged()` 改为只由 TEMP_COMMIT 驱动**：
+   - 触发条件：`lastTempCommitRound > 0` 且与该回合号不同（幂等）→ 游戏期 → 玩家 → 有绑卡 → 不重入
+   - 失败静默（C2 原要求保持）
+   - 方法名保留 `onStateChanged`（第 1 期 6 处调用与 4 条用例零改动，语义注释全面重写）
+4. **TEMP_COMMIT 不进存档**：`reduce` 无分支（走 `default`）、`save()` 不含它 —— 已有，
+   本批补「存档 JSON 里零 `tempcommit` 字面量」的用例。
+
+---
+
+## 二、老 APP 口径对照（逐条）
+
+| 老 APP（webview 2.13.13） | 本批 Flutter | 一致性 |
+|---|---|---|
+| `avatarThumbDataUrl(url,64,cb)`：只收 `data:image/`；`side=min(w,h)`；`sx=(w-side)/2`；缩到 64 | `encodeAvatarThumb()`：同上裁剪公式；输入还额外支持本机相对路径 | ✅ 裁剪/尺寸/判据一致 |
+| `toDataURL('image/jpeg', 0.72)` | `toByteData(png)` → `data:image/png;base64,` | ⚠️ **格式不同（Flutter 无 JPEG 编码器，pubspec 本批禁改）** |
+| `if (thumb) sum.avatar = thumb; else delete sum.avatar` | `cardToRoomSheetForReport`：非空才写键，否则 `remove` | ✅ |
+| `_cropMember`：`avatar: sh.avatar \|\| ''`（对同席公开） | `room_model_host_core.dart:424` 已是同形状 | ✅ 第 1 期已在位 |
+| `sanitizeSheet`：`^data:image/(png\|jpe?g\|webp);base64,` 且 ≤20000 | `raSanitizeSheet` 同正则同上限；`domain/avatar_uri.dart` 再复用一份给视图层 | ✅ |
+| feed 条目：`feedAvatarForSeat(st, seat)` → 成员 `sheet.avatar` | `feedAvatarOfSeat(state, seat)` → `FeedItem.avatar` | ✅ 同口径（按 seat 反查，不新增线上字段） |
+| `_advanceRound`：ROUND → `_onRoundBoundary()` → `_onDayWeekTick()` → **最后** TEMP_COMMIT | `advanceRoundInto` 同顺序 | ✅ 已在位，本批补钉子用例 |
+| TEMP COMMIT 必须 `_push` 进 plan（只 `emit` 玩家收不到） | `pushInto(out, emit(...))` | ✅ |
+| `room.start` 直接 emit ROUND、不走 `_advanceRound` | `roomActionStart()` 同（只在无回合时 emit ROUND） | ✅ 有「开局不触发」用例 |
+| `combat.next` 仅**整轮折返**才走到统一出口 | `nextTurn()` 里 `if (round != prevRound) advanceRoundInto(...)` | ✅ 有折返/非折返两条用例 |
+| `_onTempCommit`：只提交本房临时卡；别房绝不误伤；没有则静默跳过；幂等 | 见「关键决策 2」 | ✅ 语义对齐（实现形态不同，见下） |
+
+---
+
+## 三、关键决策（含如实说明）
+
+### 决策 1：PNG vs JPEG —— 体积实测
+
+- **硬约束**：`ui.Image.toByteData()` 只支持 `rawRgba` / `png`，**没有 JPEG 编码器**；
+  `pubspec.yaml` 本批不许改（不能引 `image` 包）。所以只能用 PNG。
+- **实测**（本机，`p10_t2_avatar_test.dart` 打印）：
+  - 300×300 彩色噪声图 → 64px **PNG base64 = 7,102 字符**（约 5.2KB 二进制）
+  - 纯色 / 两色图 → 200–600 字符
+  - 结论：**远低于老 APP 的 20000 上限**，广播体积安全（老 APP JPEG 0.72 约 2-4KB，
+    本批 PNG 同类图约 5-7KB，**约 1.5-2 倍**，但仍只有上限的 1/3 以内）。
+- 若某张图仍超 20000 → 自动降到 48 → 32（有确定性用例：先量 64/48 的真实体积，
+  再把上限卡在两者之间，断言真的降到 48）。
+- **不假装一样**：这是与老 APP 的**唯一实质差异**，已写进代码头注释与本报告。
+
+### 决策 2：C2 与 tempCommit 的取舍 —— 以 tempCommit 为唯一触发源
+
+团队口径倾向「tempCommit 为唯一触发源，C2 原有回合号去重逻辑复用作幂等保护」，**照办**：
+
+- **保留**：`RoomCardSaver` 的 `_busy` 重入保护、`_lastAutoRound` 幂等、失败静默、
+  `canSave` / `saveNow` 手动保存（C1）。
+- **替换**：触发判据从「`meta.round` 变了」→ 「`session.lastTempCommitRound` 变了」。
+  理由（老 APP 注释原文）：天/周恢复会经 `EVT.STATE` 改临时卡（重伤每周回血），
+  若一看到回合号变就落库，玩家会把**恢复前**的旧值覆盖回原卡。
+- **为什么不会两套机制打架**：判据只剩一条来源（TEMP_COMMIT），`_lastAutoRound`
+  只做幂等键（存的是 TEMP_COMMIT 的 round）。同一批里没有第二个写入口。
+- **Flutter 侧没有「localStorage 临时卡」这个东西**（老 APP 的 `KEY_TEMP_PREFIX + roomCode + '.' + charId`）：
+  房间 state 本身就是唯一暂存面，`roomCardPatchOf` 从它取值 → 覆盖原卡，
+  与老 APP 的 `commitTempCard` **语义等价且天然幂等**。
+  所以老 APP 的 roomCode 隔离在 Flutter 侧是**结构性成立**的（每个会话只看自己那份 state），
+  本批用「两间房并存、别房推进回合、本房不落库」的用例把它钉死。
+
+### 决策 3：缩略图生成放 repo、判据放 domain
+
+- `lib/repo/avatar_thumb.dart`：用引擎画布（解码 / canvas / PNG 编码）→ repo。
+- `lib/domain/avatar_uri.dart`：纯字符串判据 + 同步 base64 → domain（视图层要用同一份规则）。
+- 红线：`lib/domain/**` 零 Flutter / 零 IO / 零 UI —— 已用 `domain_purity_test` + P5 门禁双验。
+
+### 决策 4：私密栏头像的来源
+
+老 APP 的私密卡（`fillPrivCard`）**本来就没有头像**；本批按团队任务书补上，
+做法是**画 KP 头像**（私密信息由权威端下发），绝不虚构发送者。
+若将来私密行需要真实发送者，得在 `reduce` 的 PRIVATE 分支加 `seat` —— 那会改存档形状，
+本批**没有**动（避免砸 P4 oracle 夹具）。
+
+---
+
+## 四、自己踩的坑（给后来人）
+
+1. **domain 注释里的字面量也会被门禁扫到**。`lib/domain/avatar_uri.dart` 头注释里写了
+   `package:flutter` / `dart:ui` / `dart:io` 三个词（只是说明「零依赖」），
+   直接让 `domain_purity_test` 与 `qa_p5_ui.js` 判据 07 变红。
+   → 注释里改成「Flutter 框架包 / 引擎 / 文件系统」这类描述。
+2. **`setUpAll` 里造图**。`testWidgets` 跑在 fake-async 区域，`picture.toImage()` 的
+   Future 永不完成。头像素材必须在 `setUpAll`（fake-async 之外）生成一次再复用；
+   同理 widget 用例里的文件写盘一律用**同步** `writeAsBytesSync`。
+3. **`sentLog` 的形状是 `{to, msg:{k,t,p}}`**，不是信封本身 —— 第一版诊断函数在顶层找
+   `k`，于是「批次里有 round」永远判成 false，白跑一轮。
+4. **`round.next` 在统一出口之后还会追加一条系统播报**（`EVT.LOG`），
+   所以 TEMP_COMMIT **不是整批计划的最后一条**（老 APP 也一样）。
+   正确断言是「它排在 round 与所有 state/dice 之后，且之后只有 log」。
+5. **`sheet.damage` 之后那一回合会 +1 HP**（1 回合 = 1 天）。第一版用例拿「打伤后的 HP」
+   去比「存下去的 HP」，差了 1 —— 但这个差值恰好证明了顺序正确，
+   于是把用例改成「存下去的必须等于**恢复后**的值」，反而更有力。
+
+---
+
+## 五、验收原始输出
+
+### 5.1 `dart analyze`
+```
+Analyzing dice-realm...
+No issues found!
+```
+
+### 5.2 全量 `flutter test --concurrency=1`
+```
+04:48 +1834: All tests passed!
+```
+账目：基线 **1800** + 新增 **34**（头像 19 + tempCommit 15）= **1834**，**只增不减**，算平。
+
+新增文件：
+- `test/p10_t2_avatar_test.dart`（19 组）
+- `test/p10_t2_tempcommit_test.dart`（15 组）
+
+### 5.3 门禁
+```
+node tool/qa/qa_p4_gate.js   → ==== 合计 13 条，失败 0 条 ====   P4_GATE IS_PASS: YES
+node tool/qa/qa_p5_ui.js     → ==== 合计 14 条，失败 0 条 ====   P5_UI_GATE IS_PASS: YES
+      jsStr( 实际 14 处（预算 14，白名单外 无）—— 本批零新增
+```
+
+### 5.4 反向验证（3 处，逐字节恢复后复跑全绿）
+
+| # | 摘掉什么 | 变红 | 恢复校验 |
+|---|---|---|---|
+| ① | `advanceRoundInto` 里 tempCommit 的 `pushInto` | `p10_t2_tempcommit_test` **10 组红** | `diff -q` 通过，sha256 `3673ae8e…6688` |
+| ② | `AvatarThumb._reload` 的 dataURI 分支 | `p10_t2_avatar_test` **3 组红**（含核心的「远端玩家显示图」） | `diff -q` 通过，sha256 `c25d6695…16bc` |
+| ③ | 「无头像 → 删 avatar 键」（改成总是带键） | `p10_t2_avatar_test` **2 组红** | `diff -q` 通过，sha256 `c09dc019…e722` |
+
+恢复后复跑：`test/p10_t2_avatar_test.dart + p10_t2_tempcommit_test.dart + room_ui_entry_test.dart`
+→ `00:03 +56: All tests passed!`
+
+### 5.5 出包（`bash tool/build_apk.sh`，只跑了这一个脚本）
+```
+[1/3] 构建 release APK（native-assets 保持开启）
+√ Built build\app\outputs\flutter-apk\app-release.apk (66.7MB)
+[2/3] 校验 AOT 产物
+  8782728  1981-01-01 01:01   lib/arm64-v8a/libapp.so
+  9732680  1981-01-01 01:01   lib/armeabi-v7a/libapp.so
+  8979336  1981-01-01 01:01   lib/x86_64/libapp.so
+[3/3] 完成（native-assets 始终为开启状态，flutter test 可直接跑）
+
+===== 出包成功 =====
+-rw-r--r-- 1 60965 197609 69919088 build/app/outputs/flutter-apk/app-release.apk
+dc1c9771a8c252195afda2001b58479ce78f8a840124bc673f28f433e7ad0a9c  app-release.apk
+签名：debug（可侧载安装、不可上架）
+```
+- 三 ABI 齐全（arm64-v8a / armeabi-v7a / x86_64 各带 `libapp.so`）
+- **字节数 69,919,088**（基线 69,820,784，+98,304 字节）
+- `flutter config --list` → `enable-native-assets: true`（出包后仍为 true ✅）
+- 版本号未改：`2.17.0+83`（本批没被要求改版本号；pubspec 全程未动）
+
+---
+
+## 六、文件清单
+
+**新增（4）**
+- `lib/domain/avatar_uri.dart` —— dataURI 纯字符串判据（正则 + 20000）+ 同步 base64 解码
+- `lib/repo/avatar_thumb.dart` —— 64px 缩略图生成（短边居中裁 / PNG / 降尺寸阶梯 / 可注入端口）
+- `test/p10_t2_avatar_test.dart` —— 19 组
+- `test/p10_t2_tempcommit_test.dart` —— 15 组
+
+**修改（12）**
+- `lib/ui/widgets/avatar_picker.dart` —— `AvatarThumb` 三层优先级（+dataURI）；新增 `memberAvatarValue`
+- `lib/ui/room/sheets/card_sheet_payload.dart` —— 新增 `cardToRoomSheetForReport`（缩略图 / 无则不键）
+- `lib/ui/room/sheets/sheet_bind_char.dart` —— 绑卡 / 清空改走上面的函数（await + `_busy`）
+- `lib/ui/room/widgets/gp_pl_mates.dart` —— 玩家侧队友栏用 `memberAvatarValue`
+- `lib/ui/room/widgets/gp_kp_players.dart` —— KP 侧玩家栏用 `memberAvatarValue`
+- `lib/ui/room/widgets/gp_pl_char_card.dart` —— 自己角色卡面板也统一走 `memberAvatarValue`
+- `lib/ui/room/view/feed_view.dart` —— `FeedItem.avatar` + `feedAvatarOfSeat`
+- `lib/ui/room/widgets/gp_feeds.dart` —— 条目左侧头像 + `GpFeedsKeys.avatar(seq)`
+- `lib/ui/room/widgets/gp_privates.dart` —— 私密行左侧 KP 头像 + `GpPrivatesKeys.avatar`
+- `lib/ui/room/room_session.dart` —— 新增 `lastTempCommitRound`（默认 0）
+- `lib/ui/room/room_session_local.dart` / `_remote.dart` / `_cloud.dart` —— 抓 TEMP_COMMIT
+- `lib/ui/room/room_card_saver.dart` —— 自动保存改为**只由 TEMP_COMMIT 驱动**
+- `test/room_ui_entry_test.dart` —— 绑卡载荷断言随口径变更更新（见「遗留」第 1 条）
+
+`pubspec.yaml` **未改**；`_manual_test_checklist.md` / `qa_*_report.md` / 另一工作区 `overview.md` **未改**；
+`room_game_page.dart` 布局骨架**未动**；零新增 `jsStr(`；出站仍只用 `SendPlan.toJson()`（头像只走公开 sheet 字段）。
+
+---
+
+## 七、遗留与如实说明
+
+1. **改了 1 条既有测试的期望值**（`test/room_ui_entry_test.dart` 的绑卡载荷断言）。
+   原因：口径本身变了（老 APP：没有头像 → **不带** avatar 键），旧断言要求
+   `sheet` 与 `cardToRoomSheet(card)` 逐字段相等（含 `avatar: ''`）。
+   改法是「期望值先 `remove('avatar')` 再比，并额外断言键不存在」，**没有放宽其它字段**。
+   逐字段抽查（attrs.dex / skills.length / status.currentHP / maxSAN / 权威端房卡被换掉）全部保留。
+2. **头像体积比老 APP 大 1.5-2 倍**（PNG vs JPEG），已实测并在上文列出；仍在 20000 上限的 1/3 内。
+3. **私密栏头像是 KP 的头像**（老 APP 私密卡本来没头像）。没有给私密行加 `seat` 字段
+   —— 那会改 reduce / 存档形状，砸 P4 oracle 夹具，本批刻意不动。
+4. **远端头像「是否真通」**：逻辑与用例都通（本机无文件 → 用 dataURI → 渲染成图），
+   但**没有真机/双设备实测**（红线：不跑 adb / 模拟器 / 真机）。真机验证需用户：
+   A 设备绑一张带头像的卡 → B 设备加入同一房间 → B 的队友栏应看到 A 的头像（不是首字）。
+5. **任务 3（有余力才做）未做，如实说明**：
+   - 新消息闪烁：`FeedFlashTracker` 已接进 **聊天 + 公开记录** 两个 pane（`gp_feeds`），
+     「只给你看」仍用组件自带的 `_seenSeq` 高亮（行为已满足需求，只是没换判据源）。
+     本批**没动**（避免为一个纯重构砸掉 `gp_privates` 的高亮用例）。
+   - 工具栏加高：**未做**。`GpToolbar.height = 56` 被 `room_game_page.dart` 用于底部避让，
+     改高度会牵动布局用例；本批额度集中在需求 1/2，留到布局骨架那一批一起做。
+   - 布局骨架重构：按口径**不做**，`room_game_page.dart` 未动。
+6. 出包脚本 `tool/build_apk.sh` 未改；`enable-native-assets` 保持 `true`。
+
+---
+
+## 八、全局一致性交叉审查
+
+按「全部写完后一次性通读交叉检查」：
+
+1. **跨文件导入一致**：`dart analyze` 零问题；`avatar_uri`（domain，纯）→ `avatar_thumb`
+   （repo，引擎）→ `avatar_picker` / `card_sheet_payload`（ui）三层单向依赖，无环。
+   `repo/avatar_thumb.dart` 用 `export` 转出 domain 的口径常量，调用方只 import 一个文件。
+2. **接口契约**：`AvatarThumb.relPath` 字段名不变（19 处既有调用/测试零改动），
+   语义扩成「相对路径或 dataURI」，已在类注释里写清三层优先级。
+3. **数据流**：卡 `raw.avatar`（相对路径）→ `cardToRoomSheetForReport` 压成 dataURI →
+   `INTENT.CHAR.sheet.avatar` → domain `raSanitizeSheet` 白名单（≤20000）→
+   `_cropMember` 对同席公开 → 客户端 `member.sheet.avatar` → `memberAvatarValue` →
+   `AvatarThumb`。**只有一条链，没有并行上报入口**。
+4. **无重复实现**：头像判据只在 `domain/avatar_uri.dart` 一份；`raSanitizeSheet` 里那份是
+   domain 白名单（既有，未动），二者常量同为 20000，未出现第三份。
+5. **零遗留引用**：`memberAvatarRel` 仍保留（无 lib 内调用者，供既有测试/外部复用），
+   已在实际三处（队友栏 / KP 玩家栏 / 自己角色卡）全部切到 `memberAvatarValue`。
+6. **tempCommit 单一触发源**：`room_card_saver` 不再读 `meta.round` 做判据
+   （`roundOf` 改为公开的诊断函数，无调用者驱动业务）。
+
+**IS_PASS: YES**
+
+---
+
+## 九、最终结论
+
+| 项 | 结果 |
+|---|---|
+| `dart analyze` | 0 问题 |
+| 全量 `flutter test --concurrency=1` | **1834 组全绿**（1800 + 34，只增不减，账目算平） |
+| 全量 `flutter test`（改动后复跑，默认并发） | **1834 组全绿** |
+| P4 门禁 | 13/13 `IS_PASS: YES` |
+| P5 UI 门禁 | 14/14 `IS_PASS: YES`（`jsStr(` 14/14，零新增） |
+| 反向验证 | 3 处全部变红，逐字节恢复（`diff -q` + sha256 一致）后复跑全绿 |
+| APK | `dc1c9771a8c252195afda2001b58479ce78f8a840124bc673f28f433e7ad0a9c` / **69,919,088 字节** / 三 ABI 齐全 / native-assets 恢复 true |
+| 遗留 | 见上（改了 1 条既有断言；PNG 体积大 1.5-2 倍；私密栏用 KP 头像；无真机双设备实测；任务 3 未做） |
+
+**IS_PASS: YES**
+

@@ -1,0 +1,345 @@
+================================================================================
+骰境 TRPG · 原生重写 P3-B 交付报告
+（AI 车卡主流程 + 云分享；附 P3-B 收尾：8 条测试夹具回归修复）
+================================================================================
+日期        2026-11-08
+工程        dice-realm（Flutter 3.47.9 / Dart 3.13.7），版本 2.14.0+80
+工程根 ROOT C:\Users\60965\WorkBuddy\2026-10-08-18-34-17\dice-realm
+源码（只读） C:\Users\60965\WorkBuddy\2026-10-08-18-34-17\coc7th-card-app\web\js
+             （**一个字符都没改**）
+本期范围    ① core/ai.js#AIGen.makeCharacter → lib/net/* + lib/domain/ai_gen.dart
+             ② core/share.js / ui/share-ui.js → lib/net/share_client.dart
+                + lib/repo/share_store.dart + lib/ui/share_panel.dart
+             ③ lib/ui/ai_create_page.dart（✨ AI 车卡 / 快速开始）
+             ④ 收尾：修 P2 遗留两个 widget 测试的夹具（+8 条），**lib/ 一行未改**
+验收口径    dart analyze 无 issue；flutter test 全绿（508 组）；
+            lib/domain 无 package:flutter；两个老测试文件单独全绿
+
+
+一、交付清单（绝对路径 + 行数，行数均为本期收尾后的 wc -l）
+--------------------------------------------------------------------------------
+新增 · 网络层 lib/net/*（dart:io，不引第三方 http 包）
+  C:\Users\60965\WorkBuddy\2026-10-08-18-34-17\dice-realm\lib\net\ai_client.dart        326
+      OpenAI 兼容 chat 客户端，对应 ai.js#AIClient。只保留一条原生通道
+      （网页版才有 CORS / 混合内容，故不移植 hasBridge / __cocHttpDone）。
+      参数照抄旧版：maxTokens 默认 6000、超时 180000ms、temperature 0.9。
+      错误 7 分类（badKey / notFound / rateLimited / serverError / badResponse /
+      unreachable / …），异常文本经 secret_mask 打码。
+  C:\Users\60965\WorkBuddy\2026-10-08-18-34-17\dice-realm\lib\net\ai_create.dart        180
+      AI 车卡编排：调模型 → 截断/解析失败自适应重发（6000 → 16000）
+      → toProfile → applyAttrCap → preset.buildFrom → changeLog。
+  C:\Users\60965\WorkBuddy\2026-10-08-18-34-17\dice-realm\lib\net\http_io.dart           82
+      极小 HTTP 壳（裸 HttpClient）：发 JSON 请求 / 读完整响应体 / 可取消。
+      刻意不做语义翻译（状态码/错误文本原样上抛），翻译在 domain/ai_probe.dart。
+  C:\Users\60965\WorkBuddy\2026-10-08-18-34-17\dice-realm\lib\net\share_client.dart     229
+      ShareApi 抽象 + ShareClient 实现 + buildSharePayload + ShareCreateResult
+      + ShareException（5 分类）+ normalizeShareBase / looksValidShareBase。
+
+新增 · 规则层（纯 Dart，零 Flutter 依赖）
+  C:\Users\60965\WorkBuddy\2026-10-08-18-34-17\dice-realm\lib\domain\ai_gen.dart        374
+      ai.js#AIGen 里不碰网络的部分：aiSystemPrompt / aiExamples / occNames /
+      capLines / buildPrompt / parseJson / toProfile。makeCharacter 故意放 net/。
+  C:\Users\60965\WorkBuddy\2026-10-08-18-34-17\dice-realm\lib\domain\secret_mask.dart    38
+      API Key 脱敏唯一实现（前 4 + 后 4；≤8 位只留前 2）。放 domain 是因为
+      lib/net/* 也要用，而 net 不该反向依赖 repo。
+
+新增 · 仓库层 / UI
+  C:\Users\60965\WorkBuddy\2026-10-08-18-34-17\dice-realm\lib\repo\share_store.dart     291
+      本机分享记录：文件 + 内存双后端，<文档目录>/dice_realm/shares.json。
+      delToken 三铁律：不上传 / 不进导出 / 不进日志（describe() 只给 id+url）。
+  C:\Users\60965\WorkBuddy\2026-10-08-18-34-17\dice-realm\lib\ui\share_panel.dart       340
+      详情页与完成页共用的云分享面板，三态：未配置（只给引导、不摆上传按钮）/
+      已配置未分享 / 已分享（链接 + 复制/分享/更新/删除，删除要二次确认）。
+      「打开」用 share_plus 系统分享面板，替代旧版浏览器桥 + url_launcher。
+  C:\Users\60965\WorkBuddy\2026-10-08-18-34-17\dice-realm\lib\ui\ai_create_page.dart    785
+      ✨ AI 车卡 / 🎲 生成随机角色 / ✏ 我要自己车卡 三条路；
+      生成中可取消 + 秒数 + 阶段消息；失败可一键「改用规则生成」真出卡。
+
+修改（把新功能挂上去的最小改动）
+  C:\Users\60965\WorkBuddy\2026-10-08-18-34-17\dice-realm\lib\repo\repo_scope.dart       99  加 ShareScope + /ai 路由常量
+  C:\Users\60965\WorkBuddy\2026-10-08-18-34-17\dice-realm\lib\app.dart                  89  ShareScope 包裹 + /ai 路由
+  C:\Users\60965\WorkBuddy\2026-10-08-18-34-17\dice-realm\lib\main.dart                  37  注入 ShareService（base 现读设置）
+  C:\Users\60965\WorkBuddy\2026-10-08-18-34-17\dice-realm\lib\ui\create\steps\step_summary.dart 303  第 243 行嵌 SharePanel(card: draft)
+  C:\Users\60965\WorkBuddy\2026-10-08-18-34-17\dice-realm\lib\ui\card_detail_page.dart  723  详情页加云分享面板
+  C:\Users\60965\WorkBuddy\2026-10-08-18-34-17\dice-realm\lib\ui\home_page.dart         478  入口
+  C:\Users\60965\WorkBuddy\2026-10-08-18-34-17\dice-realm\lib\ui\create\create_flow_page.dart 312  第 0 步 / AI 结果落地
+  C:\Users\60965\WorkBuddy\2026-10-08-18-34-17\dice-realm\lib\ui\settings_page.dart     708  shareBase 项
+  C:\Users\60965\WorkBuddy\2026-10-08-18-34-17\dice-realm\pubspec.yaml                  92  share_plus 等
+
+新增 · oracle 工具 / fixtures
+  C:\Users\60965\WorkBuddy\2026-10-08-18-34-17\dice-realm\tool\oracle\dump_ai_fixtures.js 225
+      buildPrompt / toProfile / parseJson 三个纯函数的期望值（46 例）。
+  C:\Users\60965\WorkBuddy\2026-10-08-18-34-17\dice-realm\test\fixtures\ai_gen.json  83984 B
+  C:\Users\60965\WorkBuddy\2026-10-08-18-34-17\dice-realm\test\fixtures\qa_legacy_export.json 41650 B
+  C:\Users\60965\WorkBuddy\2026-10-08-18-34-17\dice-realm\test\fixtures\legacy_bundle_export.json / legacy_card_export.json / legacy_card_blocks_export.json 5978 / 5453 / 7715 B
+  C:\Users\60965\WorkBuddy\2026-10-08-18-34-17\dice-realm\test\support\fake_http.dart   158  本地假服务端（AI / 分享 HTTP 真跑）
+  C:\Users\60965\WorkBuddy\2026-10-08-18-34-17\dice-realm\test\support\oracle.dart     175  fixture 驱动 + 逐字段深比较
+
+新增 · 测试（本期）
+  C:\Users\60965\WorkBuddy\2026-10-08-18-34-17\dice-realm\test\ai_client_test.dart      305  chat 成功 / 7 类失败 / Key 打码
+  C:\Users\60965\WorkBuddy\2026-10-08-18-34-17\dice-realm\test\ai_create_page_test.dart 257  AI 车卡页：生成 / 取消 / 失败回退 / 上限文案
+  C:\Users\60965\WorkBuddy\2026-10-08-18-34-17\dice-realm\test\ai_flow_test.dart        348  ⭐ 核心不变式（见 §二）
+  C:\Users\60965\WorkBuddy\2026-10-08-18-34-17\dice-realm\test\ai_gen_test.dart         199  旧版 ai.js 纯函数逐字节等价 + parseJson 矩阵（见 §三）
+  C:\Users\60965\WorkBuddy\2026-10-08-18-34-17\dice-realm\test\domain_purity_test.dart   62  lib/domain 零 Flutter / 零 dart:ui|io
+  C:\Users\60965\WorkBuddy\2026-10-08-18-34-17\dice-realm\test\qa_probe_test.dart       737  H1-H5 / S1-S6 QA 探针（含旧版真实导出 fixture 逐字段回读）
+  C:\Users\60965\WorkBuddy\2026-10-08-18-34-17\dice-realm\test\share_client_test.dart   318  请求/响应形状 + 5 类错误 + 未配置不发请求 + delToken 不外泄
+  C:\Users\60965\WorkBuddy\2026-10-08-18-34-17\dice-realm\test\share_panel_test.dart    170  三态 UI + 二次确认 + 详情页也有面板
+  C:\Users\60965\WorkBuddy\2026-10-08-18-34-17\dice-realm\test\share_store_test.dart    127  文件/内存后端 + 坏文件容错 + describe 不吐口令
+
+收尾修改（本次，仅测试侧，见 §五）
+  C:\Users\60965\WorkBuddy\2026-10-08-18-34-17\dice-realm\test\support\app_harness.dart 294  + wrapWithScopes 复用型 helper
+  C:\Users\60965\WorkBuddy\2026-10-08-18-34-17\dice-realm\test\wizard_fix_jump_test.dart 289  7 条 D2 用例宿主补 Scope
+  C:\Users\60965\WorkBuddy\2026-10-08-18-34-17\dice-realm\test\create_extra_steps_test.dart 423  硬约束 3 用例宿主补 Scope
+
+
+二、⭐ 核心不变式：「AI 只给创意，数值走 preset_gen.buildFrom(profile) 规则引擎」
+--------------------------------------------------------------------------------
+落地位置
+  lib/domain/ai_gen.dart:11-14（不变式声明）、:281-283（toProfile 清洗原则
+    「能给空串就给空串，绝不给错值」，每项独立兜底，坏一项只丢一项）
+  lib/net/ai_create.dart:6-12（不变式声明）、:148-157：
+    final profile = toProfile(raw);
+    final scaled = applyAttrCap(profile, caps);              // 本地二次校准
+    final sid = jsTruthy(settingId) ? settingId : profile['setting'];
+    final c = preset.buildFrom(profile, sid, preset.PresetOptions(caps: caps));
+    —— 模型返回的 attributes 也只作为 profile 的一个**宽松输入**，还要过
+    attrsFromAi 区间检查 + applyAttrCap 上限压缩；其余数值（职业点、技能分配、
+    装备、资产）规则引擎根本不看模型给的值。
+
+对应的测试名（精确 group / test 字符串）
+  test/ai_flow_test.dart · group '恶意 / 残缺的 AI 返回 → 落地卡仍然合法（核心不变式）'
+    · 17 条 evilPayloads 逐条 test(why, ...)：
+        '空对象（什么都没给）' / '全字段为空串' / 'attributes 是字符串' /
+        'attributes 超范围（999）' / 'attributes 少项 + 字符串数字' /
+        '职业名瞎编' / '自定义职业 + 垃圾技能名' / '自定义职业 + 非数组技能' /
+        '背景全是错误类型' / '背景文本超长 + 换行' / '年龄越界 + 性别非法' /
+        'prompt 注入（要求改数值）' / '返回数组而不是对象' / '返回 null' /
+        '嵌套垃圾字段' / '显式声明不要规则数值'
+      （以上每条都喂给真 HTTP 假服务端，再断言落地卡可用）
+    · 'AI 给全 15 的属性（想绕过规则）→ 仍按 15-90 合法区间落地'
+    · 'AI 的 attributes 正常时会被采纳（创意字段要真的用上）'
+    · 'AI 给的姓名/背景是创意字段，一律采信；数值一律本地算'
+    公共断言 expectUsable()：validate 无 error、checkList 10 项全过、
+      姓名/职业/居住地/技能/武器非空、职业点+兴趣点不超额、技能不超上限、
+      八项属性 15-90 且 5 的倍数（被上限压缩时豁免 5 的倍数）。
+  test/ai_flow_test.dart · group '回退路径：AI 完全不可用时，规则引擎必须能顶上'
+    · 'AI 一直 500 → 抛可读错误；随后规则引擎直接生成一张合法卡'
+  test/ai_gen_test.dart · group 'toProfile 的清洗原则：能给空就给空，绝不给错值'
+    · '属性只保留能解析成整数的项；一项都不剩就整块丢弃'
+    · '非法输入（null / 字符串 / 数组）→ 空 profile，不抛'
+    · '年龄越界归 0（表示「交给随机」）；字符串数字能救'
+    · '背景文本单行化 + 240 字截断'
+    · 'occupationSkills 去空、去重前截断到 8 项；非数组整块丢弃'
+    · 'fromAI 恒为 true（规则层据此走宽松属性口径 + 跳过背景疯狂掷骰）'
+  test/oracle_preset_test.dart · group '生成结果合规性（这是「AI 车卡出来的卡一定能用」的地基）'
+    · 'generateOne 全部分支' / 'generate 批量'
+  等价性（旧版当预言机）：test/ai_gen_test.dart · group 'ai.js → ai_gen.dart 等价性'
+    fixture.run 覆盖 buildPrompt / toProfile / parseJson 三个纯函数（46 例）。
+  三条不变式（ai_gen_test.dart 文件头）：同一描述+同上限 → 提示词逐字节相同；
+    同一模型 JSON → profile 逐字段相同；parseJson 失败方式稳定。
+
+  ⚠️ 该文件的注释写明：如果哪天有人"优化"成「直接把 AI 的 attributes / skills
+    写进卡」，这里会立刻红。这就是不变式的护栏。
+
+
+三、parseJson 鲁棒性矩阵（输入形态 → 行为）
+--------------------------------------------------------------------------------
+实现：lib/domain/ai_gen.dart:177-257；fixture：tool/oracle/dump_ai_fixtures.js
+      :190-210（TEXTS 15 例）；断言：test/ai_gen_test.dart:40-101。
+
+逐级抢救（从宽到严，共 4 级）
+  ① 去掉 ``` / ```json 围栏（大小写不敏感）→ 直接 jsonDecode
+  ② 从第一个 '{' 起配平花括号（跳过字符串与转义）→ 抠出片段 decode
+  ③ 去掉尾随逗号 `,\s*([}\]])` → 再 decode
+  ④ 仍失败 → 抛 AiGenException，消息带上下文、可直接展示给玩家
+
+| 输入形态                                        | 行为 |
+|-------------------------------------------------|------|
+| `{"a":1}` 干净 JSON                             | ① 直接 decode → Map |
+| ` ```json\n{"a":1}\n``` ` / ` ```\n{...}\n``` ` | 剥离围栏 → ① decode → Map |
+| `{"a":1}\n``` `（只有尾围栏）                   | 剥离尾围栏 → ① decode → Map |
+| `好的，这是结果：\n{"a":1}\n希望你喜欢`（前后废话）| ① 失败 → ② 抠首个配平对象 → Map |
+| `前言 {"a":1} 中间 {"b":2} 尾巴`                | ② 只抠**第一个**配平对象，忽略后续（与旧版一致） |
+| `{"a":1,}` 尾随逗号                             | ①/② 失败 → ③ 去逗号 → Map |
+| `{"a":1` 截断不闭合（max_tokens 用尽）          | ② 配平失败 → AiGenException「模型返回的 JSON 不完整（花括号没配平，末尾停在：…）」；上层据此判 truncated 并加大额度重发 |
+| `{'a':1}` 单引号                                | **刻意不修** → AiGenException「JSON 格式有误：…」（不猜模型想写什么） |
+| `完全没有 JSON 的回复` / 空串 / null / 非字符串 | 无 '{' → AiGenException「模型没有返回 JSON 结构（回复开头是：…）」 |
+| `{"s":"a}b{c"}` / `{"s":"带\"引号\"的字符串"}`  | ② 配平跳过字符串 + 转义 → 正确抠出，不误判 |
+| `{"a":{"b":[1,2,{"c":"}"}]}}` 深层嵌套          | ② 完整配平 → Map |
+| `[1,2,3]` / `null` / `42` 数组 / null / 标量    | **不抛，原样返回**（返回什么就是什么），由 toProfile 兜成空 profile → 规则引擎照样出合法卡 |
+| `''`（empty string）                            | 无 '{' → 「模型没有返回 JSON 结构」 |
+
+刻意不做的四件事（ai_gen.dart:170-175）
+  · 不修单引号 / 不补括号 —— 猜错会把「缺失字段」变成「错误字段」，比失败更糟；
+  · 不吞异常 —— 调用方要靠「截断 vs 格式错」决定重试策略；
+  · 不把数组 / 数字当卡 —— 由 toProfile 兜底；
+  · 不在解析层落地任何数值 —— 那是规则引擎的活（见 §二）。
+
+上层（lib/net/ai_create.dart:96-139）据此决策
+  finish_reason=length 或解析失败 → onStage 提示 → 6000 → 16000 重发一次；
+  两次都截断 → AiException(emptyContent)「换非推理型模型 / 把描述写短」；
+  两次都格式错 → AiException(badResponse)「点重新生成再试」；
+  第一次格式错、第二次正常 → 直接成功（不把用户卡在重试里）。
+
+
+四、分享接口请求 / 响应形状对照（旧版 core/share.js → Dart）
+--------------------------------------------------------------------------------
+旧版参照：C:\Users\60965\WorkBuddy\2026-10-08-18-34-17\coc7th-card-app\web\js\core\share.js（197 行）
+
+| 维度 | 旧版 coc7th-card-app/web/js/core/share.js | Dart（lib/net/share_client.dart + lib/repo/share_store.dart） |
+|------|------------------------------------------|--------------------------------------------------------------|
+| 地址解析 | `userBase() \|\| presetBase()`；normalizeBase = trim + 去尾 `/`；configured = `!!base()`；looksValid `/^https?:\/\/[^\s/]+/i` | `ShareClient(baseProvider: () => settings.shareBase)`（main.dart:28，**现读**，改完设置立刻生效）；normalizeShareBase / looksValidShareBase 同口径；configured = base.isNotEmpty。**BuildConfig 预置优先级未移植**（见 §六） |
+| 创建请求 | `fetch(b + '/api/cards', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(buildPayload(c))})` | `httpRequest('$b/api/cards', 'POST', {'Content-Type':'application/json'}, jsonEncode(buildSharePayload(c)), timeout: 30s)` —— **路径 / 方法 / 头 / 体形状逐字一致** |
+| 创建请求体 | `{name: c.characterName\|\|'未命名调查员', visibility: c.shareVisibility\|\|'link', data:{ characterName, playerName, basicInfo, attributes, derivedStats, status, assets, background, skills:(…).map(slimSkill), weapons:(…).map({name,skill,damage,range,ammo}), items:(…).map({name,quantity,description}), mythos, history, unitName:(basicInfo.occupationName\|\|''), sharedAt: Date.now() }}` | `buildSharePayload(c, {int? sharedAt})` 同键同形状；slimSkill 同 6 键；weapons 同 5 键；items 同 3 键；unitName 用 `jsStr(c.basicInfo['occupationName'])`；`sharedAt` 可注入（便于固定时钟）。是**精简视图**（剔头像 data URL），不是完整存档 |
+| 创建响应 | `r.json()` → `j`；!r.ok 先 `r.text()` → throw `服务器返回 ${status}：${t.slice(0,140)}` | `decodeJsonOrNull(res.body)` 非 Map → badResponse；`field()` 用 **jsTruthy** 判空（不能 jsStr(null)，否则 url 会变成字符串 'null'）；id/url 缺一 → badResponse「没有返回 id / url」；!res.ok → http「服务器返回 ${status}：${body 前 140}」 |
+| 创建成功返回 | `j` 整体（含 delToken），并在 then 里写 localStorage + 置 `c.shareId` | `ShareCreateResult(id, url, delToken)`，**只返回、不碰本地存储**（落盘交给 ShareStore，职责分开才好测）；不回写角色卡 |
+| 创建响应形状 | `{id, url, delToken}` | 同 `{id, url, delToken}`（后端无需改动） |
+| 删除请求 | `fetch(b + '/api/cards/' + rec.id + '/del', {POST, JSON, body: JSON.stringify({token: token \|\| rec.delToken})})`；无本机记录 → reject「本机没有该角色的分享记录」；!r.ok → throw「删除失败（${status}）」 | `ShareClient.remove(shareId, token)`：`POST $b/api/cards/$shareId/del`，body `{token}`；!ok → http「删除失败（${status}）」。**noRecord 判定与记录读取/清理在 ShareService/ShareStore 层**，client 只管网络 |
+| 删除响应 | 2xx 即成功 → 删 localStorage 记录，return true | 2xx 即成功 → ShareStore 删记录；删除失败**保留**记录（还能重试，有测试钉住） |
+| 本机存储 | localStorage `coc7_card_shares_v1` → `{[charId]: {id,url,delToken,at,name}}` | `<文档目录>/dice_realm/shares.json` → `{"format":"dice-realm.shares","version":1,"shares":{"<charId>":{…}}}`；文件 + 内存双后端；坏 JSON / 空文件 / 无 shares 包一层都容错成空表 |
+| 未配置 | `Promise.reject(new Error('UNCONFIGURED'))`（字符串哨兵） | `ShareException(unconfigured, '还没配置分享服务地址')` **不发请求**；UI 未配置时根本不摆上传按钮（只给「怎么开启」+「不开也能用」两条路） |
+| 错误分类 | 裸 Error + 字符串哨兵（UNCONFIGURED / 文案） | `ShareErrorKind` 五分类：unconfigured / noRecord / unreachable / http / badResponse；`shareErrorFrom()` 兜住非 ShareException 的异常 |
+| delToken | 存 localStorage，随 `list()` 暴露 | 三铁律：只落本机 shares.json / 不上传 / 不进导出 / 不进日志（`ShareRecord.describe()` 只给 id+url）；有测试钉住「请求体里不含 aiKey」「describe 不含口令原文」 |
+| 复制 / 打开 | AndroidBridge 原生桥 → navigator.clipboard → legacyCopy textarea；`global.open(url,'_blank')` | 剪贴板 API + `share_plus` 系统分享面板（可选浏览器/微信/邮件），不引 url_launcher / 不配 Android queries |
+| 超时 | fetch 默认（无显式） | 分享 30s；AI chat 180s（推理模型慢，90s 会误杀） |
+
+结论：**路由、方法、请求体、响应体、payload 键名与旧版逐字一致**，自建后端
+不需要任何改动；差异都在「本机存储位置 / 错误分类 / 权限边界 / 平台桥」这些
+客户端内部实现上。
+
+
+五、P3-B 收尾：8 条测试夹具回归（本次实际改的东西）
+--------------------------------------------------------------------------------
+基线（收尾前实跑）：500 通过 / 8 红，总数 508。
+
+根因（已定位到行，产品代码无问题）
+  lib/ui/create/steps/step_summary.dart:243 新增 `SharePanel(card: draft)`；
+  lib/ui/share_panel.dart:130 的 build 第一行 `ShareScope.of(context)`；
+  lib/repo/repo_scope.dart:73-77 的 `of` 带断言
+    `assert(scope != null, 'ShareScope 未挂载：请把页面放在 DiceRealmApp 子树内')`。
+  两个 P2 老测试**自己造裸 MaterialApp 宿主**、没挂任何 Scope：
+    · test/wizard_fix_jump_test.dart:57-68 的 `_MiniWizard.build`（7 条 D2 全组）
+    · test/create_extra_steps_test.dart:289-295（硬约束 3「概要页每一行都按
+      映射跳到对应步骤 id（逐条点）」1 条）
+  真实 app 无此问题：lib/app.dart:39-53 已按
+    RepoScope → SettingsScope → ShareScope → MaterialApp 挂好；
+    test/support/app_harness.dart:142-165 的 pumpApp 走 DiceRealmApp，
+    用它的测试全通过。**结论：只改测试夹具，不改 lib/。**
+
+改动清单（3 个文件，全在 test/ 下）
+  1) test/support/app_harness.dart
+     · 加 `import 'package:dice_realm/repo/repo_scope.dart';`
+     · 新增 `Future<Widget> wrapWithScopes(Widget child) async`：
+       newMemoryRepo() + newMemorySettings() + useFakeShare(FakeShareApi(base: ''))
+       → `RepoScope(repo, child: SettingsScope(repo, child: ShareScope(service, child: child)))`。
+       顺序与 DiceRealmApp 完全一致；`base: ''` = 未配置，绝不联网。
+       复用同文件现成积木，未改它们的签名或行为。
+  2) test/wizard_fix_jump_test.dart · `_jumpAndExpectControl`(:137-146)
+     `await tester.pumpWidget(_MiniWizard(key: UniqueKey(), card: card))`
+     → `final host = await wrapWithScopes(_MiniWizard(key: UniqueKey(), card: card));`
+       `await tester.pumpWidget(host); await tester.pumpAndSettle();`
+     helper 是 async，先 await 再 pump；每条用例仍用 UniqueKey 独立点击。
+  3) test/create_extra_steps_test.dart:289-295
+     把那段裸 `MaterialApp(home: Scaffold(body: StepSummary(...)))` 作为 child
+     传给 wrapWithScopes，再 pumpWidget(host) + pumpAndSettle。
+
+为什么这个修法**不会掩盖真实 app 里的配置错误**
+  · 产品代码一行未动：`ShareScope.of` 的 assert 原样保留（QA 上一轮明确要求
+    不许把它改成宽容返回 null）。没有 try/catch、没有 fallback、没有降级为
+    warning，也没有删 SharePanel 或把断言条件放宽。
+  · helper 复现的是**正确挂载**这个真实条件，而不是绕过条件：层级顺序、注入
+    方式（构造器传实例）都与 DiceRealmApp 一致，只是把真实后端换成内存后端 +
+    未配置的假分享服务。真实 app 若漏挂 / 挂错顺序 / 把 ShareScope 放到
+    MaterialApp 之下，任何走到 StepSummary 的页面依旧会在 build 时命中同一条
+    断言（或 Scope.read 的同类断言）当场炸出来，行为没有变化。
+  · 断言本身是「InheritedWidget 依赖契约」的守门员，作用域只在 debug/测试
+    构建生效；这次补的是**缺失的宿主**，不是**放宽的检查**。测试从「裸宿主」
+    变成「与生产同构的宿主」，覆盖率只增不减。
+  · 8 条用例的 expect / findsOneWidget / checkList / wizardChecks 映射表一字
+    未改，没有 skip、没有删用例；只换了 pumpWidget 的入参。
+  · pumpApp 路径（142-165）完全没动，仍是
+    `DiceRealmApp(repo, settings, share, home)`。全量 508 全绿、总数不减，
+    证明既有的 pumpApp 用例一条没被影响。
+  · FakeShareApi(base: '') 让 SharePanel 在这些用例里走「未配置引导」分支，
+    一个网络请求都不会发（与 share_client_test.dart「未配置不发请求」硬约束同口径）。
+
+未做的事（遵守约束）
+  · 未改 lib/ 下任何产品代码；未删 SharePanel；未弱化 ShareScope.of 断言；
+  · 未改 8 条断言、未 skip、未删用例；未改 checkList / wizardChecks 映射表；
+  · 未构建 APK（团队统一构建）。
+
+
+六、自检结果（原始输出，2026-11-08 实跑）
+--------------------------------------------------------------------------------
+$ source /d/dev/env.sh
+$ cd /c/Users/60965/WorkBuddy/2026-10-08-18-34-17/dice-realm
+$ export NO_PROXY=127.0.0.1,localhost
+
+$ dart analyze
+Analyzing dice-realm...
+No issues found!
+
+$ grep -rn "package:flutter" lib/domain
+（无匹配 —— 零命中，grep 退出码 1）
+另：test/domain_purity_test.dart 的 3 条用例（不得出现 package:flutter /
+    不得 import dart:ui|dart:io / 每个文件有中文模块头注释）全绿。
+
+$ flutter test test/wizard_fix_jump_test.dart test/create_extra_steps_test.dart
+Resolving dependencies...
+Downloading packages...
+Got dependencies!
+4 packages have newer versions incompatible with dependency constraints.
+00:00 +0: loading .../wizard_fix_jump_test.dart
+...
+00:21 +19: All tests passed!
+
+$ flutter test
+Resolving dependencies...
+Downloading packages...
+Got dependencies!
+4 packages have newer versions incompatible with dependency constraints.
+00:00 +0: loading test/ai_client_test.dart
+...
+00:36 +508: All tests passed!
+
+  → 测试总数 **508 组，0 红**（P3-A 报告为 413 组，本期 +95 组）。
+  → 收尾前基线 500 通过 / 8 红（合计 508）；收尾后 508 全绿，**总数不减**。
+  → 两个老文件单独跑 19 组全绿（wizard_fix_jump 9 + create_extra_steps 10）。
+
+运行期提示（非失败， informational）
+  · `Flutter assets will be downloaded from https://storage.flutter-io.cn.`（镜像）
+  · `4 packages have newer versions incompatible with dependency constraints.`（pub 提示）
+  · `⚠️ ai_gen.json：1 类函数在原码里会抛异常，已跳过 → {parseJson: 模型没有
+    返回 JSON 结构（回复开头是：完全没有 JSON 的回复…）}` —— 这是 oracle
+    fixture 驱动对「原码会抛异常」样例的预期跳过，Dart 侧由
+    test/ai_gen_test.dart 的 'fixture 里所有「原码会抛异常」的样例，Dart 也抛
+    且同属一类' 明确覆盖（断言同属一类 + 消息前缀一致），不是漏测。
+
+
+七、遗留问题 / 给下游的提醒
+--------------------------------------------------------------------------------
+1. 【本期未做，按要求】未构建 APK —— 团队统一构建。
+2. 【需自建后端】云分享要求服务端实现 `POST /api/cards` → `{id,url,delToken}`
+   与 `POST /api/cards/<id>/del` → 2xx。未配置 shareBase 时入口只给引导、
+   不发起请求（P3-A 报告 §六.6 的提醒已落地）。分享服务地址只从
+   SettingsRepo.shareBase 现读；旧版 `BuildConfig.shareBase` 打包预置这一
+   优先级**有意未移植**，若以后要做「自用版预置地址」，在 main.dart 注入
+   baseProvider 时接上即可（一行）。
+3. 【未移植的旧版平台桥】share.js 的 AndroidBridge.copyToClipboard /
+   openUrl、legacyCopy textarea 降级、CocShare.list() 没有照搬；Flutter 用
+   剪贴板 API + share_plus 系统面板，SharePanel 三态已覆盖等价行为。
+4. 【解析层的有意为之】parseJson 刻意不修单引号 / 不补括号（见 §三）。
+   模型若持续输出这类格式，会走两次重试后报 badResponse，需要用户点
+   「重新生成」或改用规则生成 —— 这是取舍，不是缺陷。
+5. 【两个老测试的宿主形态】wizard_fix_jump_test.dart 与
+   create_extra_steps_test.dart 仍然自己造 `MaterialApp`（只是外面包了三个
+   Scope），没有走 DiceRealmApp 的路由/主题。当前全绿；若以后 StepSummary
+   再新增别的 InheritedWidget / Theme 依赖，这两处可能再次漂移。建议后续
+   迁到 pumpApp，但本次为了最小改动没有重构。
+6. 【fixture 体积】test/fixtures/preset.json 4.5 MB 沿用 P3-A，未动。
+7. 【P4】roomBase 仍只存不连；preset_gen.presetSettings 可变全局的提醒
+   沿用 P3-A 报告 §六.7（单机单用户够用，「每次生成现读」语义必须保留）。
+
+除上述非阻断提醒外，本次收尾未发现第 8 条之外的新失败、新 analyze 问题，
+也未发现 lib/domain 引入 Flutter 依赖。
+================================================================================

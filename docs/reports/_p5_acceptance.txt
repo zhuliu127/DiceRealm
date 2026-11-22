@@ -1,0 +1,127 @@
+================================================================
+P5 房间 UI 期 · 最终验收报告（T05 收尾 + 结项）
+================================================================
+日期：2026-11-09 14:5x
+工程：C:\Users\60965\WorkBuddy\2026-10-08-18-34-17\dice-realm
+执行：主理人齐活林代行（429 限流至 2026-11-10 11:39，团队链不可用）
+
+----------------------------------------------------------------
+一、T05 七条验收判据 · 逐条核对
+----------------------------------------------------------------
+判据 1  4 个指定测试文件 0 红
+        ✅ room_ui_player_test / room_ui_permission_test /
+           room_ui_save_test / room_ui_roll_test → 42 组 All tests passed!
+
+判据 2  T-30 表驱动（enabled ⟺ needs(role, op).allowed）
+        ✅ 在 room_ui_permission_test.dart 内，三视角全表遍历
+           锚点表 30 op（combat.enqueue 迁至专用 key，见 _p5_fix_5red.txt）
+           无锚点清单 31 条 + 有锚点 30 条 = POLICY 61 条，铺满校验通过
+
+判据 3  T-60 ~ T-63 断言权威侧
+        ✅ room_ui_pl_test / room_ui_roll_test / qa_p5_priv_probe_test 覆盖
+           D100 后 host.state['dice'] 带 total + levelText
+           SAN Check 后该座位 currentSAN 实际下降
+           手绘板 T-63：p1 落笔后 p2/sp1/权威 public 均不可见（2 点只在本人侧）
+
+判据 4  K4 导入迁移 + 幂等
+        ✅ room_legacy_migrate_test / room_ui_save_test / room_session_test 覆盖
+           导入后 logs 无「秘密检定」明文；二次导入迁移条数 == 0
+
+判据 5  qa_p5_ui.js 全 OK + 死代码零命中 + await repo.save( 不增加
+        ✅ 门禁 14 条 0 失败（原 13 条，本期 +1 条 seat-only 校验）
+           plBottomBar / plFeeds / kpChat / kpGameLog → 各 0 命中
+           await repo.save( 冻结值 4 处，实际 4 处（注释行不计），未增加
+
+判据 6  全量只增不减 0 红 + analyze 零 issue + domain 零 flutter/io/ui
+        ✅ 1305 组 All tests passed!（基线 985 → 1296 → 1305）
+           dart analyze → No issues found!
+           lib/domain 50 个 .dart 零 package:flutter / dart:io / dart:ui
+
+判据 7  pubspec.yaml 未改
+        ✅ mtime 仍 2026-11-08 18:55，4068 字节
+           （工程不是 git 仓库，故以 mtime + 尺寸替代 git diff）
+
+----------------------------------------------------------------
+二、本期补的缺口：T-64 confirm=kp 的端到端闭环
+----------------------------------------------------------------
+【问题】P4 只验了 domain 侧「state.edit.self 入 pending 队列」；
+       KP 面板也有待确认区；但「KP 点同意 → 数值真生效」这条
+       UI 端到端链路**没有测试**。
+
+【为什么它是缺口而非小事】Q-P5-3 的文案是「数值：需 KP 同意后才能生效」。
+       如果同意后不生效，UI 就是在骗用户（K7 违规）；
+       如果未同意就生效，confirm=kp 则形同虚设。两个方向都必须有断言。
+
+【核查结论：链路本身是通的】
+       intent(confirm) → confirmPending(seat, p)
+         · 仅 KP 可调（seat != kHostSeat 直接拒）
+         · 按 op + by 定位待办
+         · agree=true → applyAction(entry['by'], entry['p'])
+           ↑ 用**发起者座位**重放，所以 stateSelf 拿到正确的 seat
+       且 UI 发的 payload 不带 seat 是对的 —— 座位由权威端从发起者身份推导，
+       与 P4 测试里那个冗余的 'seat' 字段无冲突。
+
+【新增测试】test/room_ui_confirm_flow_test.dart（3 例，全绿）
+       1. 玩家提交 HP=7 → 入队且权威态不变 → KP 点「确认」→ HP 真变 7
+          （同时断言待办被消费、确认按钮消失）
+       2. KP 点「取消」→ 数值不变，待办同样被消费
+       3. 旁观者强行打开同一弹层 → 队列恒空（hostRead == null）、
+          看不到确认/取消、消费不了待办
+
+----------------------------------------------------------------
+三、P5 最终数据
+----------------------------------------------------------------
+全量测试            1305 组 0 红
+dart analyze        No issues found!
+P5 UI 门禁          14 条 0 失败   IS_PASS: YES
+P4 门禁             13 条 0 失败   IS_PASS: YES
+lib/ui/room         51 个 .dart / 12558 行
+  view/ 6 个 / 1032 行
+  分布：根 13 · sheets 13 · widgets 18 · view 6 · painter 1
+lib/domain          50 个 .dart，纯 Dart 零命中
+pubspec.yaml        mtime 2026-11-08 18:55 未变
+
+任务完成度
+  T01 UI 基础设施 + 纯视图层 + RoomSession + K4 迁移      ✅
+  T02 游戏页壳体：key + 骨架 + 网格 + 顶栏 + 缩放          ✅
+  T03 共享只读块与信息流                                  ✅
+  T04 KP 专属块 + KP 侧弹层                              ✅
+  T05 玩家专属块 + 入口页/房间页 + 迁移接线 + 门禁收尾     ✅
+  依赖图 docs/p5-task-dependency-graph.mermaid 全部满足
+
+----------------------------------------------------------------
+四、P5 期挖出的真缺陷汇总（4 个）
+----------------------------------------------------------------
+1. 旁观者能改自己状态（stateBtn 无条件渲染）        —— 本期修
+2. UI 乐观提示「已更新」（_applyBody 无门控）        —— 本期修
+3. （P4 补丁 B1）四个 intent 入口未接线             —— P4 期修
+4. （P4）暗骰结果落公共 state.dice                  —— P4 期修
+
+共同点：**测了「你以为的入口」，没测「用户真正会点的入口」**
+  · P4 漏 intent() 门（不在 POLICY 里）
+  · P5 漏专用 key 路径（不在 act/ 锚点射程内）
+  → 结论：T-30 只覆盖 act/<op>；专用 key 必须有独立探针
+    （qa_p5_priv_probe_test.dart 承担这个角色，它确实抓到了缺陷）
+
+----------------------------------------------------------------
+五、结项结论
+----------------------------------------------------------------
+P5（房间 UI 期）**功能闭环，可以进入出包与 P6**。
+
+遗留（不阻断 P5 结项）：
+  L1  P5-T05 的工程师交付报告（_p5_engineer_t05a.txt）仍缺 —— 代码已全绿，
+      报告可在限流恢复后由工程师补写。
+  L2  本期翻转的 A-4 两条断言需 QA 独立复核，确认不是「为绿而放宽」。
+      复核要点：原断言是「记录缺陷存在（findsOneWidget）」，
+      现断言是「入口不渲染（findsNothing）」；配套新增了双保险用例，
+      覆盖「绕过入口强行开弹层」的路径 —— 覆盖面是扩大而非缩小。
+  L3  ✅ 已闭环（2026-11-09 14:40）：出的是 **Android APK** 而不是 Windows 桌面
+      —— 工程只有 android/ 平台目录（无 windows/），Visual Studio 也未安装。
+      产物 56.9MB / 三 ABI 均带 libapp.so / Android Debug 签名 / 可侧载安装。
+      过程中发现「build 用 junction → 增量缓存判失效 → 静默产出无 AOT 坏包」
+      的陷阱（坏包 32.8MB、无 libapp.so、装上白屏），
+      已固化为 tool/build_apk.sh（出包 + 强制校验 libapp.so + 自动恢复 config）。
+      详见 _p5_apk_build.txt。**实机安装验证仍未做**（本机 adb 无设备、无 emulator）。
+
+P5_ACCEPTANCE IS_PASS: YES
+================================================================

@@ -1,0 +1,225 @@
+%% P5 房间 UI 类图（源：_p5_design.md §3.8）
+%% 泛型已省略，真实 Dart 签名见 §3.1–3.9
+
+classDiagram
+    direction LR
+
+    class RoomSession {
+        <<abstract>>
+        +String code
+        +String seat
+        +String role
+        +Map state
+        +RoomLinkState link
+        +int lastSeq
+        +String lastNotice
+        +RoomHostRead hostRead
+        +sendIntent(op, p)
+        +hostAction(action, p)
+        +pullSync()
+        +int clampBeforeSeq(v)
+    }
+
+    class LocalLoopbackSession {
+        -RoomHost host
+        -Map clients
+        -List sentLog
+        +attach(seat, client)
+        +detach(seat)
+        +pumpPlans(plans)
+        -_deliver(client, envelope)
+    }
+
+    class RoomHostRead {
+        <<abstract>>
+        +Map state
+        +List pending
+        +List localActors
+        +List localAssets
+        +Map boardBySeat
+        +Map requestsBySeat
+    }
+
+    class LoopbackHostRead {
+        -RoomHost host
+    }
+
+    class RoomController {
+        -RoomSession session
+        -RoomUiLocal local
+        -RoomNotesStore notes
+        -ImagePickerPort imagePicker
+        -RoomCardSink cardSink
+        -RoomSaveStore saveStore
+        +RoomGate gate
+        +sendIntent(op, p)
+        +hostAction(action, p)
+        +bool throttle(key, window)
+        +bool saveNow(name)
+        +LegacyMigrateResult openSave(save)
+        +notice(text)
+    }
+
+    class RoomGate {
+        +String role
+        +bool can(action)
+        +String confirmOf(action)
+    }
+
+    class RoomUiLocal {
+        +int leftTab
+        +int combatTab
+        +Set folded
+        +RoomToolMode toolMode
+        +int toolColorIndex
+        +BoardMode boardMode
+        +int boardPage
+        +int bonus
+        +int penalty
+        +bool darkRoll
+        +double zoom
+        +String chatDraft
+        +toggleFold(id)
+        +setBonus(v)
+        +setPenalty(v)
+        +setZoom(v)
+    }
+
+    class RoomScope {
+        <<InheritedNotifier>>
+        +RoomUiLocal local
+        +RoomController controller
+        +of(context)
+    }
+
+    class RoomHost {
+        +Map state
+        +List pending
+        +List localActors
+        +List localAssets
+        +Map boardBySeat
+        +Map requestsBySeat
+        +apply(evt)
+        +plan(rec)
+        +intent(seat, msg)
+        +syncFor(seat)
+        +save()
+        +adoptSave(save)
+    }
+
+    class RoomClient {
+        +String seat
+        +Map state
+        +int lastSeq
+        +receive(raw)
+        +gate(seq)
+        +intent(op, p)
+    }
+
+    class SendPlan {
+        +String to
+        +RoomEnvelope msg
+    }
+
+    class RoomEnvelope {
+        <<sealed>>
+        +String k
+    }
+
+    class RoomGridSpec {
+        +bool grid
+        +bool compact
+        +of(w, h, landscape)
+    }
+
+    class MemberStats {
+        +num hp
+        +num hpMax
+        +num san
+        +num sanMax
+        +bool hasMaxSan
+        +String body
+    }
+
+    class FeedItem {
+        +int seq
+        +num at
+        +FeedKind kind
+        +String seat
+        +String text
+        +Map dice
+        +Map opp
+        +bool redacted
+    }
+
+    class CombatRow {
+        +String id
+        +String name
+        +num hp
+        +num hpMax
+        +bool hpHidden
+        +bool isCurrent
+    }
+
+    class NormPoint {
+        +double x
+        +double y
+    }
+
+    class RoomNotesStore {
+        +RoomNotesStorage storage
+        +load(code, seat)
+        +add(code, seat, note)
+        +remove(code, seat, id)
+    }
+
+    class ImagePickerPort {
+        <<abstract>>
+        +pickImage(maxBytes)
+    }
+
+    class LegacyMigrateResult {
+        +Map save
+        +int migrated
+        +bool changed
+    }
+
+    class RoomGamePage {
+        +build(context)
+    }
+    class KpSkeleton {
+        -List slots
+    }
+    class PlSkeleton {
+        -List slots
+    }
+
+    RoomSession <|-- LocalLoopbackSession : implements
+    RoomHostRead <|-- LoopbackHostRead : implements
+    LocalLoopbackSession --> RoomHost : 权威端(本机)
+    LocalLoopbackSession --> RoomClient : 逐个投递
+    LocalLoopbackSession --> LoopbackHostRead : role==kp 时暴露
+    RoomHost --> SendPlan : 产出
+    SendPlan --> RoomEnvelope
+    RoomClient ..> RoomEnvelope : receive
+    RoomController --> RoomSession : 唯一出口
+    RoomController --> RoomGate
+    RoomController --> RoomUiLocal
+    RoomController --> RoomNotesStore
+    RoomController --> ImagePickerPort
+    RoomController ..> LegacyMigrateResult : openSave 返回
+    RoomScope --> RoomSession
+    RoomScope --> RoomUiLocal
+    RoomScope --> RoomController
+    RoomGamePage --> RoomScope : 取 session/local
+    RoomGamePage --> KpSkeleton
+    RoomGamePage --> PlSkeleton
+    KpSkeleton ..> RoomGridSpec : 布局判定
+    PlSkeleton ..> RoomGridSpec
+    KpSkeleton ..> MemberStats : 只读派生
+    PlSkeleton ..> MemberStats
+    KpSkeleton ..> FeedItem : 只读派生
+    PlSkeleton ..> FeedItem
+    KpSkeleton ..> CombatRow
+    PlSkeleton ..> CombatRow
+    KpSkeleton ..> NormPoint : 画笔/落点

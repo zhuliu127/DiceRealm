@@ -1,0 +1,314 @@
+================================================================
+P10 第 2 期 B（任务 #7）交付报告 — 房间布局重构
+工程师：寇豆码（software-engineer-4） · 快速模式 · 全程只改布局骨架
+================================================================
+
+【结论】IS_PASS: YES
+  · 用户口述 ① 平板横屏固定网格：完成（复刻老 APP 2.13.13 两张红块图，缝隙统一）
+  · 用户口述 ② 平板竖屏 / 手机横竖屏 展开 + 折叠方块：完成
+  · 用户口述 ③ 工具栏加高、按钮全显示、不用横向拖动：完成（改成内容自适应高度）
+  · 用户口述 ④ 聊天 / 公开记录 / 只给你看 闪烁提示：完成（三栏同源判据）
+  · 用户口述 ⑤ 自动头像 PNG 化：**未做**（见 §7 遗留，如实说明，未留半成品）
+
+全量测试 1834 → **1853 组 0 红**（账目见 §5.1）；串行 --concurrency=1 同样 1853 全绿。
+dart analyze（lib + test）零 issue；P4 门禁 13/13、P5 UI 门禁 14/14 全过。
+
+================================================================
+§1 做了什么（按用户口述五条逐条对应）
+================================================================
+
+1) 平板横屏 = 固定比例网格（`RoomLayoutMode.dock`）
+   · 原来 `Wrap` 铺块（多列 2 列 / 单列 1 列）整体退役，改成**声明式固定网格**：
+     布局用纯数据描述（`roomDockPlanOf(isKp:)` → `RoomSlotNode` / `RoomSplitNode`），
+     渲染只有 `buildRoomLayout()` 一处。
+   · **缝隙统一**：行列间距都取自同一个 `gap = roomBlockGap(spec)`
+     ⇒ 「用户手摆导致栏位没对齐」在结构上不可能再发生（测试用几何断言钉死：
+     `列间距 == 行间距 == gap`，容差 0.6px）。
+   · 大块（公开素材图）占主要面积并自适应剩余空间；竖长条（角色信息 / 素材栏 /
+     场景检定 / 队友信息）按 flex 等宽对齐。
+   · 工具栏通栏固定在屏幕最下方（见 §3 第 3 条：由 Stack+Positioned 改成
+     Column 的最后一格，理由与收益写在代码注释里）。
+
+2) 平板竖屏 / 手机横屏 / 手机竖屏 = 展开 + 折叠方块（`RoomLayoutMode.folded`）
+   · 断点仍在 `RoomGridSpec` 一处（唯一真相源），本轮只新增两样东西：
+     `RoomLayoutMode { dock, folded }` 与常量 `dockShortSide = 560`。
+     `dock = grid && landscape && 短边 ≥ 560`；其余全部走 folded。
+     （只看宽度不够：手机横屏 780×320 也算 grid，但按用户口径属于折叠档。）
+   · KP 展开（口述白名单）：`gpKpLeft`（地图怪物/npc 素材）、`gpMap`（公开素材图片 +
+     战斗轮次信息）、`gpScene`（场景检定）；`gpToolbar` 恒在最下方。
+   · 玩家展开：`gpPlCharCard`（角色信息面板）、`gpPlScene`（场景检定）；工具栏同理。
+   · 其余槽位收成 **104×104 方块**（`RoomSlotSquare`）：标题 + 一行摘要 + （有新消息时）
+     「新」角标；**点整块 → 全屏显示真块**（走 `showFullscreenReader`，
+     不裸 `showDialog`、也不新增第二个弹层壳）。
+   · **展开区也可收起**：复用既有 `RoomUiLocal.isFolded / setFold / toggleFold`
+     （不另造折叠状态）；收起后退化成方块，方块右上角「展开到面板」再放回。
+     每个可折叠槽位恒有且只有一个 `roomFoldKey(slot)` 抓手（两种形态共用一个 key）。
+   · 小屏可滚动：展开区与方块区都在同一个 `SingleChildScrollView` 里，零溢出。
+
+3) 工具栏加高、按钮全显示、不横向拖动
+   · 删掉工具栏内部的**横向** `SingleChildScrollView`（用户抱怨的「要拖动找按钮」的根因）。
+   · 高度不再写死：`Wrap` 多行 + **由内容撑开**（横屏自动变矮、竖屏自动变高）。
+   · 根因修复（重要）：`RoomTap` 内部原来是 `Center`，在「宽度有界但松」的容器
+     （`Wrap`）里会**撑满整行**，导致每个按钮各占一行、骰子条被顶到 600+ dp 高。
+     改成 `Align(widthFactor: 1, heightFactor: 1)` 后按钮按内容收紧，
+     `Wrap` 才能真正多列排布。**未缩字号、未缩按钮**。
+
+4) 三栏闪烁统一判据源
+   · `gpPrivates`（只给你看）退役自带的 `_seenSeq`，改用 `FeedFlashTracker.check()`
+     （与聊天 / 公开记录同一个类、同一套输入：末条 seq / 末条 seat / 我的 seat），
+     并接上 `syncEpoch` 变化时的 `reset()`（断线补拉不算新消息）。
+   · 折叠成方块后块体没建 → 判据上提到页面级 `RoomFlashBoard`（三栏各一个
+     `FeedFlashTracker`，同一套判据类），方块上显示「新」角标；点开方块即视为已读。
+   · 零 `Timer` / 零 `AnimationController` / 零 `Future.delayed`（有静态守卫用例）。
+
+5) 自动头像 PNG 化 —— 未做（§7）。
+
+================================================================
+§2 三档布局的槽位落位表
+================================================================
+
+【平板横屏 KP（dock）】flex 声明（根 → 内容列 → 上排）
+  Row
+  ├─ gpKpLeft            17   （地图怪物 / npc 素材，通高）
+  └─ Column              83
+       ├─ Row            52
+       │    ├─ gpKpTools  22   （KP 工具竖条：标点/画笔/橡皮/放单位/颜色/清除）
+       │    ├─ gpMap      40   （公开素材图片 + 手绘标记 + 战斗轮次信息，最大块）
+       │    └─ Column     23   （场景检定 / 战斗列表 / 玩家信息 三块）
+       │         ├─ gpScene   34
+       │         ├─ gpCombat  36
+       │         └─ gpPlayers 30
+       ├─ Row            26   （gpChat 1 : gpLog 1）
+       ├─ gpPriv         15   （通中间宽度）
+       └─ gpStatus        7   （最底一条）
+  顶部 gpTopbar（页面 Column 第一格）、底部 gpToolbar（页面 Column 最后一格）不参与网格。
+
+【平板横屏 玩家（dock）】
+  Row
+  ├─ gpPlCharCard        20   （角色信息面板，通高）
+  └─ Column              80
+       ├─ Row            52
+       │    ├─ gpPlMap    55   （公开素材图片 + 手绘标记 + 战斗轮次信息，最大块）
+       │    └─ Column     30   （右侧竖列，五块）
+       │         ├─ gpPlScene  22
+       │         ├─ gpPlMates  20
+       │         ├─ gpPlCombat 20
+       │         ├─ gpPlSketch 20
+       │         └─ gpPlNotes  18
+       ├─ Row            26   （gpPlChat 1 : gpPlLog 1）
+       ├─ gpPriv         15
+       └─ gpStatus        7
+
+【折叠档（平板竖屏 / 手机横屏 / 手机竖屏）】
+  KP     展开：gpKpLeft、gpMap、gpScene             + gpToolbar（贴底）
+         方块：gpKpTools、gpCombat、gpPlayers、gpChat、gpLog、gpPriv、gpStatus（7 块）
+  玩家   展开：gpPlCharCard、gpPlScene               + gpToolbar（贴底）
+         方块：gpPlMap、gpPlMates、gpPlCombat、gpPlChat、gpPlLog、gpPlSketch、
+               gpPlNotes、gpPriv、gpStatus（9 块）
+  ★ 12 / 13 个槽位在两种形态下都**恰好各出现一次**（容器 key 不增不减、不改名），
+    有纯函数用例守：`展开 ∪ 方块 ∪ {顶栏, 工具栏} == 全槽位`（长度与集合双查）。
+
+  ★ 关于 KP 红块图里的「怪物信息（可折叠）」：现有 slot 表里**没有**独立槽位，
+    它由 `gpCombat`（战斗列表，内含「顺序 / 怪物信息」两个 tab，见
+    `GpCombatList` 的 `PanelTabs(['顺序','怪物信息'])`）承载。本轮未新增 slot。
+
+================================================================
+§3 关键决策（含与派工单的偏离及理由）
+================================================================
+
+1) 布局实现方式：声明式纯数据 + 单点渲染（而不是直接写嵌套 Row/Column）
+   好处：布局可断言（测试能对角逐格比对 flex 链与先后顺序，不必量像素）、
+   只有一个渲染入口、后续加档位不需要动页面骨架。
+
+2) 折叠摘要口径（方块上那一行「简要信息」，全部来自 view 层纯函数，不碰秘密字段）
+   聊天 · N 条 / 公开记录 · N 条 / 只给你看 · N 条 / 成员 · N 人 /
+   公开素材 · N 个 / 战斗轮次与列表 / 手绘与标记 / 本机笔记 /
+   怪物 / NPC 素材 / 画笔与放置工具 / 场景检定 / 我的角色 / 连接与回合状态
+
+3) ★ 偏离：工具栏从 `Stack + Positioned(bottom:0)` 改成 `Column` 的最后一格
+   · 派工单要求「保持现有 Positioned 方式」，但实测**做不到**「按钮全显示」：
+     工具栏「需要几行」随宽度**非单调**（实测内容高：360→278dp、420→278dp、
+     480/560/620→234dp、700→148dp、780/820→190dp、900→148dp、1000→190dp、
+     1024→148dp、1280→104dp）。任何「按宽度查表」的固定高度都会在某档把按钮
+     挤出可视区；而 Positioned 又必须知道高度才能给内容区留避让。
+   · 改成 Column 后：工具栏高度由内容撑开，内容区自然拿「剩下的高度」——
+     **不需要避让常量，结构上不可能被遮挡**（用例：内容区视口底边 ≤ 工具栏顶边，
+     360×640 / 780×320 / 1280×800 三档都断言）。
+   · 原有结构约束「工具栏不在 `Transform.scale` 子树内」继续成立（兄弟节点），
+     只是兄弟关系从 Stack 换成了 Column；对应用例同步改成「祖先里有 Column +
+     不在缩放容器 + 内容区底边不越过工具栏顶边」。
+   · 极矮屏兜底：工具栏最多占可用高度的 62%（`kToolbarMaxShare`），
+     320dp 高的手机横屏上才可能出现竖向滚动；正常档位（≥360dp 高）一次都不用滚。
+
+4) 平板横屏的每格都有两道布局层兜底（**都不改块内 UI**）
+   · 高度超出格子 → 格内竖向滚动；
+   · 宽度窄于该块的最小可用宽度（`roomDockMinWidthOf`：KP 工具窄栏 300、
+     素材栏/角色卡 230、场景检定 288、其余 200/240/120）→ 给下限宽度后格内
+     横向滚动。理由：这些块原本是给「横向铺满的 Wrap」写的，个别固定行
+     （KP 工具窄栏的五色板行、场景检定头部）窄于其最小宽度会 `RenderFlex overflow`。
+     有了下限宽度，窄格只是「格内可滚」，绝不溢出到隔壁格。
+     ★ 这是本轮唯一「不完美」的地方：1280dp 宽时 KP 工具窄栏约 265dp < 300dp，
+       需要格内轻推一下才能看全色板（不是工具栏那种「必须先横拖才知道还有按钮」）。
+
+5) `RoomTap` 的 `Center → Align(widthFactor/heightFactor = 1)`
+   这就是「按钮全显示」的真正根因修复（见 §1 第 3 条）。紧约束场景（Column stretch /
+   Expanded）行为不变；只有「有界但松」的 `Wrap` 里从「撑满一行」变成「按内容收紧」。
+
+================================================================
+§4 自己踩的坑（留给后续批次）
+================================================================
+
+· 固定网格里 `Expanded` 只把**主轴**变紧约束，交叉轴默认是松的 →
+  块会缩成自身高度并在格内垂直居中，行列看着又不齐。必须显式
+  `crossAxisAlignment: CrossAxisAlignment.stretch`（已写进 `buildRoomLayout`）。
+· `Wrap` + `RoomTap` 里 `Center` 会撑满 → 每个按钮一行（骰子条一度被顶到 622dp 高）。
+· 工具栏高度「按宽度分档」是错的（非单调），已改为内容自适应。
+· 顶栏 + 工具栏若都按内容撑高，在 320dp 高的手机横屏可能把内容区挤成 0 并
+  触发 `RenderFlex overflowed by 22px` → 已用 `kToolbarMaxShare = 0.62` 兜住。
+· widget 测试里 `find.byKey(zoomKey)` 拿到的是**内容区 Transform**（会被内容撑得很高），
+  要断言「内容区不被工具条遮挡」必须取它的 `SingleChildScrollView` 祖先（视口）。
+· 折叠档里展开区 / 方块都可能在滚动视口之外，`tester.tap` 前必须 `ensureVisible`。
+· 空栏的第一条消息只登记基线、不闪（`FeedFlashTracker` 既有语义）——
+  测「闪」必须先垫一条基线，否则用例会误判成实现没接线。
+
+================================================================
+§5 验收原始输出
+================================================================
+
+§5.1 全量测试账目（1834 → 1853，只增不减）
+  flutter test                     → 01:07 +1853: All tests passed!（0 红）
+  flutter test --concurrency=1     → 04:45 +1853: All tests passed!（0 红）
+  账目：1834
+        − room_ui_layout_test  12（改写成 17）        → +5
+        − room_ui_wiring_test  10（改成 11）          → +1
+        + p10_t3_layout_test   新增 13                 → +13
+        = 1853 ✓ 算平
+
+§5.2 dart analyze
+  dart analyze lib test → No issues found!
+
+§5.3 静态门禁
+  node tool/qa/qa_p4_gate.js → ==== 合计 13 条，失败 0 条 ====  P4_GATE IS_PASS: YES
+  node tool/qa/qa_p5_ui.js   → ==== 合计 14 条，失败 0 条 ====  P5_UI_GATE IS_PASS: YES
+    · jsStr( 仍 **14 处**（预算 14，白名单外 0）—— 本轮零新增
+    · PlaceholderBlock 仍只剩定义；showModalBottomSheet 仍只有 1 处；
+      裸 showDialog 零命中（全屏展开走 showFullscreenReader）
+    · lib/ui/room 68 个 .dart / 18146 行；view/ 6 个 / 1191 行（未新增 view/ 文件）
+
+§5.4 反向验证 3 处（逐字节恢复后复跑全绿）
+  ① 把平板横屏的固定网格退回旧的 `Wrap` 两列
+     → room_ui_layout_test 立刻 2 红：
+       「1280×800 KP：左窄栏与工具窄栏同一行、列间距与行间距同源」
+       「1280×800 玩家：角色卡通高、素材图最大、13 个容器全在」
+     → 恢复：cp 回备份，`cmp -s` 一致，sha256 = 80bd86f509504cc8743bfe5da59ebe5a6e48efab7abec972cc43d3c204f89951
+  ② 摘掉「方块点开 → 全屏」的接线（`onOpen: null`）
+     → p10_t3_layout_test B 组 2 红（KP 三格点开 / 玩家素材图点开）
+     → 恢复：cmp 一致，同一 sha256
+  ③ 摘掉「只给你看」的判据（页面级 `RoomFlashBoard` 的 priv 分支 + 块内 tracker 判定）
+     → p10_t3_layout_test E 组「只给你看…」1 红
+     → 恢复：cmp 一致，
+       room_layout.dart sha256 = 991dfe8546250b81476c556810f64e671d1dcfc18de507f266625f286086c3a9
+       gp_privates.dart sha256 = cc6a554e491ad127f21ac39426f9cb73846d324fba421aafb5b4ecea382a1844
+  ★ 每次恢复后又跑了一遍相关用例，全绿（见 §5.1 的两次全量）。
+
+§5.5 新增/改写的测试覆盖
+  test/p10_t3_layout_test.dart（新增 13 组）
+    A 固定网格槽位落位表（KP/PL 逐格 + flex 链 + 三档×两角色表驱动）
+    B 折叠档方块点开 → 全屏显示真块（KP 聊天/私密、玩家素材图只读）
+    C 展开区可收起（复用 RoomUiLocal.folded，收起→方块→放回）
+    D 工具栏加高：无横向滚动容器、所有按钮落在工具栏矩形内（360/1280）、
+      内容区视口底边 ≤ 工具栏顶边（360/780/1280 三档）
+    E 闪烁三栏同源：别人发聊天闪 / 自己发不闪 / 骰子进记录闪 / KP 递线索给 p1 闪 /
+      KP 自己写的不闪 / 三处实现零 Timer-零 AnimationController（静态守卫）
+  test/room_ui_layout_test.dart（改写，12 → 17）
+  test/room_ui_wiring_test.dart（10 → 11：默认档改平板横屏 + 新增折叠档接线用例）
+  test/room_ui_shell_test.dart（折叠组按新语义重写：展开区折叠头 → 方块 → 放回）
+  test/room_ui_permission_test.dart / qa_p5_priv_probe_test.dart / p7_lobby_gate_test.dart
+    （页面级用例的屏幕档位改成「平板横屏」，因为只有这一档会把全部槽位摊成真块；
+      弹层用例档位不变。断言强度未降：这些用例仍是 findsOneWidget / 可点性等价。）
+
+================================================================
+§6 文件清单
+================================================================
+
+新增：
+  lib/ui/room/widgets/room_layout.dart      布局声明 + 渲染 + 折叠方块 + 闪烁板 + 摘要（新建）
+  test/p10_t3_layout_test.dart              本轮验收（13 组）
+
+修改（lib）：
+  lib/ui/room/view/room_view.dart           + RoomLayoutMode、RoomGridSpec.dock / dockShortSide
+  lib/ui/room/room_game_page.dart           两档内容区、展开/方块、minWidth 兜底、
+                                            工具栏改 Column 末格 + 高度上限、页面级闪烁板
+  lib/ui/room/widgets/gp_toolbar.dart       横向滚动退役、Wrap 多行、高度自适应、竖向兜底
+  lib/ui/room/widgets/gp_privates.dart      _seenSeq 退役 → FeedFlashTracker + 「新」角标
+  lib/ui/room/widgets/room_panel_kit.dart   RoomTap: Center → Align(widthFactor/heightFactor=1)
+
+修改（test）：见 §5.5 七个文件（含新增文件）。
+
+未改动（守红线）：
+  · `pubspec.yaml`、`lib/domain/**`（零改动、仍是纯 Dart）
+  · `RoomKeys.keyOfSlot` / `roomFoldKey` 命名；`RoomSlot` 一个没增删
+  · 各块内部 UI（GpFeeds / GpMapStage / GpKpTools / GpPlCharCard… 均未改视觉结构）
+  · `_manual_test_checklist.md` / `qa_*_report.md` / 另一工作区 overview.md
+
+================================================================
+§7 遗留与如实说明
+================================================================
+
+【⑤ 自动头像 PNG 化：未做】
+  现状问题（沿用派工单描述，已复核）：默认（未上传）头像是
+  `lib/domain/avatar.dart#make()` 生成的 `data:image/svg+xml;charset=utf-8,...`，
+  而跨设备缩略图链路只收 png/jpeg/webp，`dart:ui` 不解码 SVG →
+  「没上传头像的玩家」跨设备仍是首字圆点。
+  为什么没做：这条要求「程序绘制直出 PNG dataURI」，而自动头像目前是在
+  **domain 层**（`lib/domain/preset_gen.dart` 调 `avatar.ensure`）生成并写进卡的
+  `avatar` 字段的；domain 必须保持纯 Dart（门禁第 07 条 + 纯度测试），
+  `PictureRecorder/Canvas` 只能放 UI 层，因此需要新开一条 UI 层生成器 +
+  决定「老卡里的 SVG 继续本机显示、只把广播/缩略用换 PNG」的兼容路径，
+  并补 PNG 生成与兼容显示的用例。这是一整块独立工作量，
+  本轮额度已用于布局重构（用户列为第一优先）+ 三档布局 + 工具栏 + 闪烁，
+  故按「做不完如实报、不留半成品」处理：**未写任何半成品代码**。
+  下一步建议（给下一批）：在 `lib/ui/widgets/` 新增 `auto_avatar_png.dart`，
+  用 `PictureRecorder + Canvas` 复刻 `avatar.dart` 的徽章样式（圆底渐变 +
+  首字 + 描线弧 + 斑点环，配色沿用 `_palettes` 的 8 组与 `strHash` 散列），
+  `toImage(240,240) → toByteData(png) → base64` 产出 `data:image/png;base64,...`，
+  在「写入卡 / 广播缩略」处优先用它，SVG 老值仍走 `localAvatarRel` 的既有降级显示。
+
+【已知取舍（非缺陷，验收时请按此看）】
+  1. 平板横屏的窄格需要格内轻推（KP 工具窄栏 300dp 下限 > 1280dp 宽时的 265dp）。
+     这是「不许改块内 UI」与「固定网格很窄」的直接结果，已用格内滚动兜住而不溢出。
+  2. 折叠档默认只展开用户点名的几块：玩家在手机上要「点素材图方块」才能看图。
+     这是用户口述 ② 的原文口径，不是遗漏。
+  3. 极矮屏（≤ 约 320dp 高）工具栏才会出现竖向滚动（62% 高度上限的保护）。
+
+================================================================
+§8 出包
+================================================================
+  见 §9（构建完成后追加：字节数 / 三 ABI / SHA256 / native-assets 状态）。
+  `bash tool/build_apk.sh` → EXIT=0，三步全过：
+    [1/3] 构建 release APK（native-assets 保持开启）→ √ Built app-release.apk (66.8MB)
+    [2/3] AOT 产物校验（三 ABI 都有 libapp.so）：
+            lib/arm64-v8a/libapp.so    8,782,728
+            lib/armeabi-v7a/libapp.so  9,749,064
+            lib/x86_64/libapp.so       9,044,872
+    [3/3] 完成（native-assets 始终为开启状态，flutter test 可直接跑）
+  产物：build/app/outputs/flutter-apk/app-release.apk
+  字节数：70,001,068（基线 69,919,088 → +81,980，因为新增 1 个 ui 文件与布局代码）
+  SHA256：c3740fd7c572c82b0250c2623c6e928c678b72f56827e8faaeb6aa08b8a3aaa0
+  签名：debug（可侧载、不可上架，与基线一致）
+  复核：flutter config --list → enable-native-assets: true ✓
+        pubspec.yaml version: 2.17.0+83（未改）✓
+  门禁在出包后复跑：P4 13/13 YES、P5 UI 14/14 YES。
+
+================================================================
+§10 交付清单（给主理人 / QA 的摘要）
+================================================================
+  · 五条口述：① ② ③ ④ 完成，⑤ 未做（如实说明，未留半成品）。
+  · 全量 1853 组 0 红（并行与串行各跑一次）；analyze 零；门禁 27/27 全过。
+  · 反向验证 3 处全部「先红后绿」，逐字节恢复（sha256 已记录）。
+  · 新 APK：70,001,068 字节 / c3740fd7…a3aaa0 / 三 ABI 齐全 / native-assets 开启。
+  · 请 QA 重点独立证伪：
+      a) 平板横屏 1280×800 的「列间距 == 行间距」几何断言；
+      b) 折叠档点方块 → 全屏是否真是**真块**（不是空壳/不是裸 dialog）；
+      c) 工具栏在 360/420/780/820/1024/1280 各档「所有按钮都在栏内」；
+      d) 三栏闪烁：别人发闪、自己发不闪、KP 递线索给玩家闪、KP 自己写不闪。

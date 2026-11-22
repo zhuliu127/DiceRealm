@@ -1,0 +1,435 @@
+============================================================
+P10 第 5 期 —— 交付报告（工程师 寇豆码 / software-engineer）
+工程：C:/Users/60965/WorkBuddy/2026-10-08-18-34-17/dice-realm
+基线：2.17.0+83 / 全量 1918 全绿 / APK 70,033,836 B · fd9b05c9…5072
+本批：全量 1934 全绿 / APK 70,329,708 B · fdc5ab49…58b5
+============================================================
+
+【0】一句话结论（如实区分「用户拍板的新能力 / 沿用老 APP / 其实已修好」）
+
+- ★ 用户拍板后的**新能力**（本批首次动依赖清单）：解锁 `audioplayers ^6.8.1`
+  → 音乐控制台从「纯说明面板」升级为**真播放器**：5 个场景插槽（日常/
+  探索/悬疑/战斗/后日谈）+ 选本机音频 + 播放/暂停/停止 + 场景快捷键，
+  配置落本机、重启仍在；**KP 本机播放**，不联网、不同步、不进 state、
+  不进存档、零新增 RoomEvt/intent。
+- ★ **沿用老 APP 口径**（`ui/room-panels.js:4029-4051 musicSheet`）：
+  `<input type=file accept=audio/*>` 选本机文件、只在本机播放、不打包
+  音频、不联网；三按钮「选择音频 / 播放 / 暂停」扩成用户点名的
+  「选文件 / 播放 / 暂停 / 停止」。**老 APP 没有场景插槽** —— 5 插槽、
+  切场景先停旧、KP 房间内快捷入口是本批按用户描述新增的。
+- ★ **旧版本问题在当前代码里其实已修好**（B 项，如实报，不假装改了）：
+  用户说的「工具箱里几个百分比数字按钮没标题、一行一个」指的是杂项弹层
+  `sheet_misc.dart` 的 5 个缩放 chip；当前代码**早已有可见标题
+  `Text('界面缩放')` + `Wrap` 一行**（RoomTap 第 2 期 B 已修好
+  `Align(widthFactor/heightFactor=1)`）。本批用 widget 几何用例实测钉死，
+  并补了一行**可见说明** + 紧凑间距兜底（见 §6），没有把已修好的东西
+  重写一遍。工具栏那组只有 1 个循环百分比按钮 + 重置，不是「几个百分比」，
+  且本批实测给它加可见标题会打穿既有断言，故**逐字节零改动**（见 §6.2）。
+- 全量 **1918 → 1934**（+16，只增不减；并发 + `--concurrency=1` 串行各一遍
+  全绿）、`dart analyze` 零、P4 13/13、P5 UI 14/14、出包成功、
+  5 处生产改动逐处反向证伪、全局一致性审查 **IS_PASS: YES**。
+
+
+【1】★ 依赖解锁专项验证（本批头号风险）
+
+【1.1】选型
+  包：`audioplayers: ^6.8.1`（pub.dev 镜像 `pub.flutter-io.cn` 查询为最新稳定，
+  2026 年仍活跃维护）。
+  理由：① pubspec 声明 `environment: sdk ^3.6.0 / flutter >=3.44.0`，与本机
+  `Dart 3.13.7 / Flutter 3.47.9` 兼容；② 支持 Android 本地文件播放
+  （`AudioPlayer.play(DeviceFileSource(abs))`），并提供完整的
+  `play / pause / stop / resume / release / dispose`；③ 纯 Dart API，便于用
+  一个端口完整封装；④ 只需加一行，不碰既有依赖。
+  实读包源码核对：`file_picker 13.3.2` 的 `PlatformFile.readAsBytes()` 返回
+  `Future<Uint8List>`（`name: String` / `extension: String?`），照
+  `room_image_picker.dart` 的既有用法落地；`audioplayers 6.8.1` 导出
+  `source.dart`（含 `DeviceFileSource`）。
+
+【1.2】`pubspec.yaml` 唯一改动（diff 原文）
+  ```
+  39a40
+  >   audioplayers: ^6.8.1
+  ```
+  除此之外一字未改（版本号 2.17.0+83、资源清单、其它依赖全部不动）。
+  `pubspec.lock` **只由 `flutter pub get` 生成**，未手工编辑。
+
+【1.3】`flutter pub get` 原始输出（`flutter 3.47.9 / Dart 3.13.7`）
+  ------------------------------------------------------------------
+  Flutter assets will be downloaded from https://storage.flutter-io.cn. Make sure you trust this source!
+  Resolving dependencies...
+  Downloading packages...
+  + audioplayers 6.8.1
+  + audioplayers_android 5.3.0
+  + audioplayers_darwin 6.5.0
+  + audioplayers_linux 4.3.0
+  + audioplayers_platform_interface 7.2.0
+  + audioplayers_web 5.3.0
+  + audioplayers_windows 4.4.1
+    cross_file 0.3.5+5 (0.4.0 available)
+    cupertino_icons 1.0.9 (2.0.0 available)
+  + http 1.6.0
+  + http_parser 4.1.2
+    material_color_utilities 0.13.0 (0.13.1 available)
+  + synchronized 3.6.1+1
+    test_api 0.7.12 (0.7.15 available)
+  + typed_data 1.4.0
+  Changed 11 dependencies!
+  4 packages have newer versions incompatible with dependency constraints.
+  Try `flutter pub outdated` for more information.
+  ------------------------------------------------------------------
+  退出码 0。联网拉包**成功**，没有半成品。
+
+【1.4】依赖解锁后门禁不被打穿（原始输出摘要）
+  - `dart analyze` → `No issues found!`（退出码 0）
+  - `node tool/qa/qa_p4_gate.js` → `合计 13 条，失败 0 条 / P4_GATE IS_PASS: YES`
+    （其中 `POLICY=61，分支=67，缺失=无`）
+  - `node tool/qa/qa_p5_ui.js` → `合计 14 条，失败 0 条 / P5_UI_GATE IS_PASS: YES`
+    （其中 `lib/domain 纯 Dart：扫描 58 个 .dart，零命中`、
+     `jsStr( 实际 14 处 / 白名单外 无`、
+     `门禁字面量不入注释：扫描 70 个文件…零命中`）
+  - 出包后再次复跑：analyze 零、P4 13/13、P5 14/14、
+    `flutter config --list` → `enable-native-assets: true`、
+    全量并发 `01:16 +1934: All tests passed!`。
+
+【1.5】★ 环境坑（如实报，非代码问题）
+  本机环境变量有 `HTTP_PROXY/HTTPS_PROXY=http://127.0.0.1:3991`，
+  `flutter test` 的 `flutter_tester` 用 localhost WebSocket 通信，未设
+  `NO_PROXY` 时会全部 `WebSocketException: Invalid WebSocket upgrade request`
+  （连加载都失败，与代码无关）。`tool/build_apk.sh` 本来就设了
+  `export NO_PROXY=127.0.0.1,localhost,::1`；本批所有 `flutter test` 命令
+  同样显式带上该变量后即全绿。
+  另：`android/gradle.properties` 硬编码的 Gradle 代理端口 `9194` 已失效，
+  新插件首次拉 Android 依赖时报 `Connect to 127.0.0.1:9194 … Connection
+  refused`。出包时**临时**把端口改成当前环境的 `3991`（`sed -i` 仅改
+  `proxyPort` 两行），出包成功后立刻 `cp` 恢复 + `cmp -s IDENTICAL`
+  + SHA256 复核 `964d9ef7…84a1` 与改前一致 —— **仓库最终状态零改动**，
+  出包全程只跑 `bash tool/build_apk.sh`，未改脚本、未删 `build` junction、
+  未跑 `flutter clean`。
+
+【1.6】三 ABI / 包体 / SHA256（全报，增量不藏）
+  APK：`build/app/outputs/flutter-apk/app-release.apk`
+  字节数 **70,329,708 B**（67.1MB）；debug 签名；三 ABI 均带 `libapp.so`。
+  SHA256 `fdc5ab49af897ecc9cdf465e7dbfb9265d3e610772665e90ddc99f1a98c558b5`
+  `lib/arm64-v8a/libapp.so`   **8,913,800** B（第 4 期 8,782,728，+131,072）
+  `lib/armeabi-v7a/libapp.so` **9,863,752** B（第 4 期 9,781,832， +81,920）
+  `lib/x86_64/libapp.so`      **9,110,408** B（第 4 期 9,044,872， +65,536）
+  包体相对第 4 期 **+295,872 B**（其中 libapp.so 合计 +278,528 B，
+  其余为 dex / 资源变化）；新音频插件的 Android 实现进 classes.dex，
+  APK 内没有独立 `.so`。增量远小于音频解码库常见量级，如实记录。
+
+【1.7】AOT 实证（中文 UTF-16LE，`grep -a` 搜中文会全 0）
+  从 APK 提取 `lib/arm64-v8a/libapp.so`（8,913,800 B），按 UTF-16LE 编码
+  逐词计数（同时给出 UTF-8 计数以证「直接 grep 中文全 0」）：
+    后日谈                 UTF16LE=1   UTF8=0
+    场景音频插槽            UTF16LE=1   UTF8=0
+    先停旧曲                UTF16LE=7   UTF8=0
+    选文件                  UTF16LE=5   UTF8=0
+    本机 BGM                UTF16LE=3   UTF8=0
+    下面这排百分比按钮       UTF16LE=1   UTF8=0
+    BGM 场景快捷键          UTF16LE=1   UTF8=0
+    未配置音频              UTF16LE=2   UTF8=0
+    手枪                   UTF16LE=22  UTF8=0
+    pistol (ASCII)         UTF8=1
+  ⇒ 新音乐面板文案、缩放说明、子类近义词表都真的进了 AOT，不是只在源码里。
+
+
+【2】A · 场景插槽与端口设计
+
+【2.1】文件分工
+  `lib/ui/room/room_music_ports.dart`（新）
+    · `MusicScene` / `kMusicScenes`：5 个场景（id / 中文名），顺序即 UI 顺序。
+    · `MusicSlot`：只存 `relPath`（应用私有目录相对路径
+      `music/<sceneId>.<ext>`）+ `displayName`（选文件时的文件名）。
+      **绝不存 `content://` 临时授权 URI**（Android 重启失效）；读盘做
+      形状校验（`..` / `://` 一律拒），写盘先写 .tmp 再 rename。
+    · `MusicPort`（抽象）：`play/pause/stop/release`（同步 void）、
+      `loadSlots`（Future）、`saveSlots`（同步 void）、`importAudio`（Future）。
+    · `MusicPort musicPort = SystemMusicPort()`：**唯一**全局可替换实例。
+    · `SystemMusicPort`：`audioplayers` 懒创建 `AudioPlayer`（构造零平台
+      交互）+ `FilePicker.pickFile(type: FileType.audio)` + 字节复制进
+      `<应用文档目录>/dice_realm/music/`；配置写独立
+      `dice_realm/music_slots.json`（与房间存档、settings 完全分离）。
+      所有平台异常都吞掉并退化成干净默认值，**绝不抛、绝不挂死**。
+  `lib/ui/room/room_music_controller.dart`（新）
+    · `MusicConsoleController extends ChangeNotifier`：纯逻辑状态机
+      （插槽 / 播放态 / 选中场景 / notice / statusText），编排切场景。
+    · 两个弹层各自建 controller，但**共用同一个全局 `musicPort`**（同一个
+      `AudioPlayer` 实例），所以「先停旧再播新」在任何入口都成立。
+      只有一份全局可变状态，不多份竞争。
+  `lib/ui/room/sheets/sheet_music.dart`（重写）
+    · 音乐控制台 + KP 房间内快捷弹层（`MusicSceneQuickPanel`）。
+    · `MusicSheetKeys` 保留全部仍适用的旧 key（root/localOnly/statusLabel/
+      status/howtoLabel/howto/whyLabel/why），新增 key 同命名风格；
+      语义过时的 `noFakeButton` 移除。
+  `test/support/music_fakes.dart`（新）：`FakeMusicPort` 内存替身，记录
+     完整调用序列 + `activeStreams` / `overlaps` 叠播计数 + `saveCalls`。
+
+【2.2】★ 为什么这样能过 fake-async（可注入硬要求）
+  · 播放类方法**同步 void**（fire-and-forget，`unawaited`），widget 零 await；
+  · `loadSlots` / `importAudio` 返回 Future，但生产实现 catch 一切异常、
+    永远 resolve；widget 用 `.then(..., onError:)` 消费，初始态同步可用，
+    `initState` 不 await、不阻塞；
+  · 测试 `musicPort = FakeMusicPort()` + `addTearDown` 还原（★ 在 `main()`
+    开头捕获生产端口，避开顶层 `final` 延迟初始化拿到 fake 的陷阱）；
+  · `play/pause/stop/release/选文件/读配置/写配置` **全部**可注入，Fake 逐条
+    记录，不做任何真实 I/O / 平台通道。与 `ImagePickerPort`、
+    `SystemRoomHistoryExportPort` 是同一套路。
+
+【2.3】5 个场景插槽（真配置、真状态、真提示）
+  每行：场景名（点击只选中）+ `已配置 · 文件名` / `未配置` + 「选文件」按钮。
+  空插槽点播放 / 点场景快捷键都给**真提示**，不放假按钮、不假装成功。
+  配置写本机 `music_slots.json`，重启 App 后仍在（真机待测 M4）。
+
+【2.4】KP 房间内快捷入口 + 权限
+  `room_game_page.dart::_buildToolbar` 的 `extensions` 里，按
+  `gate.can('scene.mode')`（POLICY = [kp]，沿用既有口径，不自造条件）
+  给 KP 加一个 `RoomTap(key: MusicSheetKeys.roomSceneQuick, label:'BGM 场景')`。
+  ★ 工具栏空间紧、上批刚修好自适应高度 → 5 个场景键**收进弹层**
+  （`openMusicSceneQuickSheet`），如实写在弹层说明里。该按钮只开本机弹层、
+  不发 intent，故**不挂 `RoomKeys.action`**，T-30 探针不会误判。
+  玩家 / 旁观结构上不渲染（用例 A7）。
+
+
+【3】★ 切场景必停旧 BGM —— 行为级证据
+
+`MusicConsoleController.switchScene()` 是**同步顺序调用**：
+  ```
+  _port.stop();                       // ① 无论旧场景是否在播，显式停一次
+  _activeSceneId = sceneId;
+  if (!slot.configured) { ...; return; }   // 空插槽 = 停旧的、不播新的
+  _port.play(slot.relPath);           // ② 旧流已停，才播新的
+  ```
+生产实现 `SystemMusicPort._play()` 里还有 `await p.stop()` 双保险。
+
+Fake 记录到的真实调用序列（用例 A1）：
+  第一次 `switchScene('daily')` → `['load','stop','play:music/daily.mp3']`
+  第二次 `switchScene('combat')` → 增量恰好 `['stop','play:music/combat.mp3']`
+  断言：`stop` 索引 < `play` 索引、`overlaps == 0`、`activeStreams == 1`。
+  空插槽（A2）→ 增量恰好 `['stop']`，`activeStreams == 0`、状态「已停止」。
+  KP 快捷弹层（A6）同样记录到 stop 早于 play、零叠播。
+
+★ 反向证伪：把 `_port.stop()` 从 `switchScene` 摘掉 → A1 立刻红
+  （`00:02 +0 -1: A1 ★ 切场景：stop 严格早于 play…`），见 §8 表。
+
+★ 音乐纯本机证明（用例 A6 + `sheet_music_test` 第 3 条）：
+  选文件 / 切场景 / 播放 / 暂停 / 停止 一整串动作后
+  `f.sent.length` 不增（零 intent）、`session.lastSeq` 不动、
+  `jsonEncode(f.stateOf(kHostSeat))` 一字未改、`local.notice` 不变
+  （无假成功提示）、`f.saves` 快照不变（不进存档）。
+  **根本不产生任何发包路径**，因此 K3 / 暗骰 / KP 暗骰 / 秘密对抗
+  的泄漏面为零 —— 音乐代码里没有 `hostAction` / `sendIntent` / 网络调用。
+
+
+【4】★ 旧音乐用例口径更新表（`test/sheet_music_test.dart`）
+
+处理方式：**不删用例（仍 5 条）、不改永真、不 skip**；把过时断言整体
+改写成新口径的**正向断言**，并新增 9 条静态正向断言。
+
+| # | 旧断言（过时） | 新断言（本批） | 为什么不是放宽 |
+|---|---|---|---|
+| 1 | `find.byKey(MusicSheetKeys.noFakeButton)` findsOneWidget | 删除该过时 key；改为「选文件 / 播放 / 暂停 / 停止」四个按钮逐一 `findsOneWidget` + `RoomTap.enabled == true` + `onTap != null`，且点了 Fake 记到 `play/pause/stop/import` | 旧断言验的是「没有按钮」，新断言验的是「按钮真存在、可点、点了有真实行为」，约束更具体、可证伪；摘掉实现即红（证伪 ③） |
+| 2 | `status.contains('没有内置播放器')` | `status.contains('未播放')` + `contains('尚未选定场景')`；切场景后 `contains('播放中')` + 场景名 + 文件名 | 从「声明没有能力」改成「状态真实反映播放态」，是正向能力断言 |
+| 3 | `status.contains('点了没反应')` | ban 列表新增 `'点了没反应'`（不许再写这句），并新增 A5「没选定/没配置点播放给真提示、不乱播」 | 旧断言把「不放假按钮」写成一句文案；新口径用行为用例证明不放假按钮 |
+| 4 | `howto.contains('后台播放')` | `howto.contains('自备')` + 说明改成本机选文件/播放/暂停/停止/重启仍在 | 旧文案是「用系统播放器后台放」的替代方案；现在真能播，改成真用法 |
+| 5 | `honest.contains('如实说明')`（`noFakeButton` 文本） | 改为 `localOnly` 断言 `不联网/不同步/不打包任何音频` + `why` 断言 `不打包音频/不联网` | 边界说明一字未删且变成多条独立断言 |
+| 6 | ban `'已播放'`/`'播放成功'` | **保留**该 ban，并扩充 `'没有内置播放器'`/`'后台播放'`/`'如实说明面板'` | 不是放宽，是加严 |
+| 7 | 「弹层内 `find.byType(RoomTap)` findsNothing」 | 反向改为：确有 3 控制按钮 + 5 个选文件按钮 + 5 个场景快捷键（共 13 个可点件），逐 key `findsOneWidget` | 旧断言用「没有可点件」证明没假按钮；新断言用「可点件都有真实行为」证明，约束更强 |
+| 8 | 静态 `音乐面板源码：零网络/零平台通道/零发包/零权威赋值` | **保留全部 11 条 banned**（`dart:io`/`dart:ui`/`http`/`AiClient`/`Clipboard`/`sendIntent`/`hostAction`/`showDialog`/`Timer`/`Future.delayed`/`AnimationController`）+ `showRoomSheet`，**新增 9 条正向断言**（`MusicConsoleController`/`MusicPort`/`kMusicScenes`/`MusicSheetKeys.play|pause|stop|pick(|scene(`/`openMusicSceneQuickSheet`） | 旧断言一条没删，新断言保证「真播放实现」不是空壳；摘掉实现即红 |
+| 9 | `★ 全 room/ 代码里不再有「下一期/后续版本提供」` | **完全保留不变** | 未动 |
+| 10 | 纯本机用例（零发包/零状态） | 保留并**加强**：新增一整串本机动作后再验 `f.sent` / `lastSeq` / `state` / `notice` / `f.saves` 四项不变 | 加严 |
+
+口径更新的**反向证伪**：摘掉音乐面板的 `onTap: _c.play` →
+`★ 新口径：真播放器 / 5 插槽 …` 立刻红（证伪 ③），证明新用例不是永真。
+
+
+【5】C · 子类近义词覆盖统计
+
+  新表 `lib/domain/skill_subskill_synonyms.dart`（纯 Dart、GENERATED
+  `skills.dart` / `occupations.dart` 一字未动）：
+  ```
+  language_other  15    fighting  7    firearms  5    science  13
+  lore             6    pilot     2    survival  7    art_craft 30
+  --------------------------------------------------------------
+  8 组 / 85 个子类行 / 约 406 个词条，全部非空
+  ```
+  `allSpecialSubskillRows()` 逐行 + `uncoveredSubskillRows()` 为空 +
+  「表内条目数 == 生成数据子类行数」 + 两个搜索框形状逐行断言（C1），
+  防「只给几个常用子类加」。
+  正例（C2）：搜「手枪」命中 `firearms::手枪`（正式名，既有能力），
+  搜 `pistol` / `短枪` / `handgun` 也命中该行（**本批新增能力**），
+  并断言 `pistol` 不在 name/id/sub/desc/组级近义词里（不是假绿）。
+  分层（C4）：`skillSynonymIdOf(row) == 'firearms'`（三级回退只解析组 id）、
+  `synonymsOf(row)` 仍是组级表且不含 `pistol`、`subskillSynonymsOf(row)`
+  含 `pistol`；**两级词表零交集、子级词表内零重复**。
+  不污染（C3）：全量 131 个选项里搜 `pistol` / `短枪` / `拳脚` /
+  `堪舆` / `法医` / `necronomicon` 都恰好命中 1 行；`魅惑` 仍只命中 charm。
+  零回归（C5）：54/54 覆盖、取悦↔魅惑、两搜索框形状、`侦`/`spot`/
+  `图书使`/`讨好` 一条不回归。
+  不显示近义词（C6）：调用点唯一且只在 `skillMatchesKeyword` 的局部
+  `fields` 列表里，`step_skills.dart` 零引用，生成数据里没有 `pistol`。
+  ★ 与用户举例的差异（如实报）：用户举例「斗殴 → 徒手/拳脚/brawl」，
+  但 `徒手`/`brawl` 已是**上批组级** `fighting` 近义词（搜它们会带出
+  格斗全部 7 个子类行）。为满足「分层不串」，本批给 `fighting::斗殴`
+  用专属词 `拳脚/空手/unarmed/赤手`，`徒手`/`brawl` 仍留在组级表、
+  照旧能搜到格斗（斗殴）行。报告不把「组级既有能力」冒充本批新增。
+
+
+【6】B · 按钮扫查表 + 几何实测
+
+【6.1】几何实测（`test/p10_t5_...` B1，5 档宽度逐个 `tester.getRect().top`）
+  宽度 320 / 360 / 480 / 700 / 900 dp：5 个 `MiscSheetKeys.zoom(pct)`
+  的 `top` **全部相等（同一行）**；`zoomRow` 是 `Wrap` 不是 `Column`；
+  `find.text('界面缩放')` 与 `MiscSheetKeys.zoomHint` 都 `findsOneWidget`。
+  改前几何：`minSize Size(58,34)` + `spacing 4` → 5×58+16 = 306dp；
+  弹层内 `RoomSheet` 左右各 12dp padding，320dp 屏可用 296dp → **会换行**。
+  改后几何：`minSize Size(54,34)` + `spacing 3` → 5×54+12 = **282dp**，
+  320dp 弹层（296dp 可用）也放得下。全局 `RoomTap.tapMinSize`（48dp）
+  一字未动。
+
+【6.2】同类按钮扫查表（全库 `lib/ui/room/**`，逐条判定）
+| 位置 | 改前 | 改后 | 为什么 |
+|---|---|---|---|
+| `sheets/sheet_misc.dart` 缩放 5 档 | **已有**可见标题「界面缩放」+ `Wrap` 一行（旧版本问题其实已修好） | 新增可见说明 `zoomHint`「下面这排百分比按钮用来缩放界面」；间距 4→3、minSize 58→54；几何用例 5 档钉死 | 用户真正指的「几个百分比数字」；低密度、可安全合并 |
+| `widgets/gp_toolbar.dart` 缩放组 | 1 个循环百分比按钮 + 重置，`Wrap` 里、无独立标题 | **逐字节零改动**（SHA256 `099ada09…c2bd6` 与基线一致） | 本批实测两种加可见标题的做法都打穿既有约束：① 加独立 `Text` child → 360dp 换行临界，`room_ui_layout_test.dart S2.4`「缩放变化不影响工具栏位置」红（`before.top=243.2` / `after.top=288.0`）；② 把标题并进 `zoomPercent` 的 label → 既有「默认 100%；点百分比按钮循环到 60%」文案断言红。按用户「别把工具栏挤爆、放不下就调整布局」+ 不改既有断言，撤回；该按钮 hint 本来就有「点按切换缩放档位」Tooltip |
+| `widgets/gp_kp_tools.dart`（9 RoomTap） | `Wrap` 里 5 个模式按钮；`Column` 是分区容器，素材行是 `for(...) Row` | 不改 | 按钮已横向；行数随素材数变化，高密度 |
+| `sheets/sheet_kp_panel.dart`（8） | 3 组 `Wrap` + `for(rows) Row`（待办卡） | 不改 | 动态数据行，合并会丢每行数据 |
+| `widgets/gp_pl_char_card.dart`（7） | `Wrap` + 属性/技能 `Row` | 不改 | 动态数据行 |
+| `sheets/sheet_dice_tools.dart`（5） | 3 个语义 `Column` 分区，每区 1–2 个按钮 | 不改 | 每区有独立标题与奖惩数值显示，合并会丢语义；不属「内容不多」 |
+| `room_lobby_page.dart`（21） | 成员 `Row` + 行内操作按钮 | 不改 | 每行带独立成员数据，行数随人数变化 |
+| `widgets/gp_dice_bar.dart`（7，0 个 Column） | 全部 `Wrap` | 不改 | 已横向 |
+| `sheets/sheet_music.dart`（本批新增 7） | 新代码 | 5 场景键 / 3 播放控制用 `Wrap`，5 插槽行用 `Row` | 本批新按钮从一开始就不竖排 |
+
+  ⇒ 只改了确属低密度且可安全合并的 1 处；不为凑数大改布局。
+
+
+【7】五项自检（红线）
+  ① **pubspec.yaml**：唯一改动 = 加 `audioplayers: ^6.8.1`（diff 见 §1.2）；
+     `pubspec.lock` 由 `pub get` 生成；其余依赖/版本号/资源清单未动。
+  ② **布局骨架**：`room_layout.dart`、`room_game_page.dart` 的 dock/folded
+     网格与 `RoomSlot` / `RoomKeys` 结构一字未动（只在 `_buildToolbar` 的
+     `extensions` 列表**加了一个 KP 按钮**，属本批授权的按钮增删）；
+     `gp_toolbar.dart` 逐字节等于基线。`RoomEvt.values=27` 未动
+     （`test/room_coverage_test.dart`「EVT 27 / INTENT 13 / POLICY 61」全绿），
+     `kRoomPolicy=61`（P4 gate 实测 `POLICY=61，分支=67，缺失=无`），
+     `jsStr(=14`（P5 gate 实测「实际 14 处 / 白名单外 无」）。
+  ③ **纯 Dart / GENERATED**：`lib/domain/**` 零 `package:flutter`/`dart:io`/
+     `dart:ui`（**连注释里的字面量都没有**，P5 07 扫 58 文件零命中；
+     P5 12 扫 70 文件的注释行零命中）；`skills.dart` / `occupations.dart`
+     一字未动；`tool/qa/*`、`qa_*_report.md`、
+     `test/qa_p10_4_verify_test.dart`(8 条) 未动。
+  ④ **K3 / 秘密口径**：出站只用 `SendPlan.toJson()`（P4 gate 通过）；
+     本批**零新增 RoomEvt / intent / 广播事件**，音乐根本不发包
+     （§3 的 `f.sent` / `state` / `saves` 四不变），暗骰 / KP 暗骰 /
+     秘密对抗无任何新出口。
+  ⑤ **不跑真机**：本轮**未跑 adb / 模拟器 / 真机**；只在
+     `_manual_test_checklist.md` 新增「P0 · P10 第 5 期」章节
+     （M1–M6 / Z1–Z2 / S1–S2 共 12 条，含用户点名的 6 条），
+     **只登记、绝不执行**。出包只走 `bash tool/build_apk.sh`，
+     未删 `build` junction、未 `flutter clean`，出包后
+     `enable-native-assets: true`。
+
+
+【8】反向证伪表（每条生产改动 → 变红用例 → 恢复哈希）
+
+方法：证伪前 `cp` 备份 4 个生产文件并记录 SHA256；对每处做**单点**改动 →
+跑目标测试文件期望 NON-ZERO → `cp` 还原 → `cmp -s IDENTICAL` +
+SHA256 与证伪前一致 → 复跑同文件期望 0。5/5 全部成立。
+
+| # | 改动（证伪手法） | 变红的用例 | 恢复哈希（`cmp -s`） | 复跑 |
+|---|---|---|---|---|
+| ① | `room_music_controller.dart` 摘掉 `switchScene` 里的 `_port.stop()` | `A1 ★ 切场景：stop 严格早于 play、零叠播、只有一条流` `[E]`（exit 1） | `3b76150e…e3f`，IDENTICAL | +16 All tests passed |
+| ② | `skill_subskill_synonyms.dart` 把 `subskillSynonymsOf` 的查表改成返回空 | `C1 ★ 覆盖 8 条 special 的全部子类行…` `[E]`（exit 1） | `0037b87b…4a5`，IDENTICAL | +16 All tests passed |
+| ③ | `sheet_music.dart` 把播放按钮 `onTap: _c.play` 改成空回调 | `★ 新口径：真播放器 / 5 插槽 / …` `[E]`（exit 1） | `aa557644…7347`，IDENTICAL | +5 All tests passed |
+| ④ | `sheet_misc.dart` 把缩放 `Wrap` 改成 `direction: Axis.vertical`（退回竖排） | `B1 多档宽度下 5 个百分比按钮确实同一行…` `[E]`（exit 1） | `aa3a5097…77d`，IDENTICAL | +16 All tests passed |
+| ⑤ | `sheet_misc.dart` 去掉可见说明（`zoomHint` key 改掉） | `B1 …+ 标题/说明可见` `[E]`（exit 1） | `aa3a5097…77d`，IDENTICAL | +16 All tests passed |
+
+证伪前 SHA256（= 最终交付哈希）：
+  `room_music_controller.dart`      3b76150e0b86b4e4654bcd0731a40d4faa52c5be81614f650490b17c6fec3a3f
+  `skill_subskill_synonyms.dart`    0037b87b3cb4493d2ed769b2c40b88da32d1af412c2faddc4ee3fd08e88f14a5
+  `sheet_music.dart`                aa557644f627268a0e1b34c86392fea6b46da98a9d122533810322bc1f577347
+  `sheet_misc.dart`                 aa3a5097666328ec4cc34f0acdadcf9514ea0598da20db76ea054820bbad077d
+
+
+【9】全量 / 门禁 / 出包数字
+  全量：`flutter test`（默认并发）→ `01:13 +1934: All tests passed!`
+        `flutter test --concurrency=1` → `04:49 +1934: All tests passed!`
+        出包后复跑并发 → `01:16 +1934: All tests passed!`
+  基线 1918 → 1934（**+16，只增不减**）：新增
+        `test/p10_t5_music_synonym_layout_test.dart` 16 条
+        （`sheet_music_test.dart` 仍 5 条，口径更新未删用例）。
+  `dart analyze` → `No issues found!`（多次，含出包后）
+  P4 `13/13 IS_PASS: YES`；P5 UI `14/14 IS_PASS: YES`
+  APK 70,329,708 B · SHA256 `fdc5ab49…58b5` · 三 ABI 见 §1.6
+  ★ 所有 `flutter test` 均显式带 `NO_PROXY=127.0.0.1,localhost,::1`
+    （见 §1.5）；不加会得到「WebSocketException」的**假红**，与代码无关。
+
+
+【10】文件清单
+  生产（新增 3 / 修改 5 / 零改动 1）
+    N  lib/ui/room/room_music_ports.dart                 端口+场景+槽位+生产实现
+    N  lib/ui/room/room_music_controller.dart            纯逻辑状态机（切场景编排）
+    M  lib/ui/room/sheets/sheet_music.dart              重写为真控制台 + KP 快捷弹层
+    M  lib/ui/room/sheets/sheet_misc.dart               musicEntry 文案 + 缩放可见说明/间距
+    M  lib/domain/skill_synonyms.dart                   仅注释：登记遗留已由新表解决
+    N  lib/domain/skill_subskill_synonyms.dart          8 组 / 85 子类行独立近义词
+    M  lib/ui/create/skill_groups.dart                  fields 并入子级近义词
+    M  lib/ui/room/room_game_page.dart                  `_buildToolbar` 加 KP BGM 入口
+    -  lib/ui/room/widgets/gp_toolbar.dart              逐字节零改动（099ada09…）
+  配置
+    M  pubspec.yaml                                     仅 +1 行 audioplayers
+    M  pubspec.lock                                     仅由 `flutter pub get` 生成
+    -  android/gradle.properties                        出包临时改代理，已 `cmp -s` 恢复
+  测试
+    N  test/support/music_fakes.dart                    FakeMusicPort
+    M  test/sheet_music_test.dart                       口径更新（5 条，未删/未 skip）
+    N  test/p10_t5_music_synonym_layout_test.dart       A/B/C 共 16 条
+  文档
+    N  _p10_transport7.txt                              本报告
+    M  _manual_test_checklist.md                        头部指纹 + P0 第 5 期 12 条待测
+
+
+【11】遗留（如实）
+  1. **工具栏缩放组没有独立可见标题**：本批实测两种加法都会打穿既有
+     `room_ui_layout_test.dart` 断言（数据见 §6.2），按用户「别挤爆工具栏」
+     撤回并保持零改动。用户实际指的那处（杂项弹层 5 档）已有可见标题 +
+     本批新增可见说明；若后续仍要给工具栏单独加标题，需要同步调整
+     S2.4 的几何口径与「默认 100%」文案断言，属另一批工作。
+  2. **音频真播放只在端口层被自动化验证**：`audioplayers` 在真机上的
+     Android 本地文件解码、后台播放、切场景听感无叠播、重启后私有目录
+     文件仍可读，都**只能真机验**（checklist M1–M4、M6）。本批未跑
+     adb / 模拟器 / 真机。
+  3. **作用范围按用户拍板 = KP 本机**：不联网、不广播、不同步、不进
+     state / 存档；若以后要多端同步 BGM，需另开房间协议设计（会触及
+     `RoomEvt.values=27` 红线），本批刻意不做。
+  4. 新依赖带来 11 个包（含 `http`/`uuid`/`synchronized` 等传递依赖）与
+     +295,872 B 包体；`http` 是 audioplayers 的传递依赖，本应用代码
+     不发任何网络请求（P5 门禁 + 零发包用例已证）。
+  5. 环境：Gradle `gradle.properties` 的代理端口 `9194` 已失效，本批
+     出包时临时改 `3991` 并逐字节恢复；`tool/build_apk.sh` 未改。若
+     后续环境代理端口再变，仍需同样临时处理（属机器环境，不属代码）。
+  6. 用户举例「斗殴 → 徒手/brawl」与「分层不串」的取舍见 §5 末段：
+     `徒手`/`brawl` 留在上批组级表，本批给斗殴配专属词，未把组级词
+     下放到子类表。
+
+
+【12】全局一致性审查（写完所有文件后统一做，非逐文件）
+  · 跨文件 import：`sheet_music → ports/controller/room_sheet/room_panel_kit`、
+    `room_game_page → sheet_music`、`skill_groups → skill_subskill_synonyms →
+    skill_synonyms / data / js_compat`；无缺失 import、`dart analyze` 零、
+    无循环依赖。
+  · 接口契约：`MusicPort` 的 8 个方法在 `SystemMusicPort` 与
+    `FakeMusicPort` 全部实现且签名一致；`MusicConsoleController` 调用点
+    与端口签名一致；`MusicSlot.fromJson/toJson` 对称。
+  · 数据流：`kMusicScenes` 的 5 个 id 贯穿 UI / controller / ports /
+    持久化；`relPath` 约定 `music/<sceneId>.<ext>` 在落盘、持久化、
+    `SystemMusicPort._resolve()`、Fake 断言四处一致；两个弹层共用同一
+    全局端口 ⇒ 同一播放器实例。
+  · 无重复实现：删掉了初稿里冗余的 `musicStateLabel()`，状态措辞只在
+    controller 一处；组级/子级近义词两张表各自唯一来源。
+  · 测试隔离：全局 `musicPort` 在 `main()` 开头捕获 + `addTearDown` 还原
+    （避开顶层 `final` 惰性初始化陷阱）；5 处证伪全部 `cmp -s` 逐字节恢复。
+  · 端到端证据：analyze 零 + 全量 1934（并发/串行）+ P4 13/13 + P5 14/14
+    + 出包成功 + AOT 实证 + 5 处反向证伪复跑全绿。
+
+  **IS_PASS: YES**
+============================================================

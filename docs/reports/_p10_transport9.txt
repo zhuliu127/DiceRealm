@@ -1,0 +1,272 @@
+================================================================================
+_p10_transport9.txt — 骰境 P10 第 7 期 A 交付报告（版本 2.25.0+95）
+生成时间：本机本地时间（施工中断点快照，如实记录）
+施工：software-engineer-3（功能收尾短任务 → 本期 A 布局/视觉）
+================================================================================
+
+【一句话结论】
+用户全权授权的「KP 平板横屏网格重排 + 视觉修复」6 项生产代码已全部落盘并通过
+受影响的 5 个测试文件（p10_t3 / p10_t6_layout / room_ui_shell / room_ui_kp /
+room_ui_blocks）；本轮新增几何用例 test/p10_t7_layout_test.dart（T1~T5）。
+**但：全量 2106 未跑、APK 未出、反向证伪未做、_manual_test_checklist 未更新。**
+原因见「六、阻塞」。IS_PASS: NO（不是代码判负，是交付闭环未完成）。
+
+
+================================================================================
+一、6 项逐条：真因 → 改动 → 证据
+================================================================================
+
+■ ① 横屏网格重排（核心） —— lib/ui/room/widgets/room_layout.dart
+  真因（几何实测推导，非纸面）：
+    · 1280dp 档：内容宽 1256，左栏 17% ≈ 213dp。左窄栏素材行是
+      「素材名 + 隐藏/封面/删除」固定 Row，需 ≈ 266dp → 溢出 53px，
+      被 `_slotView` 的 tooNarrow 横向滚动 + ClipRect 兜底 → 用户截图
+      「素材 隐藏 封面 删除 右半边被裁」。
+    · 舞台：Material 舞台已用 AspectRatio(16:9)，但上排 60% 让 map 格
+      高 ≈ 402dp，而 16:9 高只有 ≈ 248dp → 格内上下各留 ~77dp 空白 →
+      用户「中间一大片空白」。且 `GpMapStage` 原本**没有渲染素材图**
+      （只画笔迹/标点），assets 非空时也是一片灰。
+  改动：
+    · flex：上排 60→44、中排 34→41、状态 6→5；上排内 工具 30→24 /
+      素材 43→50 / 右列 27→26（舞台加宽，压掉舞台留边；底部三块拿更多高度）。
+    · roomDockMinWidthOf：gpKpTools 280→240、gpKpLeft 230→200
+      （左栏素材行改两行后 213 够用，且不再触发 tooNarrow 横向滚动）。
+    · 保留硬约束：根 17/83 三层、10 槽 DFS 顺序、gpKpLeft[17]、
+      gpKpTools.first==83、gpMap.length==3（p10_t3 全绿）。
+  证据：p10_t6_layout C1（新 flex 期望值已同步）、C3[1280/1524] 全绿；
+        p10_t7 T1 断言「相邻格间距 == 8、底部三块等高、10 格夹在
+        顶栏~工具栏之间、零 RenderFlex overflow」。
+
+■ ② 亮色主题栏位标题看不见 —— lib/ui/room/widgets/room_panel_kit.dart
+  真因：`_textTheme()`（lib/theme.dart:218）**没有定义 titleSmall**，
+  `SectionBox` 直接用 `textTheme.titleSmall` → 回落到 DefaultTextStyle，
+  亮色皮肤下与卡片浅底几乎同色。
+  改动：标题 style 改为 `copyWith(color: Theme.of(context).colorScheme.onSurface)`
+  （亮=深墨、暗=浅墨；onSurface == Palette.text）。
+  证据：p10_t7 T2 亮暗两套断言「标题色 == onSurface 且与 cardColor
+  亮度差 > 0.45」。
+
+■ ③ 顶栏去重 —— lib/ui/room/widgets/gp_topbar.dart
+  真因：身份行 `whoLine` 已含「KP·KP 主持」，另外又单独渲染一个
+  「角色：主持人」胶囊；KP 还多一行「服务：本机进程内（未联网）」。
+  改动：删掉 `角色：…` 胶囊与整块 KP service 行（`_oneLine` / `_twoLine`
+  两档同时删；`_TopbarData` 对应字段一并移除）。两个 key 常量保留，
+  注释标明「已撤渲染，供反向断言，不代表还有 UI 在用」。
+  口径更新（保留语义、加正向「旧的必须消失」断言，不删用例/skip）：
+    · test/room_ui_shell_test.dart：role/service 由 findsOneWidget 改
+      findsNothing（并保留 who 仍在的断言）；service 用例改名
+      「服务地址块已整体撤除（三种视角都不再建）」。
+    · test/p10_t6_layout_test.dart `_topbarKeys()`：移除 role/service
+      （否则 getRect 落空）。
+  证据：p10_t7 T4 反向断言 role/service findsNothing 且 who 仍在。
+
+■ ④ 两个栏位整合（素材管理只留一处） —— gp_kp_tools.dart + gp_kp_left.dart
+  真因：第二列（工具窄栏）与左窄栏「素材」tab 各有一份「未公开素材 +
+  上传 + 隐藏/删除」（用户图 2 / 图 3 两套）。
+  改动：
+    · gp_kp_tools：删掉「未公开素材」列表 + 逐素材 隐藏/删除 + `assets`
+      变量；只保留一个「上传素材」功能入口（`GpKpToolsKeys.upload`
+      保留 → qa_p5_priv_probe 的 asset.add 探针继续有效）。
+    · gp_kp_left：素材行由「名字 + 3 按钮」固定 Row 改「名字一行 +
+      按钮 Wrap」（48×48 热区不变、完整落在格内、不再被裁）。
+  证据：p10_t7 T5 左栏素材 tab 仍可见「旧地图 + 上传」；
+        room_ui_kp 用例改为「上传走工具窄栏 / 公开·删除在左窄栏素材 tab」全绿。
+
+■ ⑤ 公开素材严格 16:9 —— gp_map_stage.dart + room_game_page.dart
+  真因：`AspectRatio(16/9)` 已存在（RoomTheme.mapAspect=16/9），但 (a)
+  格子过高，16:9 舞台在格内上下留白；(b) 舞台**根本没有渲染素材底图**，
+  所以「素材 1」在界面上只是一片灰。
+  改动：
+    · gp_map_stage：外层 `ColoredBox` 填满整个格子（同底色收边，消除
+      「舞台周围一圈空白」），内层 `Center + AspectRatio(16/9)`；
+      `GpMapStageKeys.stage` 仍挂在 16:9 节点上（几何断言继续可测）。
+    · 新增 `_coverImage`：取最新公开素材的 dataURL → base64Decode →
+      `Image.memory(fit: BoxFit.contain)`（不裁切、不变形；解析失败静默降级）。
+    · room_game_page `_slotView`：map 类格子不再包竖向
+      SingleChildScrollView，直接拿紧约束（否则高度无界、舞台只能按宽度
+      算高、格内留白）。
+  如实披露：**这一项不是「本来坏了」**——16:9 的 AspectRatio 早已存在，
+  真问题是「素材图没渲染 + 格子过高留白 + 外层被滚动容器放开约束」。
+
+■ ⑥ 骰子文案去 1 + 其他骰子收纳 —— gp_dice_bar.dart
+  改动：
+    · 新增 `_diceLabelOf`：显示 `D100/D4/…`（去掉前导 1）；
+      **内部表达式 `kDiceExprs` 仍是 `1D100/1D4/…`，载荷与规则层一字不动**。
+    · 工具栏只留 D100 + 自定义；新增「其他骰子」按钮（`GpDiceBarKeys.otherDice`）。
+    · 点「其他骰子」→ `showGeneralDialog` 居中 Dialog，里面 D4/D6/D8/D10/D12/D20
+      （复用同一个 `_roll` 回调，key 仍是 `GpDiceBarKeys.expr(e)`）。
+  口径更新：
+    · p10_t6_layout_test B1 keys 列表：`for(final e in kDiceExprs)` →
+      `expr(kDiceExprs.first) + otherDice`。
+    · room_ui_blocks_test：点 1D6 前先打开「其他骰子」；旁观者 keys 列表
+      改为 D100 + otherDice。
+  证据：p10_t7 T3 断言「工具栏无 D4~D20、弹窗 6 个都在、点 D6 仍发 1D6」。
+
+
+================================================================================
+二、几何实测（p10_t7 T1，1280×800 / 1524×1016 两档，getRect 实测）
+================================================================================
+· 相邻格间距全部 == 8.0dp（左栏→工具、工具→舞台、舞台→右列、舞台→底部、
+  聊天→记录、记录→只给你看）——「无空隙」是逐条断言而非目测。
+· 底部三块（聊天 | 公开记录 | 只给你看）top 相等、height 相等（误差 ≤0.6dp）。
+· 公开素材舞台 rect 宽高比 == 16/9（误差 ≤0.02）。
+· 10 个格子全部夹在「顶栏下沿 ~ 工具栏上沿」之间，右不越屏。
+· 零 RenderFlex overflow（本轮真修过一处：工具窄栏 5 色行 Row→Wrap，
+  1280 档曾溢出 53px）。
+· 舞台上排留边：1280 档 ≈36dp、1524 档 ≈85dp（舞台用 16:9 居中 + 同底色
+  收边，视觉上是一整块背景而不是「空白」）。
+
+
+================================================================================
+三、版本
+================================================================================
+pubspec.yaml：2.24.0+94 → **2.25.0+95**
+lib/app_version.dart：kAppVersion='2.25.0' / kAppBuildNumber=95（两处同步）
+
+
+================================================================================
+四、文件清单
+================================================================================
+【生产代码】
+  lib/ui/room/widgets/room_layout.dart       ① flex 重排 + minWidth 调整
+  lib/ui/room/widgets/room_panel_kit.dart    ② SectionBox 标题色 +（PanelTabs 已 Wrap）
+  lib/ui/room/widgets/gp_topbar.dart         ③ 删角色/服务两胶囊
+  lib/ui/room/widgets/gp_kp_tools.dart       ④ 删素材列表/隐藏删除 + 保留上传；色行 Row→Wrap
+  lib/ui/room/widgets/gp_kp_left.dart        ④ 素材行改「名字 + 按钮 Wrap」
+  lib/ui/room/widgets/gp_map_stage.dart      ⑤ 填满格子 + 16:9 居中 + 素材图 contain
+  lib/ui/room/room_game_page.dart            ⑤ map 格不包滚动（拿紧约束）
+  lib/ui/room/widgets/gp_dice_bar.dart       ⑥ 去 1 文案 + 其他骰子弹窗
+  lib/app_version.dart / pubspec.yaml        版本 2.25.0+95
+
+【测试】
+  test/p10_t7_layout_test.dart               新增几何用例 T1~T5（本批）
+  test/p10_t6_layout_test.dart               口径更新：C1 flex / C2 配比 / B1 keys / _topbarKeys
+  test/room_ui_shell_test.dart               口径更新：role/service 反向断言
+  test/room_ui_kp_test.dart                  口径更新：素材上传/公开/删除改两处入口
+  test/room_ui_blocks_test.dart              口径更新：D6 走其他骰子弹窗
+
+【未触碰（红线）】
+  lib/domain/** 零改动；lib/ui/create/** 未碰；GENERATED 两文件未动；
+  tool/qa/*、qa_*_report.md 未改；RoomEvt.values=27 / kRoomPolicy=61 /
+  jsStr(=14（lan_server.dart）未变；RoomSlot/RoomKeys 未增删改 key 名。
+
+
+================================================================================
+五、验证结果（本机实跑）
+================================================================================
+测试环境：flutter test 在工程根的 build 是 junction → 受限 PowerShell 穿不透
+（errno 448）；git.exe 不在 PATH（flutter.bat 的 update_engine_version.ps1 失败）。
+→ 按任务预案改用**真实目录副本** D:\dev\dice-realm-t7（复制 lib/test/assets/
+  .dart_tool/pubspec.*），用 `dart flutter_tools.snapshot test --no-pub` 运行。
+
+已跑（副本，--no-pub）：
+  p10_t3_layout_test + p10_t6_layout_test + room_ui_shell_test +
+  room_ui_kp_test + room_ui_blocks_test + p10_t7_layout_test（新增 6 条）
+  →  **105 / 105 全绿，All tests passed!**（9s）
+  修复过程：kp 素材用例因跨 pump 残留 "Too many elements" → 加
+  SizedBox.shrink() 清理 + Finder.first，复跑转绿；工具窄栏 5 色行
+  Row→Wrap 修掉 1280 档 53px 横向溢出。
+dart analyze（工程根，dart.exe 直接调）：本批 8 个生产文件 → No issues found
+  （仅修掉 2 个 unnecessary_underscores info 后归零）。
+
+未跑：
+  · 全量 flutter test（2106）—— build junction 限制 + 时间；
+  · APK 出包（tool/build_apk.sh 需要 build junction，受限 PowerShell 不可用）；
+  · 反向证伪（改坏→红→恢复）；
+  · _manual_test_checklist.md 第 7 期章节。
+
+
+================================================================================
+六、阻塞（如实报）
+================================================================================
+1. `build` 是 junction → D:\dev\dice-build；受限 PowerShell 读它报
+   errno 448「不受信任的装入点」。任务预案的「真实目录副本」已启用，能跑
+   定向测试，但**全量 2106 + 出包**在副本里做等于重新编译整个工程，耗时远超
+   本会话剩余预算。
+2. `git.exe` 不在 PATH（PortableGit 目录下未找到 git.exe），`flutter.bat`
+   的前置脚本 `update_engine_version.ps1` 因找不到 git 失败 → 只能绕过
+   flutter.bat 直接调 `flutter_tools.snapshot`。
+3. 因此本报告是**施工中断点快照**：生产代码 6 项全部完成且定向测试通过，
+   但「全量只增不减 / 出包 / 反向证伪 / 清单」四项闭环未完成，需后续批次接。
+
+
+================================================================================
+七、遗留 / 需下一批接
+================================================================================
+1. 全量 `flutter test`（2106 基线）未跑 —— 必须补，确认只增不减。
+2. APK 未出（版本 2.25.0+95 已就位，出包命令 `bash tool/build_apk.sh`）。
+3. 反向证伪未做（建议至少对 ①②⑥ 各做一条：改坏 → 用例红 → 恢复）。
+4. `_manual_test_checklist.md` 未加第 7 期真机待测项（横屏四边对齐、亮色标题、
+   顶栏变短、素材单入口、舞台 16:9 + 素材图、骰子弹窗）。
+5. 舞台留边：1524 档约 85dp（16:9 与格高差），已用同底色收边 + 信息条处理；
+   若真机仍觉空，下一批可把上排再降 2~4% 或让舞台向上取整到格宽。
+6. 32 位真机 / 低 DP 手机的 412 竖屏未被本批改动波及（folded 档未动），
+   但仍建议真机复看工具栏 4 行（第 6 期遗留项）。
+
+
+================================================================================
+八、判定
+================================================================================
+生产改动          : 6 项全部落盘（①~⑥）
+定向测试          : 105 / 105 全绿（p10_t3 / p10_t6_layout / room_ui_shell /
+                    room_ui_kp / room_ui_blocks / p10_t7 新增 6 条）
+dart analyze      : 本批 8 文件 No issues found
+全量测试          : 未跑
+APK               : 未出
+反向证伪          : 未做
+版本              : 2.25.0+95（pubspec 与 app_version.dart 一致）
+
+IS_PASS: NO
+（代码层 6 项已就绪且定向验证通过；判负仅因全量/出包/证伪/清单四项闭环
+  受 build junction + git 缺失的环境阻塞未完成，如实上报，不回滚已改文件。）
+================================================================================
+
+============================================================
+【收尾补充 · 主理人亲自执行（2026-11-11 22:2x–22:4x）】
+背景：收尾 worker（software-engineer-2）在冻结基线后完成全量/串行/
+门禁/反向证伪，但在出包前被 429 限流掐断（重置 2026-11-12 20:19）。
+以下收尾由主理人在本机直接执行（worker 全部停手，单线操作）。
+
+■ 五项自检（最终冻结态，主理人实测）
+  dart analyze（全项目）→ No issues found!
+  flutter test（并发）   → 01:32 +2115: All tests passed!
+  flutter test --concurrency=1 → 05:42 +2115: All tests passed!
+  （基线 2106 → 2115 只增不减 = A 批新增 6 + worker 补 2 + 计数差 1）
+  P4 13/13 IS_PASS: YES / P5 UI 14/14 IS_PASS: YES
+  worker（限流前）已完成反向证伪 5 项：全部 RED → sha256 逐字节恢复 → GREEN。
+
+■ ★ AOT 排雷（重要，写进流程）
+  首次出包产物 70,397,488 B，但解包比对发现 arm64 libapp.so 与
+  第 6 期交付包**逐字节相同**（SHA E7DE38DA…）＝ 第 7 期源码变更
+  根本没进包 —— 正是 build_apk.sh 注释警告的「增量缓存跳过 AOT」。
+  修法（脚本注释给的）：删 .dart_tool/flutter_build 与
+  build/app/intermediates/flutter 后重编 → libapp.so 变为 9F5180C5…。
+  验证升级：旧「GetString 对齐搜索」会漏检奇数偏移字符串（实测
+  「其他骰子」假阴性 0）；改用**字节级 UTF-16LE 搜索**（hex 任意偏移）：
+    其他骰子 ×1 / 候选单位名 ×1 / 战技 ×2 / 推送要求 ×3 / 界面缩放 ×1
+    服务：本机进程内（已删项）= 0
+  ⇒ 第 7 期 A 代码确认全部进包。
+
+■ APK 指纹（v2.25.0+95）
+  70,397,488 字节 / SHA256
+  8E3679B4644F7F822555770101657188D9978EEEDA0528157E94B36E718F9015
+  三 ABI libapp.so：8,913,800 / 9,929,288 / 9,175,944（与上批尺寸
+  巧合相同、内容不同，以 SHA 与字面量为准）。交付副本
+  dice-realm-v2.25.0.apk 已按此包重拷（曾短暂放过坏包，已替换）。
+
+■ 出包环境（记录）
+  build 已由 junction 改为实目录（junction 同卷也报 errno 448，
+  flutter test/出包均无法运行；D:\dev\dice-build 原件未动）。
+  Gradle 代理 9194 失效 → 临时改 7897（本机当前活代理）出包，
+  gradle.properties 已逐字节恢复（sha256 = 964d9ef7…7d84a1，端口回 9194）。
+  另：worker 被限流硬杀曾留下 Gradle journal 锁
+  （Could not create service of type FileAccessTimeJournal），
+  杀 daemon + 删 caches/journal-1 后恢复。
+  构建中 flutter test 自动触发的 pub get 未污染 pubspec.lock
+  （仍 FA69E596…，82 处 pub.dev / 0 处镜像）。
+
+■ IS_PASS: YES（最终）
+  六项施工 = engineer-3 落盘；定向 105/105 + 口径更新 = engineer-3；
+  全量/串行/门禁/反向证伪 = engineer-2（限流前）；AOT 排雷 + 出包 +
+  本清单与报告收尾 = 主理人。三段拼接，磁盘单一真源。
+============================================================

@@ -1,0 +1,271 @@
+============================================================
+P10 第 4 期 —— 交付报告（工程师 寇豆码 / software-engineer-5）
+工程：C:/Users/60965/WorkBuddy/2026-10-08-18-34-17/dice-realm
+基线：2.17.0+83 / 全量 1905 组 0 红 / APK 70,001,068 B · 8e2bf6e4…536d0c
+============================================================
+
+【0】一句话结论（如实区分「按老 APP 修」与「新增能力」）
+
+- **A 是真按老 APP 改了规则层**：`consent` 对非 `check.request` 的状态变更请求
+  原来只 `list.removeAt(idx)`，缺老 `room-model.js:1569` 的 `_settleRequest`
+  收尾（REQUEST-done SEAT + 清 pending）。现改走本工程已实现的
+  `settleRequest(seat, id, agree, null)`，玩家端待办卡当场消失、权威端
+  `pending` 不再残留。**只动 `lib/domain/`，跑团房间 UI 布局零改动**。
+- **B 是新增搜索能力**（不是「对齐老 APP」）：新增纯 Dart 近义词表覆盖
+  `cocSkills` 全部 **54/54** 条（含 8 条组技能），并入
+  `skillMatchesKeyword` 的匹配字段，**绝不进任何渲染文本**；
+  「取悦 ↔ 魅惑」显式收录，不依赖生成文件 `desc` 里那句偶然文案。
+- 全量 **1905 → 1918**（并发 + `--concurrency=1` 串行各一遍）、analyze 零、
+  P4 13/13、P5 14/14、出包成功；**5 处生产改动逐处反向证伪**。
+
+
+【1】A · 计划数变更影响表（本批最高风险项）
+
+【1.1】出站计划到底变了什么
+`consent` 的非 check.request 分支改前：
+  同意 = `syncMembers()`（MEMBERS）+ 1 条公共 LOG
+  拒绝 = 1 条公共 sys
+改后（照老 `:1569` 的**先结算再落账**顺序）：
+  `settleRequest(seat,id,agree,null)` → ① `RoomEvt.request{self,id,done,at}`
+  **SEAT→本人**（`to == seat`）② `plan()` 自动给其余在线座位发 `skip` 水位；
+  随后才是原来的 sys / syncMembers / 公共 LOG。
+⇒ 相对改前**净增 1 条定向 evt + N 条 skip**（N = 除目标外的在线玩家数）。
+`verb` 传 null ⇒ 不多发公共 sys；既有同意/拒绝文案一字未动。
+A4 用例专门钉住「恰好 1 条 REQUEST-done + 公共 LOG 仍恰好 1 条 + 无 verb sys」。
+
+【1.2】受影响既有用例的系统扫描与裁决
+扫描口径：`grep -rln "RoomIntent.consent|state.request|consent(" test/*.dart`
++ 在这些文件里逐个查 `hasLength` / `isNotEmpty` / `.length,` / `plan(` /
+`sent.length` / `out.length` / `plans.length`。
+
+| 既有用例 / 断言 | 断言内容 | 是否触及计划数 | 裁决 |
+|---|---|---|---|
+| `test/room_ui_blocks_test.dart:442-469`「KP 发起 state.request → 玩家侧出卡 → 同意发 consent」 | `:451 host.requestsBySeat['p1'] hasLength(1)`（**前置**）；`:464 _lastP(f, RoomIntent.consent)` 读的是 **UI 发出的 intent**；`:468 requestsBySeat isEmpty` | ❌ 不触及 plan 数 | **无需改**，实测仍绿。它验的是「intent 载荷 + 权威表出队」，与出站计划数无关 |
+| `test/qa_p4_final_gate_test.dart:284/341` `hasLength(1)` | F4 掷骰计划数（走 `diceDirect`），与 consent 无关 | ❌ | **无需改** |
+| `test/p10_t3b_rule_diff_test.dart:671/682/740` | check.request 分支的 T7-1/T7-2/T7-3（上批三段式） | ❌ 本批**一字未动** check.request 分支 | **无需改**，T7-1/T7-2 与 QA V1 系列全绿 |
+| `test/room_actions_test.dart:210` | POLICY 61 action 分支存在性（含 `state.apply`） | ❌ | **无需改** |
+| `test/room_ui_kp_test.dart:241/308` | KP 待办面板渲染 | ❌ | **无需改** |
+| **合计** | — | — | **0 条既有用例需要改断言；没有删任何用例；没有把 `hasLength(n)` 降级成 `isNotEmpty`** |
+
+【1.3】新增用例对计划数的正向覆盖
+- A1 跨视角：`SendPlan` 按 `to` 分发进 **p1/p2 两个真实 RoomClient**；
+  断言 p1 的 `state.requests` 被 REQUEST-done 裁剪为空、出站确有 1 条
+  `to=='p1'` 且 `done==true` 的 REQUEST、**p2 只收 skip 收不到该 REQUEST**。
+- A2 `host.pending` 不再残留 `state.request` 记账（QA §8.2 探针的两层症状一起修）。
+- A3 拒绝路径：卡片消失 + pending 清 + 不掷骰 + 「拒绝了状态变更请求」提示仍在。
+- A4 计划数影响：见 §1.1。
+- A5 秘密口径回归：全程无 PUBLIC 私密字段，p2 的 `state.dice` 为空。
+
+
+【2】B · 近义词表覆盖统计 / 两处搜索框形状差异 / 职业搜索结论
+
+【2.1】覆盖统计（B1 用例逐 id 断言）
+  `cocSkills` = **54** 条；`skillSynonyms` = **54** 个 id，一一对应、
+  无多余 id；每个 id 的近义词列表非空（3~5 个）。
+  其中 `special:true` 组技能 **8** 条：`language_other` / `fighting` /
+  `firearms` / `science` / `lore` / `pilot` / `survival` / `art_craft`，
+  每条都有近义词；子类名仍由搜索框原有的 `sub`/`name` 覆盖，**本批不顺手
+  扩大作用域**（没有把子类名塞进近义词表）。
+  数据源 `lib/domain/data/skills.dart` / `occupations.dart` 是
+  `// GENERATED FILE — 请勿手改`，**一个字符都没动**（oracle 夹具零风险）。
+
+【2.2】★ 两处搜索框的 Map 形状差异（本批最容易踩的坑）
+真正被两个搜索框共用的是 `lib/ui/create/skill_groups.dart:216
+skillMatchesKeyword(Map skill, String keyword)`，但传进来的 Map 不同：
+
+| 搜索框 | 调用点 | Map 形状 | 技能 id 在哪个键 |
+|---|---|---|---|
+| 主技能页搜索（`skill_search`） | `step_skills.dart:68-73 _matches` | 角色卡技能实例，含 `id` / `key` / `name` / `sub` | **`id`**（`key` 是复合键如 `fighting::斗殴`，不能当 id） |
+| 「任意选择 N 项技能」弹窗（`free_picker_search`） | `step_skills.dart:1039` | `{'skill': s['id'], 'sub': ..., 'name': ...}` | **`skill`**，**根本没有 `id` 键** |
+
+⇒ `skill_synonyms.dart#skillSynonymIdOf` 做三级回退：
+`id` → `skill` → 按 `name` 反查 `cocSkills` 正式名。
+B3 额外钉住一个关键边界：组技能子类行的 `name` 是显示名
+「格斗（斗殴）」，**不等于**正式名「格斗」，按 name 反查不到，
+**只能靠 `skill` 键**；B3 把 8 条 special 的全部子类行逐个走了一遍。
+RV4 反向删掉 `skill` 键分支 → B3 立即红（证明第二级回退真的被用上）。
+
+**两处搜索框都真生效的证据（各一条用例）**：
+- 第一框：B6 **widget 用例**在真 `StepSkills` 页面往 `skill_search`
+  输入「魅惑」→ `find.byKey(Key('skill_row_charm'))` 命中 1（+ B2 单元用例
+  用主页面形状断言 `skillMatchesKeyword(def,'魅惑') == true`）。
+- 第二框：B7 **widget 用例**点开「+选择技能」弹窗（`btn_pick_free_<reqId>`）
+  往 `free_picker_search` 输入「魅惑」→ `CheckboxListTile` 恰好 1 个且
+  文本是「取悦」（+ B3 单元用例用弹窗形状断言命中）。
+  ⇒ 不是只改了共用函数就算数，两个真界面都跑通了。
+
+【2.3】取悦 ↔ 魅惑（用户点名）
+- `charm` 正式名「取悦」；`skills.dart:96` 的 `desc` 恰好写了
+  「（旧译「魅惑」）」—— **不依赖这句偶然文字**，显式把 `魅惑`
+  收进 `skillSynonyms['charm']`。生成文件将来改文案，能力不丢（RV3 反向
+  删掉表里的「魅惑」→ B2/B4 立即红，证明用例真的在守表而不是在守 desc）。
+- 搜「取悦」命中 `charm`（B2）；搜「魅惑」也命中 `charm` 且**结果里就是
+  「取悦」这一条**（B6/B7 widget）。
+- 反向防污染（B4）：遍历 54 条 × 两种形状，搜「魅惑」的命中集合恒为
+  `['charm']`；`synonymOwnersOf('魅')` / `('惑')` 都只有 `charm`；
+  单独断言 `fast_talk`/`persuade`/`intimidate` 不命中。
+  RV5 故意把「魅惑」塞进 `persuade` 的近义词 → B4 红。
+- `lib/domain/occupation.dart:96-99` 的
+  `'魅惑':'charm'` / `'取悦':'charm'` 是**职业数据解析**别名（职业原文
+  130+ 处写「魅惑」），**语义一字未动**；B8 断言 `skillMatches(charm,'魅惑')`
+  仍为 true，两边不冲突。
+
+【2.4】不显示近义词（结构性保证）
+近义词只出现在 `skillMatchesKeyword` 的局部 `fields` 列表里
+（`...synonymsOf(skill)`），**不写回 `name`/`desc`/`sub`，不改 hintText，
+不改任何 widget 的 Text**。B6 在真渲染里把结果行所有 `Text.data` 拼起来，
+逐个断言「魅惑/讨好/恭维/迷人/charm」都不出现、只有「取悦」；
+搜索框 `decoration.hintText/labelText` 同样零命中。RV2 摘掉
+`...synonymsOf(skill)` → B6 也变红（说明这条不是恒真断言）。
+
+【2.5】原有模糊能力零回归（B5）
+子串「侦」→ 侦查 ✅ / 去分隔符「spot」→ `spot_hidden` ✅ /
+顺序子序列「图书使」→ 图书馆使用 ✅ / 新增「搜寻」「讨好」✅ /
+不存在的词仍不命中 ✅。
+
+【2.6】★ 职业搜索是否接入：**不接**（明确结论）
+理由与误命中评估：`occupation.dart#searchTextOfOccupation`（`:1003-1020`）
+会把每个相关技能的 `skillSearchText(def)` **整段并进职业文本**；
+本表 54×3~5 ≈ 200 个口语词，接进去后搜「开锁」「查资料」「驾驶」
+「魅惑」会把大量并不要求该技能的职业一起带出来，职业选择页面宽显著放大，
+属于「为了一个搜索框，污染另一个搜索框」。
+本批只接车卡技能搜索框；B8 是行为级证据：
+  `skillMatches(spot_def,'search') == false`（职业侧没被污染）
+  `skillMatchesKeyword(spot_def,'search') == true`（车卡侧生效）
+  `skillSearchText(spot_def).contains('search') == false`
+  `skillMatches(charm_def,'魅惑') == true`（职业侧既有别名语义不动）
+误命中评估结论：**接入的收益（职业搜索也能用口语词）远小于代价**
+（职业文本本来就是长串拼接，近义词面宽会放大误命中），故不接。
+
+
+【3】红线与范围自查
+
+- ★ **跑团房间 UI 布局零改动**：本批只改了 3 个生产文件
+  `lib/domain/room_model_host_intent.dart`(08:23) /
+  `lib/domain/skill_synonyms.dart`(08:24) /
+  `lib/ui/create/skill_groups.dart`(08:23)。
+  `lib/ui/room/**` 最新 mtime 是 `room_game_page.dart 07:53`、
+  `room_layout.dart 01:55`、`room_keys.dart 11-09 12:40`，
+  **全部早于本批**，一个文件都没碰（连「顺手补断言」都没做）。
+- `pubspec.yaml` / `tool/qa/*` / `qa_*_report.md` /
+  `test/qa_p10_4_verify_test.dart`(8 条) 未改；
+  `RoomEvt.values=27` / `kRoomPolicy=61` / `jsStr(=14` 白名单未扩 /
+  `RoomSlot`·`RoomKeys` 未增删。
+- `lib/domain/**` 零 `package:flutter` / `dart:io` / `dart:ui`，
+  注释里的 `dart:ui` 字面量 = **0**（P5 实测通过）。
+- K3：出站只用 `SendPlan.toJson()`，零 `LogRecord.toWireJson()`；
+  A 改的是 `RoomEvt.request` 的 **SEAT→本人**（不是 PUBLIC），
+  A5 + 全量 1918 里 A4/A5/R1/R1b/T5 组秘密口径反证仍全绿。
+- 未跑 adb / 模拟器 / 真机；`build -> /d/dev/dice-build` junction 完好，
+  全程未 `flutter clean`；出包只走 `bash tool/build_apk.sh`。
+
+
+【4】五项自检（原始输出）
+
+-- 全量（默认并发）--
+  `01:07 +1918: All tests passed!`
+  基线 1905 + 新文件 `test/p10_t4_synonym_request_done_test.dart` **13** 条
+  （A1-A5 ×5 / B1-B8 ×8）= **1918**，账目算平，无既有用例被删。
+-- 全量（串行）--
+  `flutter test --concurrency=1` → `04:50 +1918: All tests passed!`
+  （上批漏跑的串行，本批补上了，无顺序依赖）
+-- dart analyze --
+  `Analyzing dice-realm... No issues found!`
+  （首轮曾报 2 条 warning：测试文件 `engine.dart` show 了不存在的
+   `syncSkills`、以及一个 unused import；已改为 `show recalc` 并删掉
+   多余 import，复跑归零。两条都是**测试文件**告警，无生产问题。）
+-- P4 门禁 --
+  `==== 合计 13 条，失败 0 条 ====` / `P4_GATE IS_PASS: YES`
+-- P5 UI 门禁 --
+  `==== 合计 14 条，失败 0 条 ====` / `P5_UI_GATE IS_PASS: YES`
+  （`jsStr(` 仍 14 处、`lib/domain` 纯 Dart 检查通过）
+-- 出包 --
+  `√ Built build\app\outputs\flutter-apk\app-release.apk (66.8MB)`
+  三 ABI `libapp.so`：arm64-v8a **8,782,728** / armeabi-v7a **9,781,832**
+  / x86_64 **9,044,872**
+  产物：**70,033,836 字节**
+  SHA256：**`fd9b05c9c36f13c20d1a1b2514163ad0ea4e9382a01687da1b92ce22c9d85072`**
+  签名：debug（可侧载、不可上架）
+  `flutter config --list` → `  enable-native-assets: true` ✅（出包后复查）
+
+
+【5】反向证伪表（每条生产改动逐一，逐字节恢复）
+
+方式：临时改坏 → 跑 `test/p10_t4_synonym_request_done_test.dart` →
+记录变红用例 → `cp` 回备份 → `sha256` + `cmp -s` 一致 → 复跑 13/13 全绿。
+临时脚本 `.rv6_tmp.py` 已删。
+
+| # | 生产改动 | 注入的反向变更 | 变红用例 | 恢复校验 |
+|---|----------|----------------|----------|----------|
+| RV1 | consent 改走 settleRequest | 退回 `list.removeAt(idx)` + `if (!jsTruthy(p['agree']))` | **A1 / A2 / A3 / A4 共 4 红**（症状正是「待办卡不消失 + pending 残留」） | `6b88c696…` `cmp -s` OK |
+| RV2 | `skillMatchesKeyword` 并入近义词 | 摘掉 `...synonymsOf(skill),` | **B3 / B4 / B5 / B6 / B7 共 5 红**（另有 1 条） | `1259cf6e…` |
+| RV3 | `charm` 显式收录「魅惑」 | 从表里删掉「魅惑」（保留 desc 里那句偶然文案） | **B2 / B3 / B4 / B6 / B7 共 5 红** ⇒ 证明用例守的是表不是 desc | `08abfae6…` |
+| RV4 | `skillSynonymIdOf` 的 `skill` 键回退 | `jsStr(skill['skill'])` → `''` | **B3 红**（组技能子类行「格斗（斗殴）」按 name 反查不到，只能靠 skill 键）。B7 仍绿属合理：那条行的 name 恰是「取悦」，第三级 name 反查兜住了 —— 三级回退设计本就如此 | `08abfae6…` |
+| RV5 | 近义词表不互相污染 | 给 `persuade` 也塞「魅惑」 | **B4 红** | `08abfae6…` |
+
+恢复后：3 个生产文件全部与备份 `cmp -s` 一致（哈希见上表），
+`flutter test test/p10_t4_synonym_request_done_test.dart` 13/13 全绿；
+再跑全量 1918（并发 + 串行）全绿。
+
+
+【6】文件清单
+
+新增：
+  lib/domain/skill_synonyms.dart              （54 条近义词表 + 三级 id 解析 + 防污染诊断函数）
+  test/p10_t4_synonym_request_done_test.dart  （13 条，A/B 两组）
+  _p10_transport6.txt                         （本报告）
+
+生产改动（仅 3 个）：
+  lib/domain/room_model_host_intent.dart      （consent 非 check.request 分支改走 settleRequest）
+  lib/ui/create/skill_groups.dart             （import + `fields` 并入 synonymsOf）
+  （`lib/domain/skill_synonyms.dart` 已计入新增）
+
+文档/清单：
+  _manual_test_checklist.md                   （头部指纹 + P0·P10 第 4 期 Q1-Q6 +
+                                              自动化 1918 行 + 技术债 15 改为已处理）
+
+未改动：`lib/ui/room/**`（用户硬约束）、`pubspec.yaml`、`tool/qa/*`、
+`qa_*_report.md`、`test/qa_p10_4_verify_test.dart`(8 条)、
+`lib/domain/data/skills.dart` / `occupations.dart`（GENERATED）、
+`lib/domain/occupation.dart`、另一工作区 `overview.md`。
+
+
+【7】遗留（如实报）
+
+1. **职业搜索未接入近义词表**：这是明确结论（§2.6），不是遗漏；若产品后来
+   要求职业页也支持口语词，需另做「白名单式收窄 + 误命中对拍」，别直接把
+   整张表并进 `searchTextOfOccupation`。
+2. **`settleRequest` 的 `pending` 清理按 `x['id'] == id` 匹配**：本批的
+   `state.request` 记账 id 与请求 id 同源（QA §8.2 探针已证），无问题；
+   但 `pending` 里其它类型的条目若将来复用了同一 id 形状，会被一起清掉 ——
+   当前全库无此情形，登记为设计留意项。
+3. 出站计划数确实变了（+1 条 SEAT REQUEST-done + N 条 skip），**没有一条
+   既有用例需要改断言**（§1.2 系统扫描 + 全量 1918 全绿为证）；但下游若有
+   外部工具按「计划条数」做监控，需知会，属协议行为变化而非 bug。
+4. 组技能子类行的近义词解析走的是 `skill` 键（B3 已逐个子类名验证），
+   子类名本身**没有**各自独立的近义词 —— 这是「不顺手扩大作用域」的
+   有意取舍，用户若要求「搜『手枪』也能搜到射击子类」，属下一批需求。
+5. 未跑 adb / 模拟器 / 真机（按约定由用户统一测）；真机待测项见
+   `_manual_test_checklist.md` P0·P10 第 4 期 Q1-Q6。
+
+
+【8】全局一致性审查
+
+- 跨文件导入：`skill_groups.dart` → `skill_synonyms.dart`（新，纯 Dart）→
+  `data/skills.dart` + `js_compat.dart`，无环、无引擎依赖；
+  `host_intent.dart` 调用的 `settleRequest` 在 `room_model_actions_combat.dart`
+  （改前就已 import），零新增依赖。
+- 接口契约：`skillSynonymIdOf(Map<String,Object?>)` 对三种形状
+  （定义 / 弹窗 / 仅 name）都返回 `String?`；`synonymsOf` 恒返回
+  `List<String>`（非 null），调用方 `...synonymsOf(skill)` 无需兜底。
+  `consent` 的 `id` 来自 `requestsBySeat[seat][idx]['id']`，与
+  `settleRequest(seat,id,agree,verb)` 签名一致。
+- 数据流：近义词只进 `fields` 局部列表，不写回技能 Map，不进渲染；
+  REQUEST-done 只发 `to == seat`，第三人仅收 skip 水位。
+- 无重复实现：`settleRequest` 是摘卡/清 pending 的**唯一**收口
+  （check.request 分支与状态请求分支共用）；`skillMatchesKeyword` 是
+  两个搜索框共用的唯一匹配函数。
+- 常量与出站：27 项 EVT / 61 条 POLICY / 14 处 jsStr 未动；
+  零 `LogRecord.toWireJson()`。
+
+**IS_PASS: YES**

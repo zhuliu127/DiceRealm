@@ -1,0 +1,230 @@
+================================================================
+P5 · T05 工程师交付报告（补写件 · 结项遗留 L1）
+工程：C:/Users/60965/WorkBuddy/2026-10-08-18-34-17/dice-realm
+补写：software-engineer (Alex) · P7 收尾交付期第一批
+说明：本文件是 `_p5_acceptance.txt` 第五节 L1 / `_p5_fix_5red.txt` 第五节第 3 条
+      点名缺失的交付报告，**事后补写**。原始 T05 实现不是本补写人写的。
+================================================================
+
+零、边界声明（先把「不是我做的」说清楚）
+----------------------------------------------------------------
+1. 本文件**只还原有证据的事实**，不编造命令输出、不编造测试数字、
+   不把 P6/P7 的成果算到 P5-T05 头上。
+2. 证据来源（均已逐段读过原文）：
+     · `_p5_design.md` §5 T05 段（1403–1423 行）与文件清单表（312–395 行）
+     · `_p5_acceptance.txt`（P5 最终验收报告，全文）
+     · `_p5_fix_5red.txt`（T05 收尾 5 红 + 3 warning 修复报告，全文）
+     · `_p5_engineer_t01.txt` / t02 / t03 / t04（报告体例与演进链）
+     · `_p5_engineer_wiring.txt`（14 槽位装配事实）
+     · 另一工作区 `overview.md` 的 P5 章节（35 / 118 / 136 行）
+3. 凡证据不足处，一律写「据现有文档推断」或「原始输出未留存」，不猜数字。
+4. **报告名 `T05A` 的来历**：现有文档只写「engineer-5 未产出
+   `_p5_engineer_t05a.txt`」（`_p5_fix_5red.txt` 第五节第 3 条、
+   `overview.md:118`），没有任何派工单解释后缀 A 的含义。
+   据现有文档推断：T01–T04 各有 `_p5_engineer_t0X.txt`，T05 是串行收尾
+   且被拆过子批次，故对应件带 A。**原始命名口径未留存**。
+
+----------------------------------------------------------------
+一、T05 的任务范围（据 `_p5_design.md` §5 T05 段）
+----------------------------------------------------------------
+设计把 T05 定为「串行收尾」，依赖 T01 → T02 → {T03 ∥ T04}，六个子批次：
+
+  S5.1 路由 + 入口页（P0-01 / P0-02）：`AppRoutes.room` /
+       `AppRoutes.roomCode(code)`；首页「骰境」FAB；入口页创建 / 加入 /
+       续玩（列本机未完结）
+  S5.2 房间页（招募中）：头卡 / 成员列表（含踢人）/ 准备 / 绑卡 /
+       开始游戏 / 结束房间 / 模式切换 / 探索面板 / KP 工具 / 状态条 / 掷骰条
+  S5.3 玩家专属块（块 2 / 8 / 10 / 11）+ 状态管理弹层：角色卡
+       （`sheet` + `runtime` 双源）、队友（裁剪视图）、手绘板
+       （`INTENT.BOARD` 全量）、笔记（本机）、状态管理（Q-P5-3 文案）
+  S5.4 玩家场景检定（块 7）+ 玩家自助（急救 / 物品 / AI RP / 全屏）：
+       **只读** KP 推来的 + 用自己技能主动检定；零裁定 / 推送按钮
+  S5.5 存档与续玩 + K4 导入迁移接线：`host.save()` → `saveStore.put`；
+       载入 → `migrateLegacySave` → `adoptSave`；迁移 >0 条 → 一次性提示
+       「旧存档含历史明文记录，已自动脱敏 N 条。」
+  S5.6 权限同源探针 + 门禁收尾：表驱动 T-30（遍历 §5.9 全表）；
+       `tool/qa/qa_p5_ui.js` 静态探针；死代码零命中；全量
+       `flutter test` + `dart analyze`
+
+设计文件清单表里标 `T05` 的文件（312–395 行，行数是**设计预估**，不是实测）：
+  `lib/ui/room/room_entry_page.dart` / `room_lobby_page.dart`；
+  `widgets/gp_pl_char_card.dart` / `gp_pl_mates.dart` / `gp_pl_sketch.dart` /
+  `gp_pl_notes.dart` / `gp_scene_check_pl.dart`；
+  `sheets/sheet_bind_char.dart` / `sheet_self_state.dart` /
+  `sheet_save_slots.dart` / `sheet_misc.dart`；
+  `test/room_ui_player_test.dart` / `room_ui_permission_test.dart` /
+  `room_ui_save_test.dart` / `room_ui_roll_test.dart`；
+  `tool/qa/qa_p5_ui.js`。
+
+★ 上述「做了什么」是**设计口径 + 结项验收口径**的还原；T05 各子批次的
+  逐文件逐行改动清单与原始 diff 未留存，本报告不逐文件编造行数。
+
+----------------------------------------------------------------
+二、T05 收尾期实际记录下来的事（据 `_p5_fix_5red.txt`）
+----------------------------------------------------------------
+该报告标题为「P5-T05 收尾修复报告 —— 5 条红 + 3 个 analyze warning」，
+执行人写明是「主理人齐活林代行（两次 429 限流，engineer 实例不可用，
+非标准 SOP）」，基线 `+1296 -5`（5 红）+ 3 warning，结果
+`+1302 全绿（0 红）+ analyze「No issues found!」`。
+
+五条红逐条根因（原文口径，不改写结论）：
+  红 1 & 2：`qa_p5_priv_probe_test.dart` → A-4 `state.self` /
+       `state.edit.self`。两处都是**实现侧真缺陷**：
+       A. `gp_pl_char_card.dart:195` 的 `stateBtn` 在 `if (!locked)` 分支里
+          无条件渲染，旁观者看到了「状态管理」入口，违反
+          「权限不足应不渲染而非禁用」；
+       B. `sheet_self_state.dart` 的 `_applyBody` / `_applyMental`
+          完全没权限门控，权威端拒绝后 UI 仍宣布「已更新」，
+          违反 K7「不乐观提示成功」。
+       修法是双保险：入口用 `gate.can('state.self')` 不渲染；
+       内层三个提交方法开头加门控，无权时只说事实、不说「已更新」。
+       测试把「现状记录」翻转为修复后期望，并新增「绕过入口强行开弹层」
+       的双保险用例。
+  红 3 & 4：`room_ui_permission_test.dart` → T-30 锚点表。
+       根因是实现演进不是缺陷：`combat.enqueue` 入口从
+       `RoomKeys.action('combat.enqueue')` 改成逐座位专用 key
+       `GpCombatKeys.enqueueRow(seat)`（候选列表每行一个座位，单值锚点
+       表达不了多行）。锚点表 31 → 30、无锚点清单 30 → 31，
+       相加仍 = POLICY 61 条；门控没丢（`enabled: can`）。
+  红 5：`room_ui_lobby_test.dart` → `jsStr` 预算冻结。
+       `gp_combat_list.dart` 新增 4 行读 `seat` / `kind`（公开标识），
+       属合理使用非泄漏。修法是「放行 + 带约束」：白名单加该文件，
+       并新增专项校验（该文件的 `jsStr(` 行必须含 seat 或 kind）；
+       BUDGET 6 → 11；同步改 `tool/qa/qa_p5_ui.js`（13 → 14 条门禁）。
+  3 个 warning：`qa_p5_priv_probe_test.dart` 的
+       `unused_shown_name RoomRole` / `unused_import showRoomSheet` /
+       `unused_shown_name CombatSheetKeys`，删掉未用 import 后 analyze 零。
+
+该报告列出的改动文件（原文「二、改动文件清单」）：
+  实现 2 个：`lib/ui/room/widgets/gp_pl_char_card.dart`、
+            `lib/ui/room/sheets/sheet_self_state.dart`
+  测试 3 个：`test/qa_p5_priv_probe_test.dart`、
+            `test/room_ui_permission_test.dart`、
+            `test/room_ui_lobby_test.dart`
+  门禁 1 个：`tool/qa/qa_p5_ui.js`
+  未动：`lib/domain/**`、`pubspec.yaml`、`room_model_save.dart`
+
+----------------------------------------------------------------
+三、P5 结项验收（据 `_p5_acceptance.txt`）
+----------------------------------------------------------------
+七条判据逐条通过（原文「一、T05 七条验收判据」），要点：
+  判据 1  四个指定测试文件 0 红 → 42 组 All tests passed!
+  判据 2  T-30 表驱动 `enabled ⟺ needs(role, op).allowed`；
+          无锚点 31 条 + 有锚点 30 条 = POLICY 61 条铺满
+  判据 3  T-60~T-63 断言权威侧（D100 后 `dice` 带 total + levelText、
+          SAN Check 后 currentSAN 真下降、手绘板两点只本人可见）
+  判据 4  K4 导入迁移 + 幂等（导入后 logs 无明文、二次导入迁移 0 条）
+  判据 5  `qa_p5_ui.js` 14 条 0 失败、四个死代码名零命中、
+          `await repo.save(` 冻结 4 处未增加
+  判据 6  全量 1305 组 0 红（基线 985 → 1296 → 1305）、
+          `dart analyze` No issues found!、`lib/domain` 50 个 .dart 零 flutter/io/ui
+  判据 7  `pubspec.yaml` 未改（mtime 2026-11-08 18:55，4068 字节）
+
+本期补的缺口（`_p5_acceptance.txt` 第二节）：T-64 `confirm=kp` 的
+端到端闭环，新增 `test/room_ui_confirm_flow_test.dart`（3 例全绿）。
+
+P5 最终数据（原文「三、P5 最终数据」）：
+  全量测试            1305 组 0 红
+  dart analyze        No issues found!
+  P5 UI 门禁          14 条 0 失败   IS_PASS: YES
+  P4 门禁             13 条 0 失败   IS_PASS: YES
+  lib/ui/room         51 个 .dart / 12558 行（view/ 6 个 / 1032 行；
+                      分布：根 13 · sheets 13 · widgets 18 · view 6 · painter 1）
+  lib/domain          50 个 .dart，纯 Dart 零命中
+  pubspec.yaml        mtime 2026-11-08 18:55 未变
+  T01 / T02 / T03 / T04 / T05 任务完成度全部 ✅
+  P5_ACCEPTANCE IS_PASS: YES
+
+本期挖出的真缺陷汇总（原文「四」）：旁观者能改自己状态、UI 乐观提示
+「已更新」（本期修），以及 P4 补丁 B1 的四个 intent 入口未接线、
+暗骰结果落公共 `state.dice`（P4 期修）。共同点写的是
+「测了『你以为的入口』，没测『用户真正会点的入口』」。
+
+----------------------------------------------------------------
+四、验收原始输出（**逐字摘自既有报告，本批没有重跑 P5 命令**）
+----------------------------------------------------------------
+`_p5_fix_5red.txt` 第三节「验收实测（原始输出）」：
+  $ dart analyze
+    Analyzing dice-realm...
+    No issues found!
+
+  $ flutter test
+    00:43 +1302: All tests passed!
+    （基线 +1296 -5 → 现 +1302，净增 6 组，0 红）
+
+  $ node tool/qa/qa_p4_gate.js
+    ==== 合计 13 条，失败 0 条 ====
+    P4_GATE IS_PASS: YES
+
+  $ node tool/qa/qa_p5_ui.js
+    [OK]   jsStr( 命中 ≤ 11 且只在白名单 5 文件
+    [OK]   gp_combat_list 的 jsStr 只读 seat / kind（公开标识）
+    ==== 合计 14 条，失败 0 条 ====
+    P5_UI_GATE IS_PASS: YES
+
+  $ ls -la pubspec.yaml
+    -rw-r--r-- 4068 2026-11-08 18:55 pubspec.yaml     （未改动）
+
+  $ grep -rn "package:flutter\|dart:io\|dart:ui" lib/domain/
+    （零命中）
+
+`_p5_acceptance.txt` 判据 1 记的四个指定测试文件合跑：
+  「42 组 All tests passed!」
+
+★ 说明：以上是**当时留存的原始输出**。本补写批次没有重跑任何 P5 命令，
+  也没有 P5 时期逐子批次（S5.1~S5.6）的独立命令日志 —— **原始输出未留存**，
+  故本报告不列那些子批次的耗时、分片数或行数增量。
+
+----------------------------------------------------------------
+五、文件清单（可确认的部分）
+----------------------------------------------------------------
+可确认在 T05 期落盘 / 改动的文件，只列有文档点名的：
+  设计清单标 T05（见第一节，来自 `_p5_design.md` 312–395 行）
+  收尾修复改动（`_p5_fix_5red.txt` 第二节）：4 个实现/测试 + 1 个门禁脚本，
+      逐项见第二节
+  T-64 新增（`_p5_acceptance.txt` 第二节）：
+      `test/room_ui_confirm_flow_test.dart`（3 例）
+  接线收尾（`_p5_engineer_wiring.txt`）：`room_game_page.dart` 的
+      14 槽位装配表里，`gpPlCharCard / gpPlScene / gpPlMates /
+      gpPlSketch / gpPlNotes` 五个 PL 槽位当时标「PlaceholderBlock（留 T05）」，
+      由 T05 换成真块 —— 这一条是**据两份报告的对照推断**，
+      逐行 diff 未留存。
+
+不可确认：T05 全部子批次的完整文件清单、各文件行数、各子批次独立测试
+          输出与耗时。**原始输出未留存**，不编造。
+
+----------------------------------------------------------------
+六、遗留与如实说明
+----------------------------------------------------------------
+1. **本文件是补写件**：`_p5_acceptance.txt` L1 明确写「报告可在限流恢复后
+   由工程师补写」；`_p5_fix_5red.txt` 第五节第 3 条写「engineer-5 未产出
+   `_p5_engineer_t05a.txt`」；`overview.md:118 / 136` 把它列为待办。
+   原因是两次 429 限流、engineer 实例不可用，T05 收尾由主理人齐活林代行
+   （`_p5_fix_5red.txt` 抬头「非标准 SOP」）。补写不改变代码，只补文档。
+2. **L2**：本期翻转的 A-4 两条断言需 QA 独立复核，确认不是「为绿而放宽」。
+   `_p5_acceptance.txt` 写明配套新增了「绕过入口强行开弹层」的双保险用例，
+   覆盖面是扩大而非缩小。本补写批次**没有**代 QA 复核。
+3. **L3**（原文标 ✅ 已闭环）：出的是 Android APK 而不是 Windows 桌面；
+   产物 56.9MB / 三 ABI 带 `libapp.so` / Android Debug 签名 / 可侧载安装。
+   过程中发现「build 用 junction → 增量缓存判失效 → 静默产出无 AOT 坏包」
+   （坏包 32.8MB、无 `libapp.so`、装上白屏），已固化为
+   `tool/build_apk.sh`。**实机安装验证仍未做**（本机 adb 无设备、无 emulator）。
+   详见 `_p5_apk_build.txt`（本报告未读该文件，此条为转述 L3 原文）。
+4. `_p5_fix_5red.txt` 第五节第 2 条当时留了「`state.edit.self` 的
+   KP 同意端到端链路未验证」的待确认项；`_p5_acceptance.txt` 第二节的
+   T-64 已补上 `room_ui_confirm_flow_test.dart`（3 例），按时间顺序
+   该待确认项**已在结项前闭环**。此推断基于两份报告的先后叙述，
+   若需精确到提交时间，原始记录未留存。
+5. 本报告不含任何 P6 / P7 的改动；P5 时期的 `lib/ui/room` 规模
+   （51 个 .dart / 12558 行）与 P7 当前规模（64 个 .dart）不同，
+   两者不能混用。
+
+----------------------------------------------------------------
+七、结论
+----------------------------------------------------------------
+IS_PASS: YES
+（依据：代码与测试在 P5 结项时已由 `_p5_acceptance.txt` 判定全绿；
+ 本文件只补 L1 缺失的交付文档，不新增代码、不重跑 P5 命令、不改动任何
+ 既有验收结论。凡无证据处均已标注「据现有文档推断 / 原始输出未留存」。）
+
+================================================================

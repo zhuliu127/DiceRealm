@@ -1,0 +1,215 @@
+classDiagram
+    direction TB
+
+    class CocRules {
+        <<RulesService / pure Dart>>
+        +int version
+        +Map LEVEL
+        +Map LEVEL_KEY
+        +Map LEVEL_TEXT
+        +Map DIFFICULTY
+        +Map OUTCOME
+        +Map JAM_TYPES
+        +Map limits
+        +thresholds(Object) Map
+        +levelOf(Object,Object,Object,Map) int
+        +rollD100(Map) Map
+        +check(Map) Map
+        +describeCheck(Map) String
+        +canPush(Map,String) Map
+        +spendLuck(Map) Map
+        +opposedAttack(Map) Map
+        +parseExpr(String) Map
+        +rollExpr(String,Map) Map
+        +resolveSanCheck(Map) Map
+        +damageFlags(Map) Map
+        +initiativeOrder(Object,Map) Map
+        +resolveAttack(Map) Map
+        +skillValue(Object,Object) int
+        +impaleDamage(Map) int
+        +malfunctionOf(Map) Map
+    }
+
+    class RoomRulesPort {
+        <<interface / lib/domain>>
+        +check(Map) Map
+        +rollExpr(String,Map) Map
+        +resolveAttack(Map) Map
+        +initiativeOrder(Object,Map) Map
+        +skillValue(Object,Object) int
+        +levelMap Map
+    }
+    class RoomMadnessPort { <<interface>> +roll() +make() }
+    class RoomSaveStore  { <<interface>> +put(code,data) +get(code) +list() }
+    class RoomCardSink   { <<interface>> +write(RoomCardPatch) Future~CardWriteResult~ }
+
+    class RoomEvent {
+        <<ValueObject / Q1 KEY>>
+        +String t
+        +Map~String,Object?~ p
+        +String? vis
+        +String? to
+        +int? seq
+        +withSeq(int) RoomEvent
+        +toJson() Map
+    }
+    class LogRecord { +int seq +RoomEvent evt }
+    class RoomSnapshot { +int seq +Map state }
+    class RoomWarning { +String t +String reason }
+
+    class RoomEvt { <<constants>> +27 values }
+    class RoomIntent { <<constants>> +13 values }
+    class RoomVis { <<constants>> +public +kp +seat }
+    class RoomPolicy { <<constants>> +61 actions +needs(role,action) NeedsResult +allowed(role,action) bool }
+    class RoomState {
+        <<emptyRoomState / 18 keys>>
+        +Map meta
+        +List members
+        +List chats
+        +List logs
+        +List dice
+        +Object? scene
+        +Object? combat
+        +List privates
+        +Object? rewind
+        +List requests
+        +Object? board
+        +Object? sceneCheck
+        +Object? archive
+        +Object? lastState
+        +Object? alert
+        +Object? opposed
+        +int seq
+        +int version
+    }
+
+    class RoomEnvelope { <<sealed>> +String k +toJson() Map }
+    class SyncEnvelope   { +int seq +Map state }
+    class EvtEnvelope    { +int seq +String t +Map p }
+    class SkipEnvelope   { +int seq }
+    class IntentEnvelope { +String op +Map p }
+    class SendPlan { +String to +RoomEnvelope msg }
+
+    class RoomLog {
+        +int cap
+        +int seq
+        +int truncated
+        +List~LogRecord~ items
+        +push(RoomEvent) LogRecord
+        +since(int) List
+        +canFill(int) bool
+        +rollbackBefore(int) int
+    }
+    class RoomRoster {
+        +Map bySeat
+        +List order
+        +Set kicked
+        +open(Map) Map
+        +markOffline(String) Map
+        +remove(String) Map
+        +get(String) Map
+        +list() List
+        +onlinePlayers() List
+        +dump() List
+        +allReady() bool
+    }
+
+    class RoomHost {
+        <<Authoritative / KP>>
+        +Map state
+        +RoomRoster roster
+        +RoomLog log
+        +List~RoomSnapshot~ snapshots
+        +List~RoomWarning~ warnings
+        +int stateSeq
+        +List roundStarts
+        +RoomRulesPort? rules
+        +RoomMadnessPort? madness
+        +apply(RoomEvent, bool persist) LogRecord
+        +emit(String,Map,String,String) LogRecord
+        +emitLocal(String,Map) LogRecord
+        +plan(LogRecord) List~SendPlan~
+        +planAll(List) List~SendPlan~
+        +cropFor(String,Map,String) Map
+        +combatFor(String) Map
+        +syncFor(String) SyncEnvelope
+        +attachPeer(Map) AttachPeerResult
+    }
+    class RoomHostRollback { <<extension>> +rollback(int) RollbackResult +rollbackPlan(int) List +rebuildRoundStarts() }
+    class RoomHostIntent   { <<extension>> +intent(String,Map) List +act(String,Map,String,Map) List }
+    class RoomHostActions  { <<extension x3>> +applyAction(String,Map) List +stateApply() +combatAttack() +checkRequest() }
+    class RoomHostSave     { <<extension>> +save() Map +savePayload() String +adoptSave(Map) RoomHost }
+
+    class RoomClient {
+        <<DeterministicReplay / Player>>
+        +String seat
+        +String role
+        +Map state
+        +int lastSeq
+        +int gapFrom
+        +int rejected
+        +int lastStateSeq
+        +receive(Object) ReceiveResult
+        +gate(int) GateResult
+        +filledMark(int) bool
+        +resyncIntent() IntentEnvelope
+        +resyncDiag() ResyncDiag
+        +applySheetState(Object,Map) ApplySheetResult
+        +intent(String,Map) IntentEnvelope
+    }
+
+    class ReduceRoomState {
+        <<pure function / 26 cases>>
+        +reduceRoomState(Map,RoomEvent) Map
+    }
+    class ScrubVisibility {
+        <<pure functions>>
+        +hasSecret(Object) bool
+        +scrub(Object) Object
+        +ruleOptsOf(Map) Map
+    }
+
+    class CharacterRepoRoomCardSink { <<adapter / lib/repo>> +write(RoomCardPatch) Future~CardWriteResult~ }
+    class InMemoryRoomCardSink      { <<adapter / test>> +write(RoomCardPatch) Future~CardWriteResult~ }
+    class InMemoryRoomSaveStore     { <<adapter / test>> +put() +get() +list() }
+    class CharacterRepo             { <<existing>> +save(Character) Future~void~ }
+
+    RoomRulesPort <|.. CocRules
+    RoomCardSink <|.. CharacterRepoRoomCardSink
+    RoomCardSink <|.. InMemoryRoomCardSink
+    RoomSaveStore <|.. InMemoryRoomSaveStore
+
+    RoomEnvelope <|-- SyncEnvelope
+    RoomEnvelope <|-- EvtEnvelope
+    RoomEnvelope <|-- SkipEnvelope
+    RoomEnvelope <|-- IntentEnvelope
+
+    RoomLog o-- LogRecord : contains
+    LogRecord --> RoomEvent : evt (persists vis/to/seq)
+    RoomHost *-- RoomLog
+    RoomHost *-- RoomRoster
+    RoomHost --> RoomState : owns (only via apply)
+    RoomHost ..> RoomRulesPort : injected (opts.rules)
+    RoomHost ..> RoomMadnessPort : injected (opts.madness)
+    RoomHost ..> ReduceRoomState : apply() ONLY writer
+    RoomHost ..> ScrubVisibility : emit / plan
+    RoomHost ..> SendPlan : plan() returns
+    SendPlan --> RoomEnvelope : msg
+    RoomHost ..> RoomEvt : t
+    RoomHost ..> RoomIntent : op
+    RoomHost ..> RoomVis : vis
+    RoomHost ..> RoomPolicy : needs()
+    RoomHost ..> RoomSaveStore : optional (Q5 port)
+
+    RoomHostRollback ..> RoomHost : extension on
+    RoomHostIntent   ..> RoomHost : extension on
+    RoomHostActions  ..> RoomHost : extension on
+    RoomHostSave     ..> RoomHost : extension on
+
+    RoomClient --> RoomState : replay
+    RoomClient ..> ReduceRoomState : receive() ONLY other caller
+    RoomClient ..> RoomEnvelope : receive / intent
+    RoomClient ..> SendPlan : consumes via P6
+
+    CharacterRepoRoomCardSink --> CharacterRepo : await save() (C5)
+    RoomHostSave ..> RoomSaveStore : serializes only

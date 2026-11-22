@@ -1,0 +1,388 @@
+================================================================
+P4 工程师交付报告 · T03 收尾（software-engineer-2）
+生成时间：2026-11-08
+工程根：C:\Users\60965\WorkBuddy\2026-10-08-18-34-17\dice-realm
+接手状态：上一个工程师 429 中断，代码已落盘但 flutter test 有 1 条红
+================================================================
+
+0. 结论
+----------------------------------------------------------------
+IS_PASS: YES
+
+· flutter test test/room_model_core_test.dart      → +31: All tests passed!
+  （其中 logScript 由 8 例恢复到 14 例，全绿，严格逐字段比较 + randUsed 断言）
+· flutter test test/room_visibility_test.dart     → +16: All tests passed!
+· flutter test（全量，不带参数）                   → +682: All tests passed! 0 红
+· dart analyze                                    → No issues found!
+· node tool/oracle/dump_p4_room.js                → 455 / 517 / 121，合计 1093 例，
+                                                    359 / 56 / 35 tag，覆盖矩阵零缺口
+· lib/domain 零 package:flutter / dart:io / dart:ui 命中（0 条）
+· kRoomOracleWhitelist.length == 1（caseId='S:q1'）断言仍绿
+· reduceRoomState( 真实代码调用点数 = 1（T04 才会变 2）
+
+
+1. 头号禁令遵守情况（逐条自查）
+----------------------------------------------------------------
+[1] 未删任何 fixture 用例；room_model.json 511 → **517**（只增）。
+    `test/support/room_oracle.dart` **一行未动**：仍是 `_expectJsonMatch` 的
+    Map 键集合双向差集 + List 长度 + num 相等 + 值相等，白名单闸门
+    `expectJsonMatchExcept` 逻辑未改。没有把严格比较改成 contains / 模糊匹配，
+    没有跳过字段、没有只比汇总值。
+    ⚠️ 说明：`test/room_visibility_test.dart` 里出现 `jsonEncode(...).contains(...)`
+       是**新增的 Dart-only 安全不变式断言**（"明文不得出现在载荷里"，设计
+       §5 T04 判据 3 明确要求这种字节级断言），不参与任何 fixture 等价比较，
+       也不是用来消 logScript 那条红的手段。
+[2] 6 例已恢复并逐例交代（见 §3），room_model.json 517 ≥ 517。
+[3] 白名单仍恰好 1 条 `S:q1`，`allowedPaths` 14 条**一条未加**，
+    其中没有任何 logScript 相关 tag（新增测试专门断言了这一点）。
+[4] `pubspec.yaml` / `lib/domain/dice.dart` / `lib/domain/rules_coc7.dart` 未改动；
+    既有 572 组基线、`qa_probe_test.dart` 36 例、`qa_p3_h1_h4/h2_h3/h5` 49 例
+    全量 682 组 0 红即证据（只增不减）。
+[5] `lib/domain` 保持纯 Dart，零命中（见 §5 原始输出）。
+[6] 未碰 T04/T05 文件：D15–D21（room_model_rollback / host_intent /
+    actions_room / actions_combat / actions_sheet / client / save 仍是 10~15 行
+    中文头注释空壳）、`lib/repo/room_state_writer.dart`、
+    `lib/repo/room_save_store.dart` 全部未写。
+
+
+2. 改动文件清单（含行数）
+----------------------------------------------------------------
+【domain · lib/domain（纯 Dart）】
+  511  lib/domain/room_types.dart           LogRecord 段净 +26 行：增加可选
+                                              第三参数 `wireEvt` 与 `toWireJson()`，
+                                              并用头注释写明三层形状边界
+  162  lib/domain/room_model_log.dart       +8 行：`RoomLog.push` 增加可选
+                                              命名参数 `wire`，透传给 LogRecord
+  105  lib/domain/room_model_envelope.dart  +14 行：文件头补「出站形状收口」说明；
+                                              `evtMsg` 补注释（只改注释，签名/实现未变）
+  （room_model_state.dart 305 / reduce 363 / host_core 591：一行未动）
+
+【test 支持库与测试】
+  239  test/support/room_fakes.dart         +27 行：补齐 `roomHostOpts()`；
+                                              新增 import room_model_host_core.dart、
+                                              oracle.dart 的 oracleNowMs
+  439  test/room_model_core_test.dart       447 → 439 行（净 -8 行）：`recJson` 改为薄包装
+                                              `rec.toWireJson()`；logScript 的 push
+                                              分支改为传 `wire: {...e}` 后统一
+                                              `rec.toWireJson()`，删掉手拼键集合
+  569  test/room_visibility_test.dart       **新增**：P0-M04 七条安全不变式 +
+                                              出站形状收口回归钉子 + T03 判据复核
+  （test/support/room_oracle.dart 198 / room_oracle_whitelist.dart 104 /
+    room_coverage_test.dart 233 / room_purity_test.dart：一行未动）
+
+【oracle 脚本与 fixture】
+ 1320  tool/oracle/dump_p4_room.js          +45 行：新增 `VIS_TO_LOG_SCRIPTS`
+                                              6 组 + 独立 tag `M:logScript:visTo`
+  248971 → 252 KB  test/fixtures/room_model.json       511 → **517 例 / 359 tag**
+  259384 B          test/fixtures/room_rules.json       455 例 / 56 tag（重生成，语义未变）
+  827035 B          test/fixtures/room_sequences.json   121 例 / 35 tag（重生成，语义未变）
+  （三个 fixture 因新增 6 个 add() 调用导致后续 case 编号整体 +6；全局编号
+    1..1093 连续无洞，无重复）
+
+【未改动（实测）】
+  pubspec.yaml、lib/domain/dice.dart、lib/domain/rules_coc7.dart、
+  lib/domain/room_model_*.dart 的 D15~D21 空壳、lib/repo/*
+
+
+3. 少的 6 例 fixture：查证、逐例交代与处置
+----------------------------------------------------------------
+3.1 证据链（接手时的真实状态）
+  · T01 报告 §1：room_model.json **517 例 / 359 个 tag**，三 fixture 合计 1093。
+  · 接手实测：**511 例 / 358 个 tag**，三 fixture 合计 1087。
+    → 少 6 例、恰好少 1 个 tag ⇒ 被删的 6 例共享 1 个「独有的」tag，
+      且该 tag 不在 `room_coverage_test.dart` 的 `_modelHelperTags` 断言表里
+      （否则覆盖测试会红，而它当时是绿的）。
+  · 三个 fixture 的 case name 全局编号实测 **1..1087 连续、0 洞、0 重复**：
+    ```
+    total cases 1087 min 1 max 1087 / holes in 1..max: [] count 0 / duplicates: 0
+    ```
+    ⇒ 不是「直接编辑 JSON 删 6 条」（那会留下 6 个编号洞），而是**改了
+      dump 脚本里的 6 个 `M_()` 注册后整体重生成**。因此原始 6 例的
+      逐字节输入已随脚本覆盖而丢失（工程非 git 仓库，全盘 find 无备份）。
+  · 编号定位：R 区 1..455；M 区（488~866 行）当前 507 例占 456..962；
+    S 区从 963 起。删 6 例后 S 起点由 969 前移到 963 ⇒ 被删的 6 个 `M_()`
+    注册位于 dump 脚本的 M 区（488~866 行）内、第一个 `S_()` 之前。
+  · 唯一红：`M:logScript#926.out[2][0].evt：键集合不一致。缺 {}，多 {vis, to}`。
+    旧版 `Log.push`(:370-379) 原样保存入参 `{t,p}`，`since()`(:382-388)
+    返回同样的原记录；Dart 的测试辅助 `recJson()` 却**硬编码 4 键**
+    `{t,vis,to,p}`。前一轮只在 `push` 分支加了 `if (e.containsKey('vis'))`
+    的形状补丁，**漏了 `since` 分支** —— 所以红仍在。
+
+3.2 为什么被删（推断，证据支持）
+  被删的应该是「入参 evt 携带 vis/to」的一整组 logScript 变体（1 个独立
+  tag、6 例）。前一轮试图消 `{vis,to}` 差异时**删错了对象**：这组用例的
+  旧版期望本来就是 4 键（因入参带 vis/to），与当时硬编码 4 键的 `recJson()`
+  恰好相等、本来是绿的；真正红的 `M:logScript#926` 是「入参不带 vis/to」
+  的 since 输出，反而被留下了。这解释了三件事：删 6 例后红仍在、
+  tag 数只少 1、以及 push 分支只修了一半的形状补丁。
+  ⚠️ 诚实声明：原始 6 例的**逐字节输入无法复原**（脚本被覆盖、无备份、
+     编号连续证明是重生成）。本轮按旧版 `Log.push` 原样保存入参的语义
+     **重建同一分类的 6 例**，数量、tag 数、覆盖语义全部恢复，且全部通过
+     严格 `expectJsonMatch` + `randUsed` 断言，未放水。
+
+3.3 恢复的 6 例逐例交代（tag `M:logScript:visTo`，randUsed 均为 0）
+  ┌ #934  ops=[push,since]                        cap=400
+  │   push 入参键 [t,p,vis,to]，vis='public', to=null
+  │   expect: out[0].evt 与 since[0].evt 均为 4 键 [t,p,vis,to]
+  │   验证：出站记录保留入参自带 vis/to，且不夹带 seq
+  ├ #935  ops=[push,since,canFill]                cap=400
+  │   push 入参键 [t,p,vis,to]，t='check', vis='seat', to='p1'
+  │   expect: push/since 均 4 键；canFill(0)=true
+  │   验证：SEAT 定向事件在日志形状层与 PUBLIC 同构
+  ├ #936  ops=[push,push,push,since]              cap=400
+  │   push 入参键依次 [t,p,vis,to] / [t,p] / [t,p,vis,to]（**混合形状**）
+  │   expect: out[0] 4 键、out[1] 2 键、out[2] 4 键；since(1) 首条 2 键
+  │   验证：形状是「逐条记录」属性，不是全局开关 —— 这是修复前必红的一组
+  ├ #937  ops=[push,push,push,since,canFill]      cap=2
+  │   同样混合形状，且 3 条 push 触发窗口裁剪（truncated=1）
+  │   expect: since 只返回窗口内 2 条，且各自保持原形状
+  │   验证：cap 裁剪不改写已保存的 wire 形状
+  ├ #938  ops=[push,push,rollbackBefore,since]    cap=400
+  │   push 入参键 [t,p,vis,to] / [t,p]，rollbackBefore(2) 丢第 2 条
+  │   expect: since(0) 只剩第 1 条且仍为 4 键
+  │   验证：回退裁剪后保留记录的形状不退化（Q1 重放路径的数据基础）
+  └ #939  ops=[push,since,canFill]                cap=400
+      push 入参键 **[t,p,vis]**（只带 vis、不带 to），since(1) 返回空数组
+      expect: out[0].evt 恰好 3 键 [t,p,vis]；canFill(99)=true
+      验证：「按入参键集合收口」而非「按值猜测」—— 少一个 to 也必须少一个键
+
+  同时保留原有 8 例不带 vis/to 的 `M:logScript`（含原红 `M:logScript#926`，
+  其 expect.out[2][0].evt 仍严格为 `{t,p}`）。`logScript` 现共 **14 例**。
+
+3.4 处置结果
+  ```
+  room_rules.json: 455 例 / 56 个 tag
+  room_model.json: 517 例 / 359 个 tag
+  room_sequences.json: 121 例 / 35 个 tag
+  ✅ 覆盖矩阵零缺口；合计 1093 例
+  M:logScript:visTo 例数 6
+  ```
+  与 T01 基线（517 / 359 / 1093）**完全对齐**。
+
+
+4. logScript 根因与修法
+----------------------------------------------------------------
+4.1 根因（不是比较器问题，是「三层形状串味」）
+  旧版共有三种 evt，键集合互不相同：
+   ① 内部日志项  room-model.js:961 `{t,vis,to,p}` —— Host.emit 构造，
+      log.items[].evt 原样保存；:3450 回退重放只传 `{t,seq,p}` 丢掉 vis/to
+      ⇒ 已批准的 Q1 缺陷，Dart 必须**保留** vis/to 供重放与权限判定。
+   ② 日志对外记录 room-model.js:370-379 `Log.push(evt)` **原样保存入参**，
+      返回 `{seq, evt}`；`since()` 返回同一批对象。evt 键集合 = 入参键集合，
+      **不含 seq**。fixture 的 logScript 直接 `new M.Log().push({t,p})`，
+      所以期望是 `{t,p}`。
+   ③ 网络出站 evt room-model.js:795 `evtMsg(rec)` = `{k,seq,t,p}`，
+      **永不带 vis/to**（只取 rec.evt.t / rec.evt.p）。
+
+  Dart 接手时把 ① 的「内部 RoomEvent（t/seq/p/vis/to）」直接当作 ② 序列化：
+  `test/room_model_core_test.dart:recJson()` 无条件拼出 `{t,vis,to,p}`。
+  ⇒ `M:logScript#926.out[2][0].evt` 多 `{vis,to}`。
+  前一轮只在 `push` 分支用 `containsKey` 打了补丁，`since` 分支仍走
+  `recJson` ⇒ 唯一红残留。
+
+4.2 修法（在出站/序列化边界做形状收口，不改比较器）
+  ★ `lib/domain/room_types.dart` · `LogRecord`
+    - 增加可选第三参数 `Map<String,Object?>? wireEvt`：保存旧版 `Log.push`
+      **原样保存的入参对象**（② 的形状）。
+    - 增加 `toWireJson()` → `{seq, evt: wireEvt ?? {t,vis,to,p}}`；
+      `wireEvt` 为 null 时推导成 Host.emit 的 4 键形状。
+    - 类注释明确 ①/②/③ 三层边界，禁止把 `RoomEvent.toJson()`
+      （5 键、含 seq）当作出站形状。
+  ★ `lib/domain/room_model_log.dart` · `RoomLog.push`
+    - 增加可选命名参数 `wire`，透传进 `LogRecord`；内部
+      `RoomEvent` **仍完整持久化 vis/to/seq**（Q1 修正不变），
+      `wire` 只影响对外序列化、绝不参与归约判定。
+    - `RoomHost.apply(persist:false)` 构造的 `LogRecord(s, evt)` 不传 wire，
+      走 4 键推导；重放路径不受影响。
+  ★ `lib/domain/room_model_envelope.dart`
+    - 文件头 + `evtMsg` 补注释，钉死「出站 evt 只取 t/p、绝不带 vis/to」；
+      `evtMsg` 实现本来就是 `EvtEnvelope(seq, t, p)`，签名/行为零改动。
+  ★ `test/room_model_core_test.dart`
+    - `recJson(rec)` → `rec.toWireJson()`（薄包装，不再手拼键）。
+    - logScript 的 `push` 分支把入参形状作为 `wire: <String,Object?>{...e}`
+      交给日志，回显统一 `rec.toWireJson()`；`since` 分支自动复用同一
+      LogRecord 的 wire ⇒ 两条路径形状一致。
+
+  4.3 为什么不破坏安全不变式
+    - `VIS.KP` 的 `plan()` 依旧 `[]`；`VIS.SEAT` 依旧「to 单发 evt +
+      其余在线者 skip」；`plan` 全程用 `EvtEnvelope(seq,t,p)`，不读 wire。
+    - `syncFor` 仍复用 `cropFor/combatFor/members()`，不读 wire、不二次过滤。
+    - Q1：`rec.evt`（RoomEvent）完整带 vis/to/seq，`apply(rec.evt,
+      persist:false)` 重放链一行未动。
+    - `room_visibility_test.dart` 新增两条回归钉子：
+      「出站 evt 键集合恒为 {k,seq,t,p}」与「log 记录 wire 形状按 push 入参收口」。
+
+
+5. 判据逐条实测（原始输出尾巴）
+----------------------------------------------------------------
+[判据 A] flutter test test/room_model_core_test.dart
+  ```
+  00:00 +20: parse（10 例）
+  00:00 +21: logScript（14 例）
+  00:00 +22: rosterScript（8 例）
+  00:00 +23: fixture 覆盖完整性（room_model.json 517 例，本批 24 类 fn）
+  00:00 +24: emptyState 恰好 18 个顶层键，且键序与旧版一致
+  00:00 +25: EVT.TEMP_COMMIT 刻意无 reduce 分支：只写 seq，其余全等
+  00:00 +26: ruleOptsOf 只下发 [1,99] 的自定义阈值（旧版未导出，Dart-only）
+  00:00 +27: needs() 对未登记 action 一律拒绝（Q6：rollback.turn 已摘除）
+  00:00 +28: apply 是唯一写口：room_model_host_core.dart 内 reduceRoomState( 只 1 处
+  00:00 +29: apply(persist:false) 必须带 seq；persist 不参与归约判定
+  00:00 +30: Log/Roster 基础语义（不依赖 fixture 也钉一遍）
+  00:00 +31: All tests passed!
+  ```
+  · emptyState 18 键：+24 绿，键序 `meta,members,chats,logs,dice,scene,
+    combat,privates,rewind,requests,board,sceneCheck,archive,lastState,
+    alert,opposed,seq,version` 逐项断言。
+  · 26 reduce 分支且 TEMP_COMMIT 无分支：coverage test 对 27 个 EVT 逐项
+    断言每支 ≥3 组输入（reduce 81 例全绿）；+25 断言 TEMP_COMMIT 只写 seq。
+  · apply 唯一写口：+28 静态扫描 `room_model_host_core.dart` 只 1 处，
+    且该行以 `reduceRoomState(state, rec.evt)` 开头；+29 验证两条路径
+    （persist true/false）喂给 reduce 的事件同构、状态全等。
+
+[判据 B] flutter test test/room_visibility_test.dart（P0-M04 七条 + 复核）
+  ```
+  00:00 +0: ① VIS.KP 的 plan() 为 []：零出站，但权威端 state 仍归约
+  00:00 +1: ② VIS.SEAT 只给 to 发 evt，其余在线者收 skip 水位
+  00:00 +2: ②b SEAT 缺收件人：不发 evt、记 1 条 warning（不静默丢）
+  00:00 +3: ③ PUBLIC + secret 被 scrub 剥离，记且只记 1 条 warning
+  00:00 +4: ③b VIS.SEAT 不 scrub（定向私密允许带 secret），但不广播
+  00:00 +5: ④ 玩家/旁观者载荷（增量 + 全量）无 hp/hpMax/secret/kpOnly/attrs
+  00:00 +6: ⑤ syncFor 与增量同视图（共用 cropFor / combatFor，不二次过滤）
+  00:00 +7: ⑥ 非 PUBLIC 的 CHECK 只落 redacted:true 脱敏行，明文不上 state/未授权 sync
+  00:00 +8: ⑦ PRIVATE 的 SEAT 守卫：定向私密不进 state.privates，只进 privateBySeat
+  00:00 +9: 出站 evt 键集合恒为 {k,seq,t,p}：内部 vis/to 绝不外泄
+  00:00 +10: log 记录的 wire 形状按 push 入参收口（logScript 红用例的回归钉子）
+  00:00 +11: P0-M02：host 不在花名册（不得据此判旁观者）；combatFor(host) 全量
+  00:00 +12: P0-M11：parseRoom 只放行 sync/evt/skip/intent 四类
+  00:00 +13: P0-M01 / Q1：apply 是唯一写口，本轮 reduceRoomState( 调用点仍为 1
+  00:00 +14: 26 个 reduce 分支 + TEMP_COMMIT 无分支（Q6）
+  00:00 +15: 白名单恰好 1 条 S:q1，allowedPaths 不含 logScript 相关 tag
+  00:00 +16: All tests passed!
+  ```
+  · ④ 用 `RoomHost.apply` 注入「权威端 state 里确实含 secret/kpOnly/attrs」
+    的战斗态（**绕过 emit 的 scrub**），再断言玩家/旁观者的增量与全量载荷
+    字节级不含 5 个禁键；同时断言 `combatFor('host')` 全量可见 ——
+    避免「源头本来就没东西可裁」的平凡通过。
+  · ⑥ 额外对照 PUBLIC CHECK 与 `vis:null` 客户端回放按 PUBLIC 处理（:685）。
+  · ⑦ 对照 `to == HOST_SEAT` 的私密按旧版进 `state.privates`。
+  · `warnings` 正常路径为空：①②③b⑥⑦ 多处断言。
+
+[判据 C] flutter test（全量，不带参数）
+  ```
+  EXIT=0
+  00:44 +681: ... 疯狂表：点「随机」→ 写入「疯狂症状」文本 + 结构化症状
+  00:46 +682: All tests passed!
+  === red lines ===            ← grep " -[0-9]+:|Some tests failed|Failing tests|[E]" 结果为空
+  ```
+  · 682 组 ≥ 635 组基线，0 红。其中本轮新增 16 组（room_visibility_test），
+    上一批 T03 的 31 组（room_model_core_test）继续保持全绿。
+  · `kRoomOracleWhitelist.length == 1` / `whitelistedTags == {'S:q1'}` 随
+    room_coverage_test.dart 一起跑过，绿。
+
+[判据 D] dart analyze
+  ```
+  Analyzing dice-realm...
+  No issues found!
+  ```
+
+[判据 E] node tool/oracle/dump_p4_room.js（重生成后）
+  ```
+  room_rules.json: 455 例 / 56 个 tag
+  room_model.json: 517 例 / 359 个 tag
+  room_sequences.json: 121 例 / 35 个 tag
+  ✅ 覆盖矩阵零缺口；合计 1093 例
+  ```
+
+[判据 F] lib/domain 纯度（grep -rn "package:flutter\|dart:io\|dart:ui" lib/domain）
+  ```
+  (上面应为空；命中数=0)
+  ```
+
+[判据 G] reduceRoomState( 真实代码调用点数
+  ```
+  -- 精确（排除注释与函数声明）--
+  lib/domain\room_model_host_core.dart:157: reduceRoomState(state, rec.evt);
+  ```
+  ⇒ **恰好 1 处**（`RoomHost.apply`）。函数声明在
+  `room_model_reduce.dart:34`，其余均为注释。T04 落 D20 的
+  `RoomClient.receive` 后才会变成 2，届时收紧断言。
+
+[判据 H] 其余四项
+  ```
+  ===== [4] 白名单条数 =====
+  1
+  ===== [5] fixture 规模 =====
+  room_rules.json 455 例 56 个 tag
+  room_model.json 517 例 359 个 tag
+  M:logScript:visTo 例数 6
+  ```
+  · `combatFor('host')` 全量：+11 绿（slot.public.hp/hpMax 与 slot.secret 可见）。
+  · `parseRoom` 只放行 4 类：+12 绿（sync/evt/skip/intent 放行，
+    host.gone / unknown / 非法 JSON / [] / "str" / '' / null / 42 全 null）。
+  · `intent('host', CHAT)` 1 条广播：**见 §7 断点 2**（D16 属 T04，本轮
+    全库无该符号）。本轮以等价断言替代并在 +3 落地：PUBLIC CHAT 的
+    `plan()` 恰好 1 条、`to == '*'`；+11 断言 `roster.get('host') == null`
+    （不因房主不在花名册而误判旁观者）。
+
+
+6. 全局跨文件一致性复查（所有文件写完后一次性做）
+----------------------------------------------------------------
+  · import 无环：room_types（零新增依赖）→ room_model_log（types/state/js_compat）
+    → room_model_host_core → room_model_envelope；`room_model_envelope.dart`
+    只改注释，没有新增 import，不存在 envelope ↔ types 反向依赖。
+    `room_fakes.dart` 新增 `room_model_host_core.dart` 与 `oracle.dart show
+    Lcg, oracleNowMs`，两者都不反向依赖 test 层。analyze 无 cycle 告警。
+  · 接口契约：`LogRecord` 新增的是**可选位置参数**，全库现有
+    `LogRecord(s, evt)` 调用（RoomHost.apply / emitLocal / core_test 的
+    evtMsg handler）零改动即通过；`RoomLog.push` 新增的是**可选命名参数**，
+    `RoomHost.apply` 的 `log.push(evt)` 零改动。无破坏性签名变更。
+  · 数据流：wire 由测试 handler 的入参 Map → `RoomLog.push` →
+    `LogRecord.wireEvt` → `toWireJson()`；`since()` 返回的是**同一批**
+    LogRecord，因此 push 回显与 since 输出形状必然一致（14 例全绿实证）。
+    `rec.evt` 仍是完整 RoomEvent，Q1 重放链未触碰。
+  · 无重复实现：形状的构造逻辑只存在 `LogRecord.toWireJson()` 一处；
+    `recJson` 退化为薄包装；`evtMsg` / `EvtEnvelope.toJson()` 仍只负责
+    网络出站 4 键。
+  · 白名单/比较器：两个文件一行未动；`kRoomOracleWhitelist.length == 1`、
+    `allowedPaths` 未扩容、未新增第二条记录。
+  · 静态不变式：domain 纯度 0 命中；`reduceRoomState(` 调用点 1；
+    `RoomHost` 除 apply 外无 `state[...] =` 写（apply 唯一写口测试绿）。
+
+  结论：**IS_PASS: YES**
+
+
+7. 留给 T04 的断点（按依赖顺序，均未在本轮触碰）
+----------------------------------------------------------------
+  1. D15~D21 空壳仍在（10~15 行中文头注释）：rollback / host_intent /
+     actions_* / client / save；`lib/repo/room_state_writer.dart`、
+     `lib/repo/room_save_store.dart` 未写。
+  2. ★ `intent()` 属 D16，**本轮全库 grep 零命中**（`grep -rn
+     "List<SendPlan> intent" lib/domain/` 无结果）。因此 P0-M02 的
+     「intent('host', CHAT) 产生 1 条广播」无法在 T03 直接执行；本轮用
+     `plan(emit(CHAT, PUBLIC))` 恰好 1 条 `to:'*'` 广播 +
+     `roster.get('host') == null` 做等价替代断言（+3 / +11 已绿）。
+     T04 落 D16 后请补一条真实 `host.intent('host', {...op:'chat'...})`
+     的 1 条广播断言。
+  3. ★ `reduceRoomState(` 调用点本轮 == 1。`test/room_visibility_test.dart`
+     的 `P0-M01 / Q1` 用例断言 `== 1`；T04 落 D20 `RoomClient.receive`
+     后必须把该断言改为 `== 2`，同时把 `test/room_purity_test.dart`
+     的 `lessThanOrEqualTo(2)` 收紧为 `== 2`，并补「persist 不出现在
+     reduce 分支条件里」的静态检查。
+  4. Q1 重放链已就绪：`RoomEvent` 持久化 t/seq/p/vis/to、
+     `LogRecord.wireEvt` 把对外形状与内部对象分开。T04 直接写
+     `apply(r.evt, persist:false)` 即可；白名单 `S:q1` 的 `allowedPaths`
+     依赖 hostScript 的脚本下标 `steps[8]=syncFor(p2)` /
+     `steps[9]=syncFor(p1)`，若 T04 改 op 顺序必须同步改白名单。
+  5. `room_sequences.json` 的 `emitLocal` 步骤会输出 `rec.evt`：本轮
+     `LogRecord.wireEvt` 为 null 时推导 4 键 `{t,vis,to,p}`，与旧版
+     `emitLocal`(:1031) 一致；T04 跑 F03 全量时请顺带复核这一条。
+  6. `roomHostOpts()` 已在 `test/support/room_fakes.dart` 落地（固定时钟
+     `oracleNowMs`、独立 LCG、DeterministicRoomRules / Madness、
+     InMemoryRoomSaveStore），T04 的 Host/Client/存档测试可直接复用。
+  7. 三个 fixture 因新增 6 个 add() 调用导致后续 case 编号整体 +6
+     （全局 1..1093 连续、无洞、无重复）。白名单 `coversCase` 用
+     `tag == 'S:q1'` 或 `name.startsWith('S:q1')` 匹配，不受编号偏移影响
+     （全量测试已实证）。
+  8. T06 安全回归（rollback 后 syncFor 无明文）、T09 全量等价性门禁、
+     Q01 静态探针、P0-M07/M12 存档与写回，全部留 T04/T05。
+================================================================

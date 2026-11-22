@@ -10,6 +10,7 @@
 // ============================================================
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import '../../../domain/character.dart';
 import '../../../domain/data/skills.dart';
@@ -747,22 +748,36 @@ class _SkillRow extends StatelessWidget {
 /// （上限、点数池、克苏鲁神话不可加点）只在 domain 的 `applyPoint` 里实现
 /// 一份，界面上不该有第二套口径。
 class SkillPointSheet extends StatelessWidget {
-  const SkillPointSheet({super.key, required this.card, required this.skill});
+  const SkillPointSheet({
+    super.key,
+    required this.card,
+    required this.skill,
+    this.allowGrowth = false,
+  });
 
   final Character card;
   final Map<String, Object?> skill;
 
+  /// 仅「修改已保存角色」传 true：克苏鲁神话这类技能可以直接加成长点。
+  /// 车卡流程用默认 false —— 那里连成长点的入口都不该出现。
+  final bool allowGrowth;
+
   @override
   Widget build(BuildContext context) {
-    return _PointSheet(card: card, skill: skill);
+    return _PointSheet(card: card, skill: skill, allowGrowth: allowGrowth);
   }
 }
 
 class _PointSheet extends StatefulWidget {
-  const _PointSheet({required this.card, required this.skill});
+  const _PointSheet({
+    required this.card,
+    required this.skill,
+    this.allowGrowth = false,
+  });
 
   final Character card;
   final Map<String, Object?> skill;
+  final bool allowGrowth;
 
   @override
   State<_PointSheet> createState() => _PointSheetState();
@@ -830,7 +845,7 @@ class _PointSheetState extends State<_PointSheet> {
               style: TextStyle(fontSize: 12, color: Palette.textMute),
             ),
             const SizedBox(height: 12),
-            if (growthOnly)
+            if (growthOnly) ...<Widget>[
               Container(
                 padding: const EdgeInsets.all(10),
                 decoration: BoxDecoration(
@@ -838,14 +853,28 @@ class _PointSheetState extends State<_PointSheet> {
                   borderRadius: BorderRadius.circular(Radii.sm),
                 ),
                 child: Text(
-                  '按规则书，这项技能在车卡时不能用职业点 / 兴趣点加点，只能通过「成长」获得。',
+                  widget.allowGrowth
+                      ? '这项技能只能通过成长点提升。'
+                      : '按规则书，这项技能在车卡时不能用职业点 / 兴趣点加点，只能通过「成长」获得。',
                   style: TextStyle(
                     fontSize: 11.5,
                     color: Palette.arcane,
                     height: 1.5,
                   ),
                 ),
-              )
+              ),
+              if (widget.allowGrowth) ...<Widget>[
+                const SizedBox(height: 10),
+                _PointStepper(
+                  label: '成长点',
+                  value: jsNum(skill['growth']),
+                  remain: null, // 成长点不来自点数池，没有「可用 N」的说法
+                  color: Palette.arcane,
+                  keyPrefix: 'growth',
+                  onStep: (d) => _apply('growth', d),
+                ),
+              ],
+            ]
             else ...<Widget>[
               _PointStepper(
                 label: '职业点',
@@ -903,7 +932,7 @@ class _PointSheetState extends State<_PointSheet> {
 }
 
 class _PointStepper extends StatelessWidget {
-   const _PointStepper({
+  const _PointStepper({
     required this.label,
     required this.value,
     required this.remain,
@@ -913,11 +942,35 @@ class _PointStepper extends StatelessWidget {
   });
 
   final String label;
+
+  /// 该来源已加的点数（职业点 / 兴趣点 / 成长点）。
   final int value;
-  final int remain;
+
+  /// 剩余可用点数；`null` = 不限制（成长点不来自点数池）。
+  final int? remain;
   final Color color;
   final String keyPrefix;
   final void Function(int delta) onStep;
+
+  /// 直接输入目标值：只把「差值」交给 `onStep`。
+  ///
+  /// 负值 / 上限 / 点数池 / 「只能靠成长」这些约束一律由 domain 的
+  /// `applyPoint` 判定，界面不重复实现；失败时由 `_PointSheet` 的
+  /// `_error` 展示原因。
+  Future<void> _editValue(BuildContext context) async {
+    final target = await showDialog<int>(
+      context: context,
+      builder: (_) => _ValueInputDialog(
+        title: '$label · 目标值',
+        initial: value,
+        hint: '输入 0 以上的整数',
+        inputKey: '${keyPrefix}_value_input',
+        okKey: '${keyPrefix}_value_ok',
+      ),
+    );
+    if (target == null || target == value) return;
+    onStep(target - value);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -930,10 +983,12 @@ class _PointStepper extends StatelessWidget {
       ),
       child: Row(
         children: <Widget>[
-          SizedBox(
-            width: 56,
+          ConstrainedBox(
+            constraints: const BoxConstraints(minWidth: 56),
             child: Text(
               label,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
               style: TextStyle(
                 fontSize: 12.5,
                 color: color,
@@ -941,16 +996,33 @@ class _PointStepper extends StatelessWidget {
               ),
             ),
           ),
-          Text(
-            '$value',
-            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
+          const SizedBox(width: 6),
+          InkWell(
+            key: Key('${keyPrefix}_value'),
+            borderRadius: BorderRadius.circular(Radii.sm),
+            onTap: () => _editValue(context),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+              child: Text(
+                '$value',
+                key: Key('${keyPrefix}_value_text'),
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ),
           ),
-          const Spacer(),
-          Text(
-            '可用 $remain',
-            style: TextStyle(fontSize: 11, color: Palette.textMute),
+          Expanded(
+            child: Text(
+              remain == null ? '不限制' : '可用 $remain',
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              textAlign: TextAlign.right,
+              style: TextStyle(fontSize: 11, color: Palette.textMute),
+            ),
           ),
-          const SizedBox(width: 8),
+          const SizedBox(width: 4),
           IconButton(
             key: Key('${keyPrefix}_minus'),
             visualDensity: VisualDensity.compact,
@@ -969,6 +1041,84 @@ class _PointStepper extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+/// 点数直接输入的弹窗（自带 controller，随路由一起释放）。
+///
+/// 只用 `digitsOnly` 过滤：非数字敲不进去、负号会被吃掉，
+/// 因此 `int.tryParse` 失败只会发生在「空串」这一种情况 —— 回退当前值。
+class _ValueInputDialog extends StatefulWidget {
+  const _ValueInputDialog({
+    required this.title,
+    required this.initial,
+    required this.hint,
+    required this.inputKey,
+    required this.okKey,
+  });
+
+  final String title;
+  final int initial;
+  final String hint;
+  final String inputKey;
+  final String okKey;
+
+  @override
+  State<_ValueInputDialog> createState() => _ValueInputDialogState();
+}
+
+class _ValueInputDialogState extends State<_ValueInputDialog> {
+  late final TextEditingController _ctrl = TextEditingController(
+    text: '${widget.initial}',
+  )..selection = TextSelection(
+      baseOffset: 0,
+      extentOffset: '${widget.initial}'.length,
+    );
+
+  @override
+  void dispose() {
+    _ctrl.dispose();
+    super.dispose();
+  }
+
+  void _submit() {
+    final n = int.tryParse(_ctrl.text.trim());
+    Navigator.of(context).pop(n ?? widget.initial);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      backgroundColor: Palette.surface2,
+      title: Text(widget.title, style: const TextStyle(fontSize: 16)),
+      content: TextField(
+        key: Key(widget.inputKey),
+        controller: _ctrl,
+        autofocus: true,
+        keyboardType: TextInputType.number,
+        textInputAction: TextInputAction.done,
+        inputFormatters: <TextInputFormatter>[
+          FilteringTextInputFormatter.digitsOnly,
+        ],
+        onSubmitted: (_) => _submit(),
+        decoration: InputDecoration(
+          isDense: true,
+          hintText: widget.hint,
+          helperText: '当前 ${widget.initial}',
+        ),
+      ),
+      actions: <Widget>[
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: const Text('取消'),
+        ),
+        FilledButton(
+          key: Key(widget.okKey),
+          onPressed: _submit,
+          child: const Text('确定'),
+        ),
+      ],
     );
   }
 }

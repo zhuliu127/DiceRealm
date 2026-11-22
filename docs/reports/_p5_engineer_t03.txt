@@ -1,0 +1,161 @@
+================================================================
+P5-T03 工程师交付报告（共享只读块与信息流：S3.1 → S3.5）
+工程：C:/Users/60965/WorkBuddy/2026-10-08-18-34-17/dice-realm
+环境：Flutter 3.47.9 / Dart 3.13.7
+================================================================
+
+零、边界遵守
+----------------------------------------------------------------
+· **本轮零修改 `room_game_page.dart`**（把 PlaceholderBlock 换成真块的接线留给你
+  单派的那一轮，避免与 T04 抢同一个文件）。当前 mtime 仍是 T02/K15 对齐那次。
+· 未改 `lib/domain/**`、未改 `pubspec.yaml`、未改 T01 已落盘件（keys/scope/
+  ui_local/controller/session/view/panel_kit）。
+· 六个块文件全部**独立可测**：测试用 `MaterialApp + RoomScope + Scaffold` 直接
+  pump 块，不依赖整页骨架。
+
+一、改动文件清单（全部新增，共 2660 行）
+----------------------------------------------------------------
+【lib/ui/room/widgets/（1617 行）】
+  gp_feeds.dart          344   块 8/9（KP）/ 4/5（PL）：FeedList + FeedRow + ChatInputRow
+  gp_privates.dart       186   块 10(KP) / 9(PL)：最近 12 条 / 正序 / 新条高亮 / 全文 / 全屏
+  gp_combat_list.dart    206   块 6：顺序 · 怪物信息 · 隐藏 HP · 待确认卡
+  gp_status.dart         209   块 12(KP) / 13(PL)：待办角标 + 请求卡（同意 / 拒绝）
+  gp_dice_bar.dart       212   骰子条：骰式 / 奖惩骰 / 暗骰 / 扩展按钮
+  gp_map_stage.dart      384   块 4(KP) / 3(PL)：16:9 舞台 + 归一化落点 + MapStageController
+
+【test/（1119 行）】
+  room_ui_feeds_test.dart  412  14 组（信息流 / 私密栏）
+  room_ui_blocks_test.dart 707  24 组（骰子条 / 战斗 / 状态条 / 素材舞台）
+
+二、T03 七条验收判据（逐条实测）
+----------------------------------------------------------------
+判据 1  flutter test test/room_ui_feeds_test.dart test/room_ui_blocks_test.dart → 0 红
+  $ flutter test test/room_ui_feeds_test.dart test/room_ui_blocks_test.dart
+  00:02 +38: All tests passed!   （14 + 24 = 38 组）  ✅
+
+判据 2  奖惩骰互斥断言走**发出的 intent 载荷**（不是 UI 数字）
+  用例 `★ 奖惩骰互斥：走发出的 intent 载荷断言（不是 UI 数字）`：
+    点「奖励」×3 → 点「惩罚」×1 → 点 1D100
+    断言 sent 里最后一条 dice intent：{expr:'1D100', direct:true,
+      bonus:0, penalty:1}，且不带 secret 键；
+  上限用例：连点奖励 ×7 → RoomUiLocal.bonus==5 → 载荷 bonus==5、penalty==0  ✅
+
+判据 3  redacted 与 toWireJson 两条回归在 KP/PL 各一条渲染路径都通过
+  · redacted：KP 侧 / PL 侧各一条（PL 用 p2 真收到的裁剪态，T8），
+    断言页面文本含「KP 秘密进行了一次检定」，且**不含**「秘密检定：骰出 07」；
+  · 原始键名：两个 pane（记录 / 聊天）分别渲染后，把全部 Text + RichText 的
+    纯文本拼起来，断言不含 `"t":` / `"vis":` / `"to":` / `"seq":`  ✅
+
+判据 4  输入行不重建
+  用例 `★ 输入 abc → 会话重绘 → controller.text 仍是 abc 且 State 同一实例`：
+    enterText('abc') → p1 发一条 chat（触发整块重建）→
+    `identical(tester.state(before), tester.state(after)) == true`，
+    且 `TextField.controller.text == 'abc'`  ✅
+
+判据 5  旁观者侧骰子条全 disabled
+  用例 `★ 旁观者：骰子条全部禁用…`：奖励 / 惩罚 / 暗骰 / 自定义 / 7 个骰式
+  逐一断言 `RoomTap.enabled == false`；且点了不发任何载荷；
+  POLICY 不允许的 `combat.roll` / `check.opposed` **结构上不渲染**  ✅
+
+判据 6  dart analyze 零 issue；全量 flutter test ≥1095 组、0 红
+  $ dart analyze → No issues found!
+  $ flutter test  → 00:32 +1135: All tests passed!
+  1097（T02 收尾）+ 38（T03）= 1135，0 红  ✅
+
+判据 7  门禁
+  `lib/ui/room/widgets/` 里 `RoomHost` / `room_rules` / `rules?.check(` /
+  `rollExpr(` / `opposedFull(` 命中 **0**；
+  新 8 个文件注释里的被扫字面量命中 **0**  ✅
+
+三、五个子批次的实现要点
+----------------------------------------------------------------
+S3.1 素材舞台（gp_map_stage.dart）
+  · `MapStageControl implements MapStageController` —— §3.9 六个成员签名一字不改，
+    另暴露 `mode / strokeColor / strokeWidth / markKind / markLabel / markRevealed /
+    actorName / playerSeat` 给舞台自己读（块 3 仍只认接口）。
+  · 坐标：`stageNormOf(Offset, Size)` 纯函数（clamp 到 [0,1]，零尺寸不出 NaN），
+    `stagePointJson` 产出 `{x,y}` —— 与权威端 `mapStroke` / `mapMark` 同形状。
+  · 落点三态：mark → `map.mark{...}`；placeActor / placePlayer → 回调交出
+    (名字, 归一化点)，真正的结算留给 T04；落一次即 `cancel()`（单次工具态）。
+  · 画笔：手势期间攒归一化点，**手势末尾一次** `map.stroke{color,width,pts}`。
+  · 橡皮：手势末尾用 `eraseStrokeSegments(strokes, path)` 算好整份，**一次**
+    `map.strokes.set{strokes}`（段级删除，不是整条删）。
+  · 只读：`readOnly:true` 时任何手势都不发包（玩家侧与全屏弹层同一条路径）。
+S3.2 聊天与游戏记录（gp_feeds.dart）
+  · `FeedList` 用 `ListView.builder` 懒构建；`didUpdateWidget` 里「本来就在底部
+    才跟随」，用户上滚回看时不抢滚动位置（P0-06）。
+  · `FeedRow` 五类分派全走 view/feed_view 的纯函数（`diceLine` / `checkLine`），
+    本文件不解析任何载荷 → 结构上不可能渲染出原始键名。
+  · `ChatInputRow` 把 `TextEditingController` 放在自己的 State，草稿另存
+    `RoomUiLocal.chatDraft`；旁观者 `TextField.enabled == false`。
+S3.3 只给你看（gp_privates.dart）
+  · `privRowsOf(state, seat, limit:12)` → 正序；新条 = seq 严格大于上一帧最大值，
+    首帧不标（否则一进房间全亮）；点条开全文、⛶ 开全屏。
+S3.4 战斗列表 + 状态条
+  · 战斗：`hpPublic==false` → 「HP 隐藏」；`hpMax==0` → 只显当前值且**不判死**；
+    KP 侧 `combatRows(isKp:true)` 用 secret/kpOnly 补全；「下一个行动 ▶」
+    **只在 KP 侧渲染**（T-22），玩家侧 findsNothing。
+  · 状态条：KP 读 `hostRead.pending`（T7，不在 state 里找）→ `INTENT.CONFIRM`
+    `{op, by, agree}`；玩家读自己裁剪态的 `requests` → `INTENT.CONSENT{id, agree}`。
+    `state.request` 在 pending 里留的**记账条目**被跳过（它的确认方是玩家）。
+S3.5 骰子条（gp_dice_bar.dart）
+  · 只发 `INTENT.DICE{direct:true, expr, bonus, penalty, [secret]}`，**不自算结果**
+    （载荷里没有 result/total/rolls/value，有专门用例钉死）。
+  · 奖惩骰互斥 + 0–5 由 `RoomUiLocal.setBonus/setPenalty` 一处实现，骰子条只透传。
+  · 暗骰 → `secret:true`：结论是「公共骰栏为空 + 私有账有内容 + 他人视图无骰值明细」，
+    三条都在用例里断言（B1-F1 的回归网）。
+
+四、本轮被测试逼出来的三个真实缺陷（都已修）
+----------------------------------------------------------------
+① **块内必须自己订阅 `local`**：`RoomScope` 是 `InheritedNotifier<RoomSession>`，
+   只订阅会话；骰子条（奖惩骰/暗骰文案）与战斗列表（tab 切换）都读本地态，
+   不订阅就「点了数字/内容不刷新」。→ `GpDiceBar` / `GpCombatList` 各自包
+   `ListenableBuilder(listenable: scope.local)`。（与 T02 的 `GpToolbar` 同一个坑，
+   已在报告里提醒：**凡读 local 的块都必须自己订阅**。）
+② **权限按钮应当「不渲染」而不是「禁用」**：T-22 要求玩家侧没有「下一个行动」。
+   改成 `isKp ? RoomTap(...) : null`，`combat.roll` / `check.opposed` 同理按
+   `gate.can(op)` 决定渲不渲染；`enabled` 仍恒等 `gate.can(op)`，T-30 探针两种分支都成立。
+③ **测试侧的 pan 手势门槛**：`tester.dragFrom` 只有起止两点且要越过 18px slop，
+   拿它测「段级擦除」会擦不中（容差 2%）。改用 `startGesture + 多次 moveTo`
+   造一条**穿过**笔迹的路径 —— 这条已写进用例注释，T04 做橡皮时会用到。
+
+五、门禁 / 硬约束自检
+----------------------------------------------------------------
+· `widgets/` 里 `RoomHost` / `room_rules` 命中 **0**（不碰权威端与规则）
+· 注释里 `package.flutter` / `dart.io` / `dart.ui` / `state[...]=` /
+  `rules?.check(` / `rollExpr(` / `opposedFull(` 命中 **0**
+· `pubspec.yaml` mtime `2026-11-08 18:55:07.401805200`（未动）
+· `lib/domain/room_model_save.dart` mtime `2026-11-09 01:30:33.416056900`（未动）
+· 时钟：全程 `pump()` / `pump(Duration)`，未用 pumpAndSettle 等 400ms 节流
+
+六、留给「接线那一轮」（你说会单派）的对接点
+----------------------------------------------------------------
+| 槽位 | 换成 | 需要的构造参数 |
+|---|---|---|
+| gpChat / gpPlChat | `GpFeeds(pane: FeedPane.chat)` | 可选 `height` |
+| gpLog / gpPlLog | `GpFeeds(pane: FeedPane.record)` | 可选 `limit` |
+| gpPriv | `GpPrivates()` | 默认 12 条 / 高 160 |
+| gpCombat（KP）、gpPlCombat（PL） | `GpCombatList()` | 默认高 200 |
+| gpStatus | `GpStatus()` | 无 |
+| gpMap（KP）、gpPlMap（PL） | `GpMapStage(controller: stageControl, readOnly: role != kp)` | `MapStageControl` 需由页面持有（块 3 也要用同一个实例） |
+| 骰子条 | `RoomGamePage(toolbarExtensions: [GpDiceBar()])` | 或由 T05 塞进房间页 |
+
+⚠️ 接线时注意两点：
+  1. `GpMapStage` 的 `controller` 必须是**页面级单实例**（`final stage = MapStageControl();`
+     放在页面 State 里），否则块 3 的画笔状态与块 4 不是同一个；
+  2. 骰子条与战斗列表已经自己订阅 `local`，接线时**不要**再在外层套第二层
+     `ListenableBuilder`（无功能问题，但会让整页在点折叠时重算）。
+
+七、给 T04 的两条接口提示
+----------------------------------------------------------------
+· 块 3 只需 `MapStageController` 接口（`beginStroke/beginErase/beginMark/beginPlace/
+  cancel/awaitingTap`），构造时由页面把同一个 `MapStageControl` 传进来；
+  **不要** import `gp_map_stage.dart` 的具体类以外的内容（`MapStageMode` 也不必读）。
+· 待确认队列：KP 侧用 `hostRead.pending`（含 `id / by / op / p / need`），
+  `state.request` 型的记账条目**没有** `op` 键，请按 `op.isEmpty` 跳过 ——
+  与 `GpStatus` 同一口径，避免同一张卡在两处各点一次确认。
+
+================================================================
+结论：T03 完成。七条判据全部实测通过（38 组新测试 + 全量 1135 组 0 红 +
+analyze 零 issue + 门禁零命中）。
+================================================================

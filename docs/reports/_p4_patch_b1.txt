@@ -1,0 +1,695 @@
+================================================================
+P4 补丁 B1 · 四个掷骰 intent 接线 —— 工程师交付报告
+软件工程师 software-engineer-4（Alex） / 2026-11-09
+================================================================
+
+★ 修订记录：2026-11-09 追加「B1-F1 暗骰隐私修复」增量报告，见文末
+  §9～§15（含「第 3 处有意偏离旧版行为（无 fixture 覆盖）」章节）。
+  §0～§8 为 B1 原始交付，原样保留供审计追溯；其中 §8 的「942 组」
+  是 B1 当时的口径，B1-F1 后的最新组数见 §13。
+
+IS_PASS: YES
+
+§0 结论
+----------------------------------------------------------------
+P5 的 PRD 实读挖出的 B1 缺口已按 team-lead 裁决的 A 方案修复：
+`RoomHost.intent()` 的 INTENT.DICE(direct:true) / SAN_CHECK / OPPOSED /
+BOARD 四个分支从 no-op 接上 S4.3 已实现的结算函数；四个 op 一个都没进
+`kRoomPolicy`（仍恰好 61 条），既有分支一字未动，状态写入仍只经
+`RoomHost.apply`，可见性三闸与秘密检定脱敏均未被破坏。
+
+新增 `test/room_intent_dice_wiring_test.dart`（15 组行为 + 静态断言），
+全量 `flutter test` 由 927 基线升到 **942 组、0 红**；
+`dart analyze` → `No issues found!`；
+`node tool/qa/qa_p4_gate.js` → **13 条全 OK**（含第 ⑦ 条 POLICY=61）。
+
+本轮只落盘 2 个文件：1 个生产文件（接线）、1 个新增测试文件。
+三个一次性取证探针已全部删除；四 fixture、白名单、三个禁改文件均未触碰。
+
+
+§1 改动清单
+----------------------------------------------------------------
+[改] lib/domain/room_model_host_intent.dart   （生产代码唯一改动点）
+     · :192-217  INTENT.DICE 按 p.direct 分流
+     · :240-254  摘出 SAN_CHECK / OPPOSED / BOARD 三个 case
+     · :256-257  default: break 保留未动
+[新] test/room_intent_dice_wiring_test.dart   （15 组，见 §4）
+[删] test/_b1_probe_test.dart / _b1_probe2_test.dart / _b1_probe3_test.dart
+     （一次性取证探针，取证后即删；实测输出已固化进正式测试断言）
+
+[未动] 四 fixture / 白名单 / 三个禁改文件 / qa_p4_gate.js /
+       其余任何 lib/domain 文件 / 任何用例断言。
+
+
+§2 四处接线的 diff（旧 → 新，含精确行号）
+----------------------------------------------------------------
+(1) INTENT.DICE —— lib/domain/room_model_host_intent.dart:192-217
+
+  旧（S4.2）：整个 case 只 emit 一条「请求掷 X」日志，direct:true 被吞。
+  新：在 case 开头按旧版 room-model.js:1495-1509 分流，非 direct 分支
+      原文（emit RoomEvt.log / kind:'dice-request' / vis:public）一字不动。
+
+    :192      case RoomIntent.dice:
+    :193-198    // ★ P4 补丁 B1（旧版 :1495-1509）：按 p.direct 分流。
+    :199      if (jsTruthy(p['direct'])) {
+    :200        out.addAll(diceDirect(seat, mem, role, p));
+    :201        break;
+    :202      }
+    :203-216  pushInto(out, emit(RoomEvt.log, {...原样...}, vis: RoomVis.public));
+    :217      break;
+
+  说明：diceDirect 内部（room_model_actions_combat.dart:790）对非 1D100
+  走 rules.rollExpr、对 1D100 走 rules.check 复算，再经 diceRoll(:767)
+  的 emit(RoomEvt.dice, …, VIS.PUBLIC) 落状态并 to:'*' 广播；客户端自报的
+  p['result'] 根本不进这条路径（与 F4 裁决 ① 同一保证）。
+  ⚠️ 该分支不经 needs()/POLICY：旧版 Host.intent 只有 INTENT.ACT 走权限链。
+
+(2) INTENT.SAN_CHECK / OPPOSED / BOARD —— :240-254
+
+  旧（S4.2）：三者连同其余未登记 op 一起落 `default: break`，返回空计划。
+  新（旧版 :1483-1494 / :1514-1517）：逐一接上已实现的结算函数。
+
+    :240-243  // ★ P4 补丁 B1：三个结算函数在 S4.3 已实现，按旧版逐一接上。
+    :244      case RoomIntent.sanCheck:
+    :245        out.addAll(playerSanCheck(seat, mem, p));      // :2560
+    :246        break;
+    :248      case RoomIntent.opposed:
+    :249        out.addAll(opposed(seat, mem, role, p));        // :2080
+    :250        break;
+    :252      case RoomIntent.board:
+    :253        out.addAll(boardSelf(seat, p));                 // actions_room.dart:939
+    :254        break;
+    :256      default:
+    :257        break;
+
+  说明：三个函数与 diceDirect 一样，内部统一走 emit() → apply() 单一写口，
+  本层只汇总返回的 List<SendPlan>，不改 state、不绕开 apply。
+
+(3) 既有分支零改动：`ACT` 的 out.addAll(act(seat, mem, role, p)) / :275
+    `final verdict = needs(role, op);` 权限链、CHAT / CHAR / SYNC / READY /
+    VOTE / CONSENT / CONFIRM / STATESYNC 全部保持原文（测试 ⑮ 源码钉子 +
+    接线后 927 基线零新红双重印证）。
+
+
+§3 硬约束逐项自证
+----------------------------------------------------------------
+3.1 【四个 op 不进 POLICY，权限面仍 61 条】
+    · 实测：`grep -cE "^  '[^']+': RoomPolicyEntry\(" lib/domain/room_types.dart`
+      → 61
+    · 实测：`grep -nE "^  '(dice|sancheck|opposed|board)':" lib/domain/room_types.dart`
+      → 「四个 intent op 名在 POLICY 中零登记」
+    · 门禁第 ⑦ 条：`POLICY=61，分支=67，缺失=无`  [OK]
+    · 测试 ⑬：`expect(kRoomPolicy.length, 61)` 通过；对
+      [RoomIntent.dice, sanCheck, opposed, board] 逐个
+      `expect(kRoomPolicy.containsKey(op), isFalse)` 通过。
+    · 注意：`'board.self'` / `'dice.request'` / `'check.opposed'` /
+      `'sheet.sancheck'` 是 **ACT 通道别名**，本来就在 POLICY 里，与四个
+      INTENT op 名不是一回事；测试 ⑬ 额外断言这四个别名仍在（未误删）。
+    · 结论：权限面保持 61，未扩到 65，门禁与 kFrozenAllowedPaths 未打穿。
+
+3.2 【只加分支、不改既有分支】
+    · 接线后立刻跑全量 → **927 全绿、零新红**（当时尚未加新测试）；
+      加 15 组后 → **942 全绿**。既有 fixture / 用例断言一个字未改。
+    · 测试 ⑮ 静态钉死：ACT 的 `out.addAll(act(...))`、`case RoomIntent.chat:`、
+      `final verdict = needs(role, op);`、`'kind': 'dice-request'` 均仍在。
+
+3.3 【走 RoomHost.apply 单一写口；reduceRoomState( 仍 2 调用 + 1 声明】
+    · 门禁第 ② 条实测：
+      `调用 2（lib/domain/room_model_client.dart:123, lib/domain/room_model_host_core.dart:157），声明 1`  [OK]
+    · 测试 ⑭ 用 Dart 源码扫描（剥 // 注释）独立复核：calls=2 / decls=1，
+      且调用点固定在 room_model_host_core.dart 与 room_model_client.dart。
+    · 四个结算函数无一处直接写 state['xxx']=，全部经 emit()→apply()。
+      正式测试里夹具预置 `h.state['combat']` 是**测试初始态**，不是结算写入，
+      代码注释已注明。
+
+3.4 【RNG 消耗：先跑再看，结论是无需动 fixture】
+    · 四 fixture 全文 `direct` 字样统计（node 扫描）：
+      room_rules.json direct=0 / room_model.json direct=0 /
+      room_sequences.json direct=0 / room_actions.json direct=0
+    · 以 INTENT 身份出现四个 op 的用例精查：
+      room_rules 0 / room_model 0 / room_sequences 0 / room_actions **1**
+      唯一一例 `A:intent:dice.request#40` 原文：
+      `{"entry":"intent","seat":"p1","msg":{"op":"dice","p":{"expr":"1D6"}},
+        "meta":{"code":"abcd"},"snapshotEvery":20,"logCap":400}`
+      —— 无 direct，走保持不变的「请求掷 1D6」非 direct 分支，randUsed=0。
+    · fixture 里大量出现的 opposed / board / sancheck 字样全部是 ACT 通道
+      action 名（check.opposed / board.self / sheet.sancheck 等），不经 intent
+      的四个新分支，RNG 消耗路径完全不变。
+    · 实证：接线后 927 基线零新红，没有任何 randUsed 断言失配。
+      **未改任何 fixture 期望值，也未改任何用例断言。**
+
+3.5 【可见性不变】见 §6，实测证据 + 测试 ⑩ / ⑪ / ⑫。
+
+
+§4 新增测试覆盖矩阵（test/room_intent_dice_wiring_test.dart，15 组）
+----------------------------------------------------------------
+组  覆盖点                                     关键断言（全部实测通过）
+①  DICE{direct:true} KP + p1 + p2 各一次       state.dice 新增 1 条；total=2
+                                               （伪造 result.value=999 丢弃、
+                                               levelText≠'伪造'、rolls≠[999]）；
+                                               out 单条 t:'dice' 且 to:'*'
+②  1D6 / 2D6 两种骰式权威复算                 结果落在合法区间且 ≠999
+③  非 direct 分支保持原语义                    dice=[]、仅「甲 请求掷 1D6」、
+                                               kind:'dice-request'、to:'*'
+④  SAN 成功分支（currentSAN=60, seed1）        SAN 不变、dice label
+                                               'SAN Check（对 60）'、total=32
+⑤  SAN 失败分支（currentSAN=20）               seed 1/2/7 → SAN 16/18/16，
+                                               日志「失败 支 1D6，理智损失 4/2/4」
+                                               +「SAN Check 失败 -4/-2/-4」；
+                                               seed 8 走成功分支（对照）
+⑥  SAN 疯狂判定接线（seed 3/6，损失 6≥5）      SAN 20→14；日志含
+                                               「INT 检定成功 … 进入疯狂发作」+
+                                               「临时疯狂发作：恐高（持续 3 轮）」；
+                                               人物卡 mental 被写入
+⑦  OPPOSED 分支非 no-op（无武器）              返回定向提示
+                                               「你的角色卡里没有这把武器「手枪」…」
+                                               + p1 evt / p2 skip
+⑧  OPPOSED 完整申请链路                        state.opposed =
+                                               {id:'op1',by:'p1',phase:'await_kp',
+                                               targetId:'m1',weapon:{name:'手枪'}}；
+                                               out 首条 t:'opposed' 定向 host
+⑨  OPPOSED 与 CocRules.opposed 一致            check.opposed 端到端落在
+                                               state.logs[0].opp：
+                                               a.value=32/level=3/困难成功，
+                                               b.value=75/level=0/失败，
+                                               winner='a'、decidedBy='level'；
+                                               用 const CocRules() + Lcg(1)
+                                               独立复算逐字段相等
+⑩  秘密对抗脱敏（补齐 aSeat/bSeat/aBase/bBase）公共 logs 只有
+                                               「KP 秘密进行了一次对抗检定」
+                                               且无 opp 键；明文进 privates，
+                                               out 首条 to:'host' 的
+                                               private(title:'秘密对抗')，
+                                               p1/p2 收 skip，占位 log 才广播 *
+⑪  BOARD 落笔写进权威态                        state.board.strokes 2 笔、
+                                               scene.boards.p1={count:2,thumb:''}、
+                                               boardBySeat['p1'] 同步；
+                                               p1 evt(t:'board',self:true) / p2 skip
+⑫  可见性三闸                                  VIS.KP 的 plan() 为空；
+                                               VIS.SEAT 给 p1 单发 evt、
+                                               p2 收 skip
+⑬  POLICY 静态断言                              kRoomPolicy.length==61；
+                                               四 op 名 containsKey==false；
+                                               四个 ACT 别名仍在
+⑭  reduceRoomState( 静态断言                   源码扫描 calls=2 / decls=1，
+                                               调用点固定两文件
+⑮  接线源码钉子 + 既有分支原文                  四处 out.addAll(...)、
+                                               direct 分流判据、ACT needs() 链、
+                                               CHAT case、'dice-request' 均在
+
+说明：本文件为 Dart-only 行为测试 + 静态源码探针，不参与 oracle 比较、
+不登记白名单、不改 fixture，因此不影响 455/517/121/256 与白名单 2 条口径。
+
+
+§5 验收实测原始输出
+----------------------------------------------------------------
+5.1 基线（动代码前，按派工要求先跑）
+    `flutter test` → 927 组全绿；`dart analyze` → No issues found!；
+    `node tool/qa/qa_p4_gate.js` → 13 条全 OK（P4_GATE IS_PASS: YES）。
+
+5.2 接线后（未加新测试时）
+    `flutter test` → **927 全绿、零新红**；`dart analyze` → 干净。
+
+5.3 最终全量 `flutter test`（新增 15 组后）
+    尾部原文：
+      00:27 +939: .../create_extra_steps_test.dart: 硬约束 3：「去修复 →」跳到正确步骤 …
+      00:29 +940: .../step_background_test.dart: 疯狂表：点「随机」→ 写入「疯狂症状」文本 + 结构化症状
+      00:29 +941: .../step_background_test.dart: 疯狂表第 9 条（恐惧症）点开 100 条子表
+      00:31 +942: All tests passed!
+    → **942 组、0 红**（≥927 达标）。
+
+5.4 `dart analyze`
+    Analyzing dice-realm...
+    No issues found!
+
+5.5 `node tool/qa/qa_p4_gate.js` —— 13 条全 OK（原文）
+    ==== QA P4 GATE · 静态探针 ====
+    [OK]   lib/domain 纯 Dart（零 Flutter/IO/UI）
+           扫描 38 个 .dart，零命中
+    [OK]   reduceRoomState( == 2 调用 + 1 声明
+           调用 2（lib/domain/room_model_client.dart:123, lib/domain/room_model_host_core.dart:157），声明 1
+    [OK]   白名单恰好 2 条（S:q1 9 + S:trim 1），无通配
+           entries=2，S:q1:9 / S:trim:1，kTrimAllowedPath=$.snapshotSeqs[0]
+    [OK]   四 fixture 精确 455/517/121/256（三基线 1093），零 error
+           455+517+121=1093，动作分发 256
+    [OK]   room_sequences.json 121 例全实跑（hostScript 94 / clientScript 27）
+           total=121 host=94 client=27 noOnly=true handlers=true
+    [OK]   每个 fn 有 handler；only 只在 2 个已知 runner
+           handlers=100 missing=无 runners=5 onlyFiles=room_model_core_test.dart,room_save_test.dart
+    [OK]   房间写回路径恰好 1 处 await repo.save(
+           命中 1 处：lib/repo/room_state_writer.dart:1058
+    [OK]   Host.save() 恰好 20 个顶层键
+           解析到 20 个键
+    [OK]   61 个 POLICY action 全部分支零缺口
+           POLICY=61，分支=67，缺失=无
+    [OK]   Q6 休眠项三件保留（EVT.REWIND / state.rewind / rollback.turn）
+           reduce=true state=true action=true
+    [OK]   Client.receive() 返回体没有 gapFrom 键
+           扫描所有 map 字面量键
+    [OK]   三个禁改文件存在，且 dice/rules_coc7 未被 P4 反向依赖
+           pubspec=true dice.room_=false rules.room_=false
+    [OK]   T05 门禁文件齐全（8 个）
+           8 个齐全
+    ==== 合计 13 条，失败 0 条 ====
+    P4_GATE IS_PASS: YES
+
+5.6 四 fixture 规模（node 独立复核）
+    room_rules.json     total=455 cases=455 errors=0
+    room_model.json     total=517 cases=517 errors=0
+    room_sequences.json total=121 cases=121 errors=0
+    room_actions.json   total=256 cases=256 errors=0
+
+5.7 白名单（独立复核）
+    :31   const String kTrimAllowedPath = r'$.snapshotSeqs[0]';
+    :104  caseId: 'S:q1',      → allowedPaths 9 条，无通配
+    :178  caseId: 'S:trim',    → allowedPaths 1 条（常量引用），无通配
+    门禁第 ③ 条实测 entries=2 / S:q1:9 / S:trim:1。
+
+5.8 lib/domain 纯度
+    门禁第 ① 条：扫描 38 个 .dart，零命中（零 package:flutter / dart:io / dart:ui）。
+
+5.9 三个禁改文件（时间戳证明本轮未触碰）
+    pubspec.yaml              2026-11-08 18:55
+    lib/domain/dice.dart      2026-11-08 11:58
+    lib/domain/rules_coc7.dart 2026-11-08 15:15
+    本轮改动文件：
+    lib/domain/room_model_host_intent.dart        2026-11-09 07:52
+    test/room_intent_dice_wiring_test.dart        2026-11-09 08:08
+    门禁第 ⑪ 条亦确认三者存在且未被 P4 反向依赖。
+
+5.10 单跑新测试文件
+    `flutter test test/room_intent_dice_wiring_test.dart`
+    00:00 +15: All tests passed!
+
+
+§6 接线后可见性未被破坏的证据
+----------------------------------------------------------------
+(1) VIS.KP 计划仍为空 / VIS.SEAT 仍单发（取证探针 + 正式测试 ⑫）
+    VIS_KP  planLen=0
+    VIS_SEAT plans=[{"to":"p1","msg":{"k":"evt","seq":4,"t":"private",
+                     "p":{"title":"T","text":"X","at":1}}},
+                    {"to":"p2","msg":{"k":"skip","seq":4}}]
+    → plan() 源码未改；_combatEvts 仍 {combat, actor, turnstate, turn}，
+      不含 dice/board，故 DICE PUBLIC 仍 to:'*'（测试 ①③）。
+
+(2) BOARD 的 SEAT 定向未被 PUBLIC 化（测试 ⑪ / 探针）
+    BOARD out=[{"to":"p1","msg":{"k":"evt","seq":3,"t":"board",
+                "p":{"seat":"p1","self":true,"strokes":[…],"at":…}}},
+               {"to":"p2","msg":{"k":"skip","seq":3}}]
+    → 只有本人收到 evt，其余在线者收 skip 水位。
+
+(3) 秘密对抗仍脱敏（探针 3 补齐 aSeat/bSeat/aBase/bBase 后实测 +
+    正式测试 ⑩）
+    SECRET_OPPOSED logs=[{"seq":4,"seat":"","text":"KP 秘密进行了一次对抗检定",
+                          "at":1700000000000,"kind":"check"}]
+    SECRET_OPPOSED out=[{"to":"host","msg":{"k":"evt","seq":3,"t":"private",
+        "p":{"title":"秘密对抗","kind":"opposed","text":"⚔ 对抗｜甲·侦查
+             （困难成功，掷 32） vs 乙·潜行（失败，掷 75） → …","at":…}}},
+        {"to":"p1","msg":{"k":"skip","seq":3}},
+        {"to":"p2","msg":{"k":"skip","seq":3}},
+        {"to":"*","msg":{"k":"evt","seq":4,"t":"log",
+          "p":{"seat":"","text":"KP 秘密进行了一次对抗检定","at":…,"kind":"check"}}},
+        …]
+    SECRET_OPPOSED privates=[{"seq":3,"text":"⚔ 对抗｜…",
+        "at":…,"kind":"opposed","title":"秘密对抗"}, …]
+    → 明文只进 privates 并定向 host，公共 logs 只有占位文本、无 opp 明细；
+      非 secret 的 check.opposed 才把 verdict 写进 state.logs[0].opp（测试 ⑨）。
+
+(4) OPPOSED 申请事件是 SEAT 定向 KP（测试 ⑧ / 探针）
+    out 首条 {"to":"host", "t":"opposed"} + p1/p2 skip，
+    不广播给玩家，与旧版 :2080 的 emit(..., vis:seat, to:kHostSeat) 一致。
+
+
+§7 全局一致性复核（IS_PASS 判定）
+----------------------------------------------------------------
+· 跨文件 import：新增测试 import 了 dart:io / js_compat /
+  room_model_host_core / room_model_host_intent / room_model_state(show needs) /
+  room_rules(show CocRules) / room_types / flutter_test /
+  support/oracle.dart(Lcg, oracleNowMs) / support/room_fakes.dart，
+  全部有用到、无循环依赖；首轮单跑曾因漏 import `needs` 编译失败，已补
+  `room_model_state.dart show needs` 后重跑 +15 全绿（§5.10）。
+· 接口契约：diceDirect(seat, mem, role, p) / playerSanCheck(seat, mem, p) /
+  opposed(seat, mem, role, p) / boardSelf(seat, p) 四个签名与定义逐一对齐。
+· 数据流：intent 只汇总 List<SendPlan>；结算函数内部 emit→apply；
+  reduce 的 dice / check / board / opposed 分支未被改动。
+· 无重复实现：四个 op 的结算逻辑仍只在各自唯一函数里，未复制到 intent 层。
+· 无 TODO / 占位 / 未实现函数；全部简体中文注释。
+
+IS_PASS: YES
+
+
+§8 遗留
+----------------------------------------------------------------
+· 无功能遗留。三个一次性探针已删除，测试组数 942 = 927 基线 + 15 新增。
+· 未改任何 fixture 期望值、未改任何用例断言、未删任何用例；
+  白名单仍 2 条（S:q1 9 + S:trim 1），四 fixture 仍 455/517/121/256。
+· P5 的 UI 期现在可以基于 intent 的四个分支验证掷骰 / SAN / 对抗 /
+  手绘板链路；建议 P5 侧按 `direct:true` 发起 DICE intent。
+
+
+================================================================
+B1-F1 增量报告 · 暗骰结果泄漏到公共 dice（P2 隐私）
+软件工程师 software-engineer-4（Alex） / 2026-11-09
+team-lead 裁决：方案 ②（diceDirect 侧分流），不动 reduce 的 EVT.DICE
+================================================================
+
+§9 B1-F1 结论与改动清单
+----------------------------------------------------------------
+QA 复验 B1 通过后挖出的 P2 隐私缺口：暗骰（`VIS.SEAT` 的 `EVT.DICE`）
+结果被 `reduceRoomState` 无条件 push 进公共 `state.dice`，并随
+`makeSync` / `syncFor` / `save()` 全量扩散给其他玩家、旁观者与存档，
+与公共日志承诺的「只有他/她与 KP 可见」直接矛盾。B1 接线前该路径
+玩家不可达（`INTENT.DICE{direct}` 是 no-op），B1 后首次可达，属
+「修一个洞点亮一个潜伏缺陷」。
+
+按裁决方案 ② 修复：只在 `diceDirect` 的 secret 分支把两条
+`EVT.DICE`(SEAT) 换成两条 `EVT.PRIVATE`(SEAT)，完整结果只进
+`privateBySeat`（`syncFor` 按 seat 裁剪），`state.dice` 只承载公开骰。
+**未动** reduce 的 DICE 分支 / makeSync / syncFor / save / POLICY。
+
+[改] lib/domain/room_model_actions_combat.dart（生产代码唯一改动点）
+     · :836-908  diceDirect 的 secret 分支（原 :836-868 约 33 行 → 现 73 行）
+     · :909-916  else 公开骰分支：逻辑一字未动，仅补一行说明注释
+[新] test/room_intent_dark_dice_privacy_test.dart（10 组，见 §14）
+[删] test/_b1f1_probe_test.dart / test/_b1f1_qa_probe_test.dart
+     （一次性取证探针，取证后即删；实测值已固化进正式测试断言）
+[未动] room_types.dart（无需新增常量，复用 RoomEvt.private_ / RoomVis.seat）、
+       QA 的 test/qa_p4_b1_*.dart、四 fixture、白名单、三个禁改文件、
+       reduceRoomState 的 DICE 分支、makeSync / syncFor / save。
+
+
+§10 改动 diff（旧 → 新，含精确行号）
+----------------------------------------------------------------
+(1) `lib/domain/room_model_actions_combat.dart:836-908` —— 暗骰分支整体替换
+
+  旧（S4.3 逐字移植旧版 room-model.js:3055-3085）：
+    构造 payload{seat,nickname,secret,expr,rolls,total,level,levelText,
+    detail,label,at} →
+      emit(RoomEvt.dice, clone(payload), vis: RoomVis.seat, to: seat)
+      if (seat != kHostSeat) emit(RoomEvt.dice, clone(payload),
+                                  vis: RoomVis.seat, to: kHostSeat)
+      emit(RoomEvt.log, {text:'$nick 暗骰了一次（结果只有他/她与 KP 可见）',
+                          kind:'dice-dark'}, vis: RoomVis.public)
+
+  新：
+    :837-845  ★ B1-F1 方案 ② 说明注释（旧版 :612-618 / :1290 缺陷根因）
+    :846-852  nick / label / total / levelText / detail 提取
+    :853-860  「完整结果」编码进 text：
+              '暗骰 $expr（$label） = $total（$levelText）　明细：$detail'
+              —— 因 `_accumulatePrivate` 只保留
+              {seq,title,text,at,kind} 五键，完整结果必须落进 text；
+              实时 evt 的 p 另带一份结构化字段供 UI 直接渲染。
+    :861-879  privatePayload{title:'暗骰结果', text, at, kind:'dice-dark',
+              secret:true, seat, nickname, expr, rolls, total, level,
+              levelText, detail, label}
+              保留 secret 标记 = 机械防呆：日后若误改 PUBLIC，
+              emit 的 hasSecret 闸门会立刻 scrub + 记 warning。
+              当前两条都是 VIS.SEAT，不触发 scrub、不产生 warning。
+    :880-889  emit(RoomEvt.private_, clone(payload), vis:seat, to:seat) 本人
+    :890-901  if (seat != kHostSeat)
+                emit(RoomEvt.private_, clone(payload), vis:seat, to:kHostSeat)
+              KP 是权威端，必须看得见才能裁定（与 darkRoll 同款）
+    :902-908  emit(RoomEvt.log, {同一句脱敏文案, kind:'dice-dark'},
+                    vis:public)  —— 公共侧只此一条，不含 total/levelText
+
+  (2) :909-916 公开骰（非 secret）分支：`out.addAll(diceRoll(seat,
+      {expr, label, result: res}))` 一字未动，仍 EVT.DICE + to:'*'
+      + 进 state.dice。仅新增一行「公开骰行为完全不变」说明注释。
+
+  (3) `reduceRoomState` 的 `case RoomEvt.dice:`（room_model_reduce.dart:90）
+      零改动 —— 测试 ⑧ 已用源码钉子断言该分支不含任何 vis 判断，
+      证明方案 ① 未被采用。
+
+  (4) `kRoomPolicy` 零改动（未新增任何常量 / 任何条目）。
+
+
+§11 暗骰分流前后实测对比（同一输入，seed=4）
+----------------------------------------------------------------
+输入：`INTENT.DICE` / p1 / {expr:'1D100', label:'偷袭', base:50,
+      direct:true, secret:true}；房内 p1、p2 在线。
+
+  指标                          分流前（QA 实测）   分流后（本轮探针）
+  state.dice.length                    2                 0
+  syncFor('p2').state.dice.length     2                 0
+  syncFor('ghost').state.dice.length  2                 0
+  save()['dice'].length               2                 0
+  playerViewFromSave(...,'p2')        2                 0
+                     .state.dice.length
+  公共日志文案           '甲 暗骰了一次（结果只有他/她与 KP 可见）'（不变）
+  本人收 evt 类型              dice               private（完整结果）
+  KP 收 evt 类型               dice               private（完整结果）
+  privateBySeat['p1']          无                 1 条（text 含 62/失败/偷袭）
+  privateBySeat['host']        无                 1 条（同上）
+  privateBySeat['p2']          无                 无
+  state.privates（KP 私密栏）  无                 1 条（KP 定向那条）
+  warnings 增量                 0                 0（SEAT 不触发 scrub）
+  log.seq                       5                 5（事件条数不变）
+
+分流后 out 共 6 条 SendPlan（探针原文）：
+  [{"to":"p1","msg":{"k":"evt","seq":3,"t":"private","p":{
+     "title":"暗骰结果",
+     "text":"暗骰 1D100（偷袭） = 62（失败）　明细：个位骰 2；十位骰 6 → 62",
+     "at":1700000000000,"kind":"dice-dark","secret":true,
+     "seat":"p1","nickname":"甲","expr":"1D100","rolls":[],
+     "total":62,"level":"fail","levelText":"失败",
+     "detail":"个位骰 2；十位骰 6 → 62","label":"偷袭"}}},
+   {"to":"p2","msg":{"k":"skip","seq":3}},
+   {"to":"host","msg":{"k":"evt","seq":4,"t":"private","p":{...同左...}}},
+   {"to":"p1","msg":{"k":"skip","seq":4}},
+   {"to":"p2","msg":{"k":"skip","seq":4}},
+   {"to":"*","msg":{"k":"evt","seq":5,"t":"log","p":{
+     "seat":"p1","text":"甲 暗骰了一次（结果只有他/她与 KP 可见）",
+     "at":1700000000000,"kind":"dice-dark"}}}]
+
+公开骰回归（同一房先 1D6 明骰再暗骰）：
+  state.dice 只 1 条 = {seq:3, expr:'1D6', total:2, label:'明骰'}；
+  syncFor('p2') / save()['dice'] 同为该 1 条；暗骰未追加进公共数组。
+  （B1-F1 之前：state.dice 会是 3 条 = 1 明骰 + 2 暗骰。）
+
+
+§12 第 3 处有意偏离旧版行为（无 fixture 覆盖）
+----------------------------------------------------------------
+前两处登记见 `_p4_engineer_fix_f3_f4.txt`：F4 权威复算丢弃客户端自报
+result、F3 快照保留 index0 基线（均为有意偏离 oracle，已裁决）。
+本处为第 3 处，性质不同：**偏离的是旧版行为，但无 fixture 覆盖，
+因此不产生 oracle 比较差异**。
+
+· 旧版行为（room-model.js:612-618、:1290、:3055-3085）
+  `reduceRoomState` 的 `case EVT.DICE` **不判断 evt.vis**，任何
+  `emit(EVT.DICE, payload, VIS.SEAT, …)` 都 push 进公共 `st.dice`；
+  `makeSync` 又写 `dice: clone(st.dice)` 全量下发，`Host.save` 同样
+  把 `dice` 写进存档。于是玩家自己选择隐藏的那颗骰，实际被所有
+  玩家、旁观者与存档读到。旧版公共日志却写着「只有他/她与 KP 可见」，
+  属旧版自身的功能承诺与实现矛盾（缺陷，不是设计取舍）。
+
+· Dart 行为（B1-F1 修复后）
+  暗骰走 `EVT.PRIVATE`(VIS.SEAT)，完整结果只进 `privateBySeat`，
+  `syncFor` 按 seat 裁剪；`state.dice` 只承载公开骰；公共侧只留一句
+  脱敏 LOG（文案沿用旧版）。本人与 KP 各收 1 条完整结果 evt，
+  其余在线者只收 skip 水位。
+
+· 偏离理由
+  UI 与公共日志都承诺「结果只有他/她与 KP 可见」，旧版实际所有人
+  可见且随存档外带，是旧版缺陷。Dart 侧按承诺修正，泄漏面收敛到
+  「本人 + KP」，不改变公开骰语义、不越权、不损坏状态。
+
+· 为何不走白名单
+  白名单机制只管 **fixture 比较中出现的 Dart↔旧版差异**。四 fixture
+  合计 1349 例（455 + 517 + 121 + 256）中 `direct` 字段零命中、
+  `dice.direct` 零命中、无一例覆盖「玩家 secret 暗骰」路径；唯一含
+  「暗骰」字样的 `A:apply:dice.dark#30` 走的是 KP 工具 `darkRoll`
+  （EVT.PRIVATE 定向 host，本轮零改动），不是 `diceDirect`。
+  因此这处修复不产生任何 oracle 比较差异，无需新增白名单条目，
+  白名单仍恰好 2 条（S:q1 9 路径 + S:trim 1 路径）。
+  另：B1-F1 不改变任何 fixture 的期望值，也未改任何用例断言消红。
+
+
+§13 验收实测原始输出
+----------------------------------------------------------------
+13.1 动代码前基线（派工要求先跑）
+     `flutter test` → `00:31 +969: All tests passed!`
+     `dart analyze` → `No issues found!`
+     gate → 13 条全 OK（P4_GATE IS_PASS: YES）
+
+13.2 新增测试单跑
+     `flutter test test/room_intent_dark_dice_privacy_test.dart`
+     → `00:00 +10: All tests passed!`（10 组，见 §14）
+
+13.3 全量 `flutter test`（QA 待同步用例尚在）
+     `00:31 +978 -1: Some tests failed.`
+     Failing tests:
+       test/qa_p4_b1_authority_test.dart:
+       B1-1 diceDirect：玩家不能伪造骰面
+       夹带 secret 会切成暗骰（旧版 :3060 的既有语义，如实记录）
+     → **978 通过 / 1 红，总组数 979**（969 基线 + 10 新增）。
+       唯一红即派工点名、QA 明确「她会自己同步改」的 ★现状断言用例；
+       按边界要求我没有改 QA 文件，清单见 §15。
+
+13.4 全量排除该待同步用例后的硬证据
+     `flutter test --name '^(?!.*夹带 secret 会切成暗骰).*$'`
+     → `00:30 +978: All tests passed!`（**978 全绿、0 红**）
+       证明除该 1 条 QA 现状断言外，全库零回归。
+
+13.5 `dart analyze`
+     Analyzing dice-realm...
+     No issues found!
+
+13.6 `node tool/qa/qa_p4_gate.js` —— 13 条全 OK（原文）
+     [OK]   lib/domain 纯 Dart（零 Flutter/IO/UI）
+            扫描 38 个 .dart，零命中
+     [OK]   reduceRoomState( == 2 调用 + 1 声明
+            调用 2（room_model_client.dart:123, room_model_host_core.dart:157），声明 1
+     [OK]   白名单恰好 2 条（S:q1 9 + S:trim 1），无通配
+            entries=2，S:q1:9 / S:trim:1，kTrimAllowedPath=$.snapshotSeqs[0]
+     [OK]   四 fixture 精确 455/517/121/256（三基线 1093），零 error
+            455+517+121=1093，动作分发 256
+     [OK]   room_sequences.json 121 例全实跑（hostScript 94 / clientScript 27）
+            total=121 host=94 client=27 noOnly=true handlers=true
+     [OK]   每个 fn 有 handler；only 只在 2 个已知 runner
+            handlers=100 missing=无 runners=5 onlyFiles=room_model_core_test.dart,room_save_test.dart
+     [OK]   房间写回路径恰好 1 处 await repo.save(
+            命中 1 处：lib/repo/room_state_writer.dart:1058
+     [OK]   Host.save() 恰好 20 个顶层键（解析到 20 个键）
+     [OK]   61 个 POLICY action 全部分支零缺口
+            POLICY=61，分支=67，缺失=无
+     [OK]   Q6 休眠项三件保留（EVT.REWIND / state.rewind / rollback.turn）
+     [OK]   Client.receive() 返回体没有 gapFrom 键
+     [OK]   三个禁改文件存在，且 dice/rules_coc7 未被 P4 反向依赖
+            pubspec=true dice.room_=false rules.room_=false
+     [OK]   T05 门禁文件齐全（8 个）
+     ==== 合计 13 条，失败 0 条 ====
+     P4_GATE IS_PASS: YES
+
+13.7 逐项对照派工验收
+     · 全量 ≥969 组：979 组（978 通过 + 1 红），排除 QA 待同步用例后
+       978 全绿 0 红 —— 该 1 红是派工明确授权、QA 自行同步的例外，
+       不是回归；QA 改完 4 条断言后自然回到 0 红。
+     · dart analyze → No issues found!  [OK]
+     · gate 13 条全 OK，POLICY=61  [OK]
+     · reduceRoomState( 2 调用 + 1 声明  [OK]
+     · 白名单仍 2 条（S:q1 9 + S:trim 1）  [OK]
+     · 四 fixture 仍 455/517/121/256  [OK]
+     · lib/domain 纯度：38 个 .dart 零命中  [OK]
+     · 三个禁改文件：本轮零触碰（时间戳仍 2026-11-08）  [OK]
+
+13.8 单跑 QA authority 文件的失败点原文
+     `flutter test test/qa_p4_b1_authority_test.dart`
+     `00:00 +7 -1: ... 夹带 secret 会切成暗骰 ... [E]`
+     `  Expected: 'dice'`
+     `  Actual: 'private'`
+     `  package:matcher  expect`
+     `  test\qa_p4_b1_authority_test.dart 316:7  main.<fn>.<fn>`
+     `00:00 +16 -1: Some tests failed.`
+
+
+§14 新增测试覆盖矩阵（test/room_intent_dark_dice_privacy_test.dart，10 组）
+----------------------------------------------------------------
+① 暗骰：state.dice 为空；公共日志只有脱敏行且不含
+        total / levelText / label / expr / detail 明文；warnings 增量 0
+② 暗骰：本人与 KP 各 1 条 EVT.PRIVATE evt（t:'private'、secret:true、
+        total=62、levelText:'失败'、label:'偷袭'、text 含完整结果）；
+        p2 只收 skip；privateBySeat['p1'] / ['host'] 各 1 条含完整结果，
+        ['p2'] / ['ghost'] 无；syncFor('p1'/host) 的 privates 各 1 条，
+        syncFor('p2') 的 privates 为空
+③ 暗骰：syncFor('p2'/'ghost') / save()['dice'] / playerViewFromSave
+        全都读不到暗骰；序列化后不含「偷袭」「暗骰结果」「失败」，
+        但保留公共脱敏行；save()['privateBySeat'] 仍按 seat 保留
+        p1 / host（供续玩），不含 p2
+④ 公开骰回归：to:'*'、t:'dice'、state.dice 1 条（total=2、
+        label='明骰'）、syncFor('p2'/'ghost') 与 save() 都能看见、
+        privateBySeat 无暗骰明细、无公共日志
+⑤ 混合场景：同一房先公开骰再暗骰，state.dice / syncFor / save()
+        只有公开那条；本人与 KP 仍各自拿到暗骰完整结果
+⑥ KP 自己暗骰：只发 1 条 PRIVATE 给 host（不重复），
+        privateBySeat 仅 host，state.dice 为空，公共日志 'KP 暗骰了一次…'
+⑦ 可见性三闸：VIS.KP 的 plan() 空 / VIS.SEAT 单发 evt + 其余 skip /
+        PUBLIC 带 kpOnly 仍被 scrub 且恰好 +1 warning
+⑧ 静态钉子：reduce 的 `case RoomEvt.dice:` 分支不含 vis 判断
+        （证明方案 ① 未被采用），原文 `dice.add(...)` 仍在
+⑨ 静态钉子：diceDirect 的 secret 分支不再出现 RoomEvt.dice、
+        含 RoomEvt.private_ / vis:seat / to:kHostSeat；公开骰
+        `out.addAll(diceRoll(...))` 仍在；整个 combat.dart 只剩
+        1 处 `emit(RoomEvt.dice`（即 diceRoll）
+⑩ 静态钉子：kRoomPolicy.length == 61、四个 op 名不在表；
+        reduceRoomState( 仍 2 调用 + 1 声明且调用点固定
+
+
+§15 会因源码改动而红的 QA 现状断言清单（供 team-lead 转 QA）
+----------------------------------------------------------------
+派工边界明确「不要改 QA 的 test/qa_p4_b1_*.dart」，以下如实列出，
+QA 同步后全量即恢复 0 红。全部集中在同一个 test：
+`test/qa_p4_b1_authority_test.dart:297-347`
+「B1-1 diceDirect：玩家不能伪造骰面 / 夹带 secret 会切成暗骰
+  （旧版 :3060 的既有语义，如实记录）」
+
+★ 派工点名的 4 条「★现状」断言（reason 里带 ★）：
+  1) :322-323 `expect(asList(h.state['dice']).length, 2,
+       reason:'★现状：暗骰结果落进公共 state.dice（本人 + KP 各 1 条）')`
+      → 实际 0；应改为 isEmpty
+  2) :326-327 `expect(otherDice.length, 2,
+       reason:'★现状：暗骰结果出现在**其他玩家**的全量同步里（应改为 isEmpty）')`
+      → 实际 0；应改为 isEmpty
+  3) :330-331 `expect(asList(asMap(h.save())['dice']).length, 2,
+       reason:'★现状：暗骰结果写进了 save()（存档外带）')`
+      → 实际 0；应改为 isEmpty
+  4) :333-334 `expect(asList(asMap(view.toJson()['state'])['dice']).length, 2,
+       reason:'★现状：重连/旁观者拿到的裁剪视图里也有暗骰结果')`
+      → 实际 0；应改为 isEmpty
+
+★ 另有 2 条非「★现状」但同样会失效的断言，请 QA 一并同步：
+  5) :316 `expect(asMap(toSelf.single['msg'])['t'], RoomEvt.dice);`
+      → 实际 'private'（RoomEvt.private_）；应改为断言
+        t == RoomEvt.private_，并可补断言 p['total'] / p['levelText']
+        / p['label'] 为完整结果。这是全量里**首个**失败点
+        （13.8 的报错原文），Dart 单条 expect 失败即中断该 test，
+        所以全量只显示 1 红而非 6 红。
+  6) :328 `expect(jsStr(asMap(otherDice.last)['label']), '偷袭');`
+      → otherDice 为空，`.last` 会抛 StateError；应整条删除，或改为
+        断言 `privateBySeat['p1']` / `['host']` 的 text 含 '偷袭'。
+
+★ 保持成立、无需改动的断言（供 QA 确认）：
+  :315 `expect(toSelf, hasLength(1))` → 仍 1
+  :337 `expect(logRow['kind'], 'dice-dark')` → 仍 'dice-dark'
+  :338 `contains('暗骰')`、:340 `contains('只有他/她与 KP 可见')` → 仍成立
+  :346 `expect(toHost, hasLength(1), reason:'暗骰结果没有发给 KP')` → 仍 1
+  （KP 仍收到完整结果 evt，只是 t 由 dice 变 private。）
+
+★ QA 逐条实际值（一次性探针 `seed=4`、与 QA 用例同参数同夹具）：
+  315_toSelf_len_期望1 = 1
+  316_t_期望_dice = "private"
+  322_state_dice_len_期望2 = 0
+  326_otherDice_len_期望2 = 0
+  328_otherDice_last_label_期望_偷袭 = null（空列表）
+  330_save_dice_len_期望2 = 0
+  333_view_dice_len_期望2 = 0
+  337_log_kind_期望_dice-dark = "dice-dark"
+  338/340_log_text = "甲 暗骰了一次（结果只有他/她与 KP 可见）"
+  346_toHost_len_期望1 = 1，346_toHost_t = "private"
+
+
+§16 B1-F1 全局一致性复核与遗留
+----------------------------------------------------------------
+· 跨文件 import：新增测试 import dart:convert / dart:io / js_compat /
+  room_model_host_core / room_model_host_intent / room_model_save /
+  room_types / flutter_test / support/room_fakes，全部有用到、
+  无循环依赖。`RoomHost.save()` 是 RoomHostSave extension 方法，
+  首版探针误用 `show playerViewFromSave` 把它过滤掉导致编译失败，
+  已改为整文件导入（`test/room_intent_dark_dice_privacy_test.dart`
+  与正式测试均为整文件导入）；正式测试首轮另有 2 处断言写法问题
+  （`asList(null)` 返回 [] 而非 null → 改直接判键；`emit(` 与事件名
+  跨行 → 改按 token 检索），均已修正后 +10 全绿。
+· 接口契约：diceDirect(seat, mem, role, p) 签名未变；公开骰仍调
+  diceRoll(seat, {expr, label, result})；暗骰仍经 emit()→apply()
+  单一写口，未绕开 reduce，未新增 reduceRoomState 调用。
+· 数据流：完整结果两条通道（实时 evt 的 p 结构化字段 /
+  privateBySeat 的 text）互不冲突；`state.privates` 只收 KP 定向那条
+  （reduce 的 PRIVATE 守卫：vis=seat 且 to != host 时不写），
+  不进 makeSync 的 privates 视图（makeSync 用 privateBySeat[seat]）。
+· 可见性三闸：emit 的 hasSecret 闸门、plan 的 VIS.KP/VIS.SEAT 分流、
+  reduce 的 PRIVATE 守卫全部零改动，测试 ⑦ 逐条自证。
+· 无 TODO / 占位 / 未实现函数；全部简体中文注释。
+· 三个一次性探针全部删除，test/ 目录零残留。
+
+IS_PASS: YES（唯一 1 红为派工授权、QA 待同步的 ★现状断言，
+             排除后 978 全绿 0 红；QA 同步后全量自然恢复 0 红）
+================================================================

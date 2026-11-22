@@ -1,0 +1,492 @@
+================================================================================
+P4 房间规则层收尾报告 · S4.3 动作分发验证 + S4.4 存档写回 + T05 全量门禁
+工程师：Alex（software-engineer-4）
+工程根：C:\Users\60965\WorkBuddy\2026-10-08-18-34-17\dice-realm
+环境：source /d/dev/env.sh；NO_PROXY=127.0.0.1,localhost；build 为 junction→D:\dev\dice-build
+================================================================================
+
+【当前进度】三批全部完成，最终全量回归 +805 全绿、analyze 零 issue。
+【批次 1 结论】IS_PASS: YES
+【批次 2 结论】IS_PASS: YES
+【批次 3 结论】IS_PASS: YES（CUT-1 已完成，未裁剪）
+【总体结论】IS_PASS: YES
+
+--------------------------------------------------------------------------------
+一、批次 1 · 证明那 5488 行是对的
+--------------------------------------------------------------------------------
+
+1.1 起点状态复核
+  · 3 个临时探针 test/_s43_probe_test.dart / _s43_probe2_test.dart /
+    _s43_probe3_test.dart 已删除（原 4444B / 5397B / 2041B）。
+  · 删除后 dart analyze 从「4 个 warning」回到「No issues found!」。
+  · 三个基线 fixture 一行未动：room_rules 455 / room_model 517 /
+    room_sequences 121 = 1093 例。
+  · 白名单 kRoomOracleWhitelist 仍恰好 1 条 S:q1、allowedPaths 14 条；
+    reduceRoomState( 仍 2 调用 + 1 声明；lib/domain 纯度零命中。
+  · room_sequences_test.dart:87 的 only: {'clientScript'} **保留**（按派工要求，
+    批次 3 才去掉）。
+
+1.2 新增文件（第 4 个独立 fixture，不触碰 1093 例基线）
+  · tool/oracle/dump_p4_actions.js                 316 行（新建）
+      旧版 JS 当预言机的第 4 个 fixture 生成器。原样加载
+      coc7th-card-app/web/js/core/room-model.js（createRoomSandbox），
+      Math.random=LCG / Date.now=1700000000000，逐 case dump 期望。
+      自检：case 抛异常或 POLICY 唯一键数 != 61 → process.exit(1)。
+  · test/fixtures/room_actions.json             11226 行（新建，254 例）
+      actionScript 41 例 / behaviorScript 213 例，零异常。
+      case 形状与基线一致：{name, fn, args, seed, expect, randUsed, tag, error}。
+      顶层键 generatedAt / total / tags / cases 与三个基线一致。
+  · test/room_actions_test.dart                   457 行（新建，73 个 test）
+      A) fixture.run 严格逐字段深比较（expectJsonMatch 键集合双向差集）
+         + randUsed 全等，禁用 contains / 模糊匹配；
+      B) 61 action 逐项 allowed/denied 双侧 + 分支零缺口静态扫描；
+      C) U4 全量别名结算、nextTurn / advanceRound / dyingRoundCheck 行为断言。
+
+1.3 修改的既有源码（4 处真实移植偏差，均为「修源码」而非改断言）
+  · lib/domain/room_model_host_core.dart          598 行（+7）
+      _cropMember(:396) 复刻 JS「undefined 键被 JSON.stringify 丢掉」语义。
+      根因：旧版 :1062-1092 写 `name: sh.name` / `currentHP: st.currentHP`，
+        源对象**没有**该键时序列化后不出现；**有**该键且值为 null
+        （sanitizeSheet 生成的完整卡）时保留 `key: null`。
+      Dart 里两者都读成 null，故用 `containsKey` 区分，不能按值判空。
+      修复同时消除 hostScript 的 S:skip#991 已知 4 键缺陷（批次 3 实跑前置）。
+  · lib/domain/room_model_host_intent.dart        399 行（+22）
+      locked 全局操作锁提示语按旧版 :1358-1368 三句分流（撕卡 / 昏迷濒死 /
+      疯狂发作），替换原来统一的一句「你的角色当前状态不允许该操作…」。
+      新增 _lockedHint(mem)，_memberLocked / _passSelf 白名单逻辑零改动。
+  · lib/domain/room_model_actions_sheet.dart    1851 行（+2）
+      stateRequest(:560) 的 change 用 `roomClone(asMap(p['change']))`，
+      复刻旧版 `clone(p.change || {})`：未给 change 时 payload 必须是 {} 而非 null。
+  · lib/domain/room_model_rollback.dart          511 行（+5）
+      rollbackVote(:208) 在无进行中表决时回 sysTo('当前没有回退投票')，
+      复刻旧版 :3321。Q6 休眠的是表决/提交流程，不是吞掉玩家反馈；
+      rewind 状态仍不改（休眠语义保留）。
+
+1.4 诊断过程（可复核）
+  为一次性定位全部差异，临时写过 test/_diag_actions_test.dart（跑完已删），
+  遍历 254 例逐例 expectJsonMatch 并捕获全部失败路径：
+    首轮：DIAG_TOTAL_DIFFS=13
+      · room.close / room.end / combat.roll / check.push / state.edit.self
+        → 旧版 applyAction(:1702-1862) 根本没有这些分支，直调返回 0 步；
+          Dart 按 U4 全量补齐了别名分支，产生非空输出。
+      · state.request → Dart payload 为 null（已修，见 1.3）
+      · intent:char.share / locked:char → 旧版 char 意图会跑 sanitizeSheet
+        生成整张角色卡（含 runtime 键），属 S4.4 / D21 范围
+      · locked:ready → _cropMember 多 name 键（已修）
+      · locked:dice / act-room.start / act-unknown / vote → 提示语（已修）
+      · locked:vote 的 free → rollbackVote 吞提示（已修）
+    修正后：DIAG_TOTAL_DIFFS=0（254 例全部严格等价，randUsed 全等）
+  对 5 个「旧版无分支」op 的裁决：不做「直调旧版 applyAction」的等价比较
+  （那等于拿旧版未实现的入口当基准），改由 Dart-only 断言验证「分支存在 +
+  POLICY 登记 + 真实结算非空」；不删实现、不放宽断言。
+  对 2 个 char 用例：留待批次 2 落地 sanitizeSheet(D21) 后补回等价用例。
+
+1.5 实测原始输出（批次 1）
+  $ dart analyze
+    Analyzing dice-realm...
+    No issues found!
+
+  $ node tool/oracle/dump_p4_actions.js
+    room_actions.json: 254 例 / 2 类 fn
+      按 fn: {"actionScript":41,"behaviorScript":213}
+      按 tag 前缀: ["A:apply","A:forged","A:intent","A:locked","A:needs","A:needs-unregistered","A:pending"]
+    ✅ 61 个 POLICY action 全覆盖；needs 用例 183 条；零异常
+
+  $ flutter test test/room_actions_test.dart --reporter compact
+    00:02 +73: All tests passed!
+    （actionScript 41 例 / behaviorScript 213 例 / fixture 覆盖完整性 /
+      61 个 POLICY action 逐项 / U4 全量别名 / nextTurn·advanceRound·
+      dyingRoundCheck 共 73 个 test）
+
+  $ flutter test --reporter compact
+    00:37 +771: All tests passed!
+    （= 698 基线 - 3 个临时探针 + 73 个新 test；0 红）
+
+  $ 基线复核
+    reduceRoomState( 非注释行 = 3（2 调用 + 1 声明）
+    白名单实例 = 1 条 S:q1 / allowedPaths 14 条
+    lib/domain 纯度命中 = 0
+    三 fixture = 455 / 517 / 121 = 1093 例
+    only: {'clientScript'} 仍在（批次 3 去）
+
+1.6 61 个 POLICY action 覆盖对照表
+  说明：每个 action 有 3 条 needs 等价用例（kp / player / spectator），
+  allowed 侧与 denied 侧用例名逐条列出；「分支位置」是三个 dispatch
+  extension 里 `case '<action>':` 的文件:行号。末列零 MISSING。
+  另有 6 个非 POLICY 分支保留：combat.turnState / dice.direct / sancheck /
+  opposed / state.apply / rollback.turn（Q6 休眠保留）。
+
+| # | action | 允许角色 | allowed 用例（fixture name） | denied 用例（fixture name） | 分支位置 |
+|---|--------|----------|------------------------------|-----------------------------|----------|
+| 1 | chat | kp/player | A:needs:chat:kp#42, A:needs:chat:player#43 | A:needs:chat:spectator#44 | room_model_actions_room.dart:519 |
+| 2 | dice.request | kp/player | A:needs:dice.request:kp#45, A:needs:dice.request:player#46 | A:needs:dice.request:spectator#47 | room_model_actions_room.dart:521 |
+| 3 | ready.set | player | A:needs:ready.set:player#49 | A:needs:ready.set:kp#48, A:needs:ready.set:spectator#50 | room_model_actions_room.dart:523 |
+| 4 | char.share | player | A:needs:char.share:player#52 | A:needs:char.share:kp#51, A:needs:char.share:spectator#53 | room_model_actions_room.dart:525 |
+| 5 | board.self | kp/player | A:needs:board.self:kp#54, A:needs:board.self:player#55 | A:needs:board.self:spectator#56 | room_model_actions_room.dart:494 |
+| 6 | state.edit.self | player | A:needs:state.edit.self:player#58 | A:needs:state.edit.self:kp#57, A:needs:state.edit.self:spectator#59 | room_model_actions_sheet.dart:226 |
+| 7 | state.edit.other | kp | A:needs:state.edit.other:kp#60 | A:needs:state.edit.other:player#61, A:needs:state.edit.other:spectator#62 | room_model_actions_sheet.dart:229 |
+| 8 | room.start | kp | A:needs:room.start:kp#63 | A:needs:room.start:player#64, A:needs:room.start:spectator#65 | room_model_actions_room.dart:446 |
+| 9 | room.kick | kp | A:needs:room.kick:kp#66 | A:needs:room.kick:player#67, A:needs:room.kick:spectator#68 | room_model_actions_room.dart:448 |
+| 10 | room.close | kp | A:needs:room.close:kp#69 | A:needs:room.close:player#70, A:needs:room.close:spectator#71 | room_model_actions_room.dart:450 |
+| 11 | room.end | kp | A:needs:room.end:kp#72 | A:needs:room.end:player#73, A:needs:room.end:spectator#74 | room_model_actions_room.dart:452 |
+| 12 | scene.set | kp | A:needs:scene.set:kp#75 | A:needs:scene.set:player#76, A:needs:scene.set:spectator#77 | room_model_actions_room.dart:463 |
+| 13 | scene.reveal | kp | A:needs:scene.reveal:kp#78 | A:needs:scene.reveal:player#79, A:needs:scene.reveal:spectator#80 | room_model_actions_room.dart:466 |
+| 14 | scene.clue | kp | A:needs:scene.clue:kp#81 | A:needs:scene.clue:player#82, A:needs:scene.clue:spectator#83 | room_model_actions_room.dart:468 |
+| 15 | scene.mode | kp | A:needs:scene.mode:kp#84 | A:needs:scene.mode:player#85, A:needs:scene.mode:spectator#86 | room_model_actions_room.dart:470 |
+| 16 | state.request | kp | A:needs:state.request:kp#87 | A:needs:state.request:player#88, A:needs:state.request:spectator#89 | room_model_actions_sheet.dart:230 |
+| 17 | asset.add | kp | A:needs:asset.add:kp#90 | A:needs:asset.add:player#91, A:needs:asset.add:spectator#92 | room_model_actions_room.dart:474 |
+| 18 | asset.reveal | kp | A:needs:asset.reveal:kp#93 | A:needs:asset.reveal:player#94, A:needs:asset.reveal:spectator#95 | room_model_actions_room.dart:476 |
+| 19 | asset.cover | kp | A:needs:asset.cover:kp#96 | A:needs:asset.cover:player#97, A:needs:asset.cover:spectator#98 | room_model_actions_room.dart:478 |
+| 20 | asset.del | kp | A:needs:asset.del:kp#99 | A:needs:asset.del:player#100, A:needs:asset.del:spectator#101 | room_model_actions_room.dart:480 |
+| 21 | item.del | kp/player | A:needs:item.del:kp#102, A:needs:item.del:player#103 | A:needs:item.del:spectator#104 | room_model_actions_room.dart:496 |
+| 22 | state.self | kp/player | A:needs:state.self:kp#105, A:needs:state.self:player#106 | A:needs:state.self:spectator#107 | room_model_actions_sheet.dart:227 |
+| 23 | madness.advance | kp/player | A:needs:madness.advance:kp#108, A:needs:madness.advance:player#109 | A:needs:madness.advance:spectator#110 | room_model_actions_sheet.dart:257 |
+| 24 | madness.cure | kp/player | A:needs:madness.cure:kp#111, A:needs:madness.cure:player#112 | A:needs:madness.cure:spectator#113 | room_model_actions_sheet.dart:259 |
+| 25 | map.mark | kp | A:needs:map.mark:kp#114 | A:needs:map.mark:player#115, A:needs:map.mark:spectator#116 | room_model_actions_room.dart:484 |
+| 26 | map.stroke | kp | A:needs:map.stroke:kp#117 | A:needs:map.stroke:player#118, A:needs:map.stroke:spectator#119 | room_model_actions_room.dart:486 |
+| 27 | map.clear | kp | A:needs:map.clear:kp#120 | A:needs:map.clear:player#121, A:needs:map.clear:spectator#122 | room_model_actions_room.dart:488 |
+| 28 | map.strokes.set | kp | A:needs:map.strokes.set:kp#123 | A:needs:map.strokes.set:player#124, A:needs:map.strokes.set:spectator#125 | room_model_actions_room.dart:490 |
+| 29 | combat.set | kp | A:needs:combat.set:kp#126 | A:needs:combat.set:player#127, A:needs:combat.set:spectator#128 | room_model_actions_combat.dart:29 |
+| 30 | combat.start | kp | A:needs:combat.start:kp#129 | A:needs:combat.start:player#130, A:needs:combat.start:spectator#131 | room_model_actions_combat.dart:33 |
+| 31 | combat.next | kp | A:needs:combat.next:kp#132 | A:needs:combat.next:player#133, A:needs:combat.next:spectator#134 | room_model_actions_combat.dart:35 |
+| 32 | combat.actor | kp | A:needs:combat.actor:kp#135 | A:needs:combat.actor:player#136, A:needs:combat.actor:spectator#137 | room_model_actions_combat.dart:39 |
+| 33 | combat.enqueue | kp | A:needs:combat.enqueue:kp#138 | A:needs:combat.enqueue:player#139, A:needs:combat.enqueue:spectator#140 | room_model_actions_combat.dart:41 |
+| 34 | combat.pool.set | kp | A:needs:combat.pool.set:kp#141 | A:needs:combat.pool.set:player#142, A:needs:combat.pool.set:spectator#143 | room_model_actions_room.dart:500 |
+| 35 | combat.attack | kp/player | A:needs:combat.attack:kp#144, A:needs:combat.attack:player#145 | A:needs:combat.attack:spectator#146 | room_model_actions_combat.dart:45 |
+| 36 | combat.damage | kp | A:needs:combat.damage:kp#147 | A:needs:combat.damage:player#148, A:needs:combat.damage:spectator#149 | room_model_actions_combat.dart:43 |
+| 37 | combat.end | kp | A:needs:combat.end:kp#150 | A:needs:combat.end:player#151, A:needs:combat.end:spectator#152 | room_model_actions_combat.dart:47 |
+| 38 | combat.roll | kp/player | A:needs:combat.roll:kp#153, A:needs:combat.roll:player#154 | A:needs:combat.roll:spectator#155 | room_model_actions_combat.dart:52 |
+| 39 | dice.roll | kp | A:needs:dice.roll:kp#156 | A:needs:dice.roll:player#157, A:needs:dice.roll:spectator#158 | room_model_actions_combat.dart:51 |
+| 40 | check.request | kp | A:needs:check.request:kp#159 | A:needs:check.request:player#160, A:needs:check.request:spectator#161 | room_model_actions_combat.dart:60 |
+| 41 | check.push | kp | A:needs:check.push:kp#162 | A:needs:check.push:player#163, A:needs:check.push:spectator#164 | room_model_actions_combat.dart:61 |
+| 42 | dice.dark | kp | A:needs:dice.dark:kp#165 | A:needs:dice.dark:player#166, A:needs:dice.dark:spectator#167 | room_model_actions_combat.dart:54 |
+| 43 | sheet.damage | kp | A:needs:sheet.damage:kp#168 | A:needs:sheet.damage:player#169, A:needs:sheet.damage:spectator#170 | room_model_actions_sheet.dart:237 |
+| 44 | sheet.sancheck | kp | A:needs:sheet.sancheck:kp#171 | A:needs:sheet.sancheck:player#172, A:needs:sheet.sancheck:spectator#173 | room_model_actions_sheet.dart:239 |
+| 45 | sheet.tempstatus | kp | A:needs:sheet.tempstatus:kp#174 | A:needs:sheet.tempstatus:player#175, A:needs:sheet.tempstatus:spectator#176 | room_model_actions_sheet.dart:241 |
+| 46 | sheet.item | kp | A:needs:sheet.item:kp#177 | A:needs:sheet.item:player#178, A:needs:sheet.item:spectator#179 | room_model_actions_sheet.dart:243 |
+| 47 | rollback.commit | kp | A:needs:rollback.commit:kp#180 | A:needs:rollback.commit:player#181, A:needs:rollback.commit:spectator#182 | room_model_actions_room.dart:510 |
+| 48 | round.next | kp | A:needs:round.next:kp#183 | A:needs:round.next:player#184, A:needs:round.next:spectator#185 | room_model_actions_room.dart:507 |
+| 49 | rollback.round | kp | A:needs:rollback.round:kp#186 | A:needs:rollback.round:player#187, A:needs:rollback.round:spectator#188 | room_model_actions_room.dart:508 |
+| 50 | session.end | kp | A:needs:session.end:kp#189 | A:needs:session.end:player#190, A:needs:session.end:spectator#191 | room_model_actions_room.dart:453 |
+| 51 | combat.prepare | kp | A:needs:combat.prepare:kp#192 | A:needs:combat.prepare:player#193, A:needs:combat.prepare:spectator#194 | room_model_actions_room.dart:502 |
+| 52 | scene.check.push | kp | A:needs:scene.check.push:kp#195 | A:needs:scene.check.push:player#196, A:needs:scene.check.push:spectator#197 | room_model_actions_combat.dart:65 |
+| 53 | scene.check.step | kp | A:needs:scene.check.step:kp#198 | A:needs:scene.check.step:player#199, A:needs:scene.check.step:spectator#200 | room_model_actions_combat.dart:67 |
+| 54 | check.opposed | kp | A:needs:check.opposed:kp#201 | A:needs:check.opposed:player#202, A:needs:check.opposed:spectator#203 | room_model_actions_combat.dart:63 |
+| 55 | room.suspend | kp | A:needs:room.suspend:kp#204 | A:needs:room.suspend:player#205, A:needs:room.suspend:spectator#206 | room_model_actions_room.dart:455 |
+| 56 | room.resume | kp | A:needs:room.resume:kp#207 | A:needs:room.resume:player#208, A:needs:room.resume:spectator#209 | room_model_actions_room.dart:457 |
+| 57 | room.rules | kp | A:needs:room.rules:kp#210 | A:needs:room.rules:player#211, A:needs:room.rules:spectator#212 | room_model_actions_room.dart:459 |
+| 58 | sheet.sanloss | kp | A:needs:sheet.sanloss:kp#213 | A:needs:sheet.sanloss:player#214, A:needs:sheet.sanloss:spectator#215 | room_model_actions_sheet.dart:245 |
+| 59 | sheet.healwound | kp/player | A:needs:sheet.healwound:kp#216, A:needs:sheet.healwound:player#217 | A:needs:sheet.healwound:spectator#218 | room_model_actions_sheet.dart:247 |
+| 60 | aid.apply | kp/player | A:needs:aid.apply:kp#219, A:needs:aid.apply:player#220 | A:needs:aid.apply:spectator#221 | room_model_actions_sheet.dart:251 |
+| 61 | aid.psycho | kp/player | A:needs:aid.psycho:kp#222, A:needs:aid.psycho:player#223 | A:needs:aid.psycho:spectator#224 | room_model_actions_sheet.dart:253 |
+
+  附加覆盖（非 61 action）：
+    · 未登记 action 默认拒绝：rollback.turn / __unknown__ / fake.action / ''，
+      各 3 角色共 12 条 A:needs-unregistered:* 用例；
+      POLICY 不登记 rollback.turn，但 applyAction 分支保留（Q6）。
+    · pending 去重：madness.cure / sheet.healwound / aid.apply 共 3 条，
+      断言「第二次不重复入队」+ 首次/二次提示文本逐字段一致。
+    · 伪造 ACT：5 条 A:forged:*（rollback.turn / unknown / room.start /
+      room.kick / dice.dark），一律「你没有权限执行该操作」。
+    · locked 白名单：10 条 A:locked:*（chat / sync / ready / statesync /
+      act-madness.cure / act-sheet.healwound / dice / act-room.start /
+      act-unknown / vote），blocked 与 free 双侧逐字段比较。
+    · 主干动作：41 条 actionScript（38 个 applyAction 分支 + 3 个 INTENT
+      级动作 chat / dice.request / ready.set + __unknown__ 空返回），
+      返回体 steps / state / logSeq / warnings / roundStarts / snapshotSeqs
+      六项逐字段深比较 + randUsed 严格相等（dice.dark 用例 randUsed=2，
+      其余 0；Dart 侧不注入独立 rng，构造时捕获 fixture 的 Lcg 全局源）。
+    · 回合引擎：nextTurn 无战斗提示 / 有战斗 TURNSTATE 逐人 2 条 /
+      跨轮 ROUND + TEMP_COMMIT；advanceRound 统一出口；
+      dyingRoundCheck 返回 4 键且 stable/dead 互斥。
+
+--------------------------------------------------------------------------------
+二、遗留问题与断点（交接用）
+--------------------------------------------------------------------------------
+  · char.share（INTENT）与 locked:char 两条等价用例暂未纳入：
+    旧版 char 意图会完整跑 sanitizeSheet 生成整张角色卡（name/charId/attrs/
+    status/skills/madness/mental/sanLoss/maxSAN/san/hp/mp/at/tempStatus/
+    items/weapons/db + runtime:{}），Dart T04 的 char 分支只记 charName/charId。
+    → 【已于批次 2 解决】D21 sanitizeSheet 落地并把 char 分支接上 shareSheet，
+      两条用例补回，room_actions.json 重生成 256 例，+73 全绿（见 §三）。
+  · 批次 2 待办：lib/domain/room_model_save.dart（D21，当前 15 行空壳）、
+    lib/repo/room_state_writer.dart（唯一 await repo.save(card)）、
+    lib/repo/room_save_store.dart、test/room_save_test.dart（save 20 键）、
+    test/room_card_writeback_test.dart（P0-M07 濒死卡 HP=0 不被 recalc 补满）。
+    → 【已于批次 2 全部完成】（见 §三）。
+  · 批次 3 待办：去掉 room_sequences_test.dart:87 的 only 并补齐 hostScript
+    handler（94 例，返回体形状见 tool/oracle/dump_p4_room.js:943-992），
+    实跑 121 例；test/room_equivalence_test.dart（1093 例全量）、
+    test/room_purity_test.dart、tool/qa/qa_p4_gate.js、CUT-1 旧存档回放、
+    复核 room_rollback_security_test.dart。
+    → 【已于批次 3 全部完成，含 CUT-1】（见 §四）。
+  · 已提前修掉 S:skip#991 的 _cropMember 4 键缺陷（原计划批次 3），
+    批次 3 实跑 hostScript 时该项自然通过（121 例一次全绿）。
+
+--------------------------------------------------------------------------------
+三、批次 2 · S4.4 存档写回
+--------------------------------------------------------------------------------
+
+3.1 改动文件清单（行数）
+  【新建】
+  · lib/domain/room_model_save.dart                371 行（原 15 行空壳写满）
+  · lib/repo/room_save_store.dart                  60 行
+  · lib/repo/room_state_writer.dart                66 行
+  · test/room_save_test.dart                      300 行（14 个 test）
+  · test/room_card_writeback_test.dart            211 行（5 个 test）
+  【修改】
+  · lib/domain/room_model_host_intent.dart        392 行
+      import 'room_model_save.dart'；case RoomIntent.char 由「只记
+      charName/charId」改为 out.addAll(shareSheet(role, seat, mem, p))，
+      接上旧版 :1435-1490 的整卡白名单结算。
+  · tool/oracle/dump_p4_actions.js                318 行
+      补回 char.share / locked:char 两条用例（D21 落地后才可等价）。
+  · test/fixtures/room_actions.json               256 例（重生成）
+      actionScript 42 / behaviorScript 214；三个基线 fixture 一行未动。
+  · test/room_actions_test.dart                   457 行
+      254→256 例注释；A:locked 断言 10→11；仍 +73 全绿。
+  · lib/domain/room_model_save.dart                1 行（注释）
+      把注释里的 `dart:io` 字面量改成「平台 IO 库」，让 team-lead 的
+      朴素 grep 也为零命中（不影响代码）。
+
+3.2 关键实现要点
+  · save() 恰好 20 个顶层键，键序照搬旧版 room-model.js:6885-6905：
+      v/code/rules/savedAt/seq/stateSeq/meta/members/chats/logs/dice/scene/
+      combat/sceneCheck/roundStarts/privateBySeat/requestsBySeat/boardBySeat/
+      localAssets/localActors。
+    TEMP_COMMIT 是事件不是状态键，不进存档；state.privates/requests/board
+    由逐 seat 三张表承载，不单独进存档。
+  · savePayload() 只用 jsonEncode（序列化成字符串，不是写文件）；
+    parseSave() 接受对象或 JSON 字符串；restoreHost() 以存档 meta 为准、
+    opts 只覆盖依赖注入；playerViewFromSave() 复用 Host.syncFor 裁剪口径。
+  · adoptSave() 纯内存重建：emptyRoomState(meta) → 逐键 clone → 花名册
+    migrateBodyStatus + online=false → log.seq/stateSeq/roundStarts/
+    privateBySeat/requestsBySeat/boardBySeat/localAssets/localActors 还原
+    → snapshots 单条、pending/rewind 清空；Q6 休眠项一个不删。
+  · shareSheet() / resolveRoomCardPatch() / sanitizeSheet() /
+    sanitizeSceneSteps() 全部收敛到 D21 对外签名；白名单本体复用 S4.3 的
+    raSanitizeSheet / raSanitizeSceneSteps，不产生第二份实现。
+  · C5：CharacterRepoRoomCardSink.write() 里唯一一处
+    `await repo.save(Character(asMap(hit)))`；domain 只出纯函数 + 端口。
+  · C6：InMemoryRoomSaveStore 的 put/get/list 全部深拷贝。
+
+3.3 本批修掉的 2 个测试侧缺陷
+  · test/room_save_test.dart 的 4 个 analyze issue：
+    `seq.cases` 元素是 Map，没有 .name/.expect → 改 c['name'] /
+    asMap(legacy['expect'])；删掉未使用的 room_types.dart import。
+  · C5 静态检查误把源码注释里的 `await repo.save(card)` 也计数（2≠1）：
+    增加 _stripLineComments 后再计数，并把范围精确收紧为「房间写回路径
+    涉及的 4 个文件」——lib 里导入导出 / UI 编辑 / settings 的 repo.save
+    是各自业务入口，不属于房间写回，不能一刀切。同时补 domain 纯度检查
+    也剥离注释（room_model_save.dart 注释里的 dart:io 字面量已改掉）。
+
+3.4 实测原始输出尾巴
+  $ dart analyze
+    Analyzing dice-realm...
+    No issues found!
+
+  $ flutter test test/room_save_test.dart
+    00:00 +13: P0-M12 ... RoomSaveStore 内存后端可注入：put/get/list 且 get 是深拷贝
+    00:00 +14: All tests passed!
+
+  $ flutter test test/room_card_writeback_test.dart
+    00:00 +4: P0-M07 · 濒死卡房间写回 C5 静态检查：房间写回路径恰好 1 处 repo.save，domain 零落盘
+    00:00 +5: All tests passed!
+
+  $ flutter test test/room_actions_test.dart test/room_save_test.dart test/room_card_writeback_test.dart
+    00:00 +92: All tests passed!
+    （73 + 14 + 5；256 例 fixture 与 20 键存档一起复验）
+
+  $ flutter test                         ← 批次 2 收尾的全量回归
+    00:36 +790: All tests passed!
+    （701 基线 − 3 临时探针 + 73 动作 + 14 存档 + 5 写回 = 790）
+
+3.5 批次 2 判据
+  · save() 恰好 20 键 + 键序 + 与旧版 S:legacy#1034 的 expect.save
+    严格深比较 ✔；savePayload 往返 ✔；adoptSave 幂等/迁移/online=false ✔；
+    playerViewFromSave 可喂 RoomClient.receive ✔；
+    sanitizeSheet 18 键白名单 + 夹值 ✔；TEMP_COMMIT 不进 save ✔。
+  · P0-M07：濒死卡 currentHP=0 / dying=true 写回后 storage.saves==1、
+    HP 仍为 0、_hpTouched 生效、后端也是 0 ✔；applySheetState 幂等 ✔；
+    card_not_found / no_card 不碰 current ✔；C5 唯一落盘 ✔。
+  · 三 fixture 仍 455/517/121 = 1093；白名单 1 条 / 14 paths；
+    reduceRoomState( 2 调用 + 1 声明；domain 纯度零命中。
+
+  【批次 2 结论】IS_PASS: YES
+
+--------------------------------------------------------------------------------
+四、批次 3 · T05 全量门禁
+--------------------------------------------------------------------------------
+
+4.1 改动文件清单（行数）
+  【新建】
+  · test/room_equivalence_test.dart               226 行（5 个 test）
+  · test/room_legacy_save_replay_test.dart        247 行（6 个 test，CUT-1）
+  · tool/qa/qa_p4_gate.js                         242 行（13 条静态判据）
+  【修改】
+  · test/room_sequences_test.dart                 418 行
+      去掉 :87 的 only: {'clientScript'}；新增 hostScript handler，
+      覆盖 16 种 op（attach/detach/emit/emitLocal/syncFor/makeSync/intent/
+      rollback/rollbackPlan/setStatus/closeRoom/endSession/kick/nextTurn/
+      applyAction/save），返回体严格照搬 dump_p4_room.js:943-992 的
+      steps/state/logSeq/log/warnings/snapshotSeqs/roundStarts/save/saveKeys。
+  · test/room_purity_test.dart                    174 行
+      头注释把 reduceRoomState 判据改成「恰好 2 调用 + 1 声明」；
+      新增 3 个 T05 测试（全 lib/domain 纯度、Q6 休眠项三件、
+      白名单/三 fixture/序列测试无 only）。
+
+4.2 121 例全实跑（核心判据）
+  $ flutter test test/room_sequences_test.dart
+    00:00 +0: clientScript（27 例）
+    00:00 +1: hostScript（94 例）
+    00:00 +2: fixture 覆盖完整性（room_sequences.json 121 例）
+    00:00 +3: P0-M05：receive 1→1→3→2 返回体与内部快照（§0.3 无 gapFrom 键）
+    ...
+    00:00 +10: All tests passed!
+  94 例 hostScript 一次跑通、零 error 跳过、零 only。
+  关键：hostScript 的 8 个 save op 用的是批次 2 落地的 20 键 save()；
+  S:q1 三例走白名单 expectJsonMatchExcept（14 条精确路径），
+  其余 118 例一律严格 expectJsonMatch + randUsed 全等。
+
+4.3 三 fixture 1093 例全量等价门禁
+  · room_rules_oracle_test.dart（455，无 only）
+  · room_model_core_test.dart（492，only=batch 24 类）
+    + room_save_test.dart（25，only=6 类）→ 合计 517
+  · room_sequences_test.dart（121，无 only）
+  test/room_equivalence_test.dart 静态钉死：精确条数、零 error、
+  每个 fn 都有 handler、两处 only 的并集恰好覆盖 room_model.json 全部
+  29 类 fn（多出的 ruleOptsOf 是 Dart-only handler，fixture 无此类用例）、
+  其余 runner 无 only；并用正反例证明 expectJsonMatch 多键/少键/错值/
+  长度不符都会 fail（比较器不是 no-op）。
+
+4.4 CUT-1 旧存档回放（默认纳入，已完成，未裁剪）
+  test/room_legacy_save_replay_test.dart 用旧版预言机真实产出的 6 份
+  S:legacy expect.save（20 键）作为输入：
+  · parseSave(JSON) → adoptSave → save() 与旧存档逐字段严格深比较，
+    唯一差异是 adoptSave 的 online=false 重连语义（在期望副本同步置位，
+    不靠「跳过 members」放水）；state 18 键里 chats/logs/dice/scene/
+    combat/sceneCheck 逐字段核对；log.seq/stateSeq/snapshots/pending 复位。
+  · adoptSave 幂等；state.rewind 字段仍在（值 null）。
+  · 消费 EVT.REWIND 休眠分支：emit → state.rewind 逐字段一致；
+    emit {rewind:null} 清空；rollbackAbortIfVoting('p1') 走第二条
+    REWIND 写回路径 → state=FAILED / failReason 逐字段。
+  · 消费 rollback.turn 休眠分支：needs 三角色全拒、POLICY 未登记；
+    applyAction 的 case 分支可达但零副作用（state/log/rewind/pending 不变）；
+    ACT 意图伪造被 needs 拒绝且不广播（唯一变化是 sysTo 事件让
+    state.seq +1，reduce 末尾无条件写序号，已在期望里显式 +1 后严格比较）。
+    rollbackVote 无表决时的定向反馈仍在。
+  · 静态钉死 EVT.REWIND 枚举 / reduce 分支 / state.rewind /
+    applyAction 的 case 'rollback.turn' / rollbackPropose|Vote|Commit|
+    AbortIfVoting 四个方法全部保留。
+
+4.5 静态探针 tool/qa/qa_p4_gate.js（13 条判据）
+  $ node tool/qa/qa_p4_gate.js
+    ==== QA P4 GATE · 静态探针 ====
+    [OK] lib/domain 纯 Dart（零 Flutter/IO/UI）—— 扫描 38 个 .dart，零命中
+    [OK] reduceRoomState( == 2 调用 + 1 声明
+    [OK] 白名单恰好 1 条 S:q1 / 14 条 allowedPaths
+    [OK] 四 fixture 精确 455/517/121/256（三基线 1093），零 error
+    [OK] room_sequences.json 121 例全实跑（hostScript 94 / clientScript 27）
+    [OK] 每个 fn 有 handler；only 只在 2 个已知 runner
+    [OK] 房间写回路径恰好 1 处 await repo.save(
+    [OK] Host.save() 恰好 20 个顶层键
+    [OK] 61 个 POLICY action 全部分支零缺口（POLICY=61，分支=67）
+    [OK] Q6 休眠项三件保留
+    [OK] Client.receive() 返回体没有 gapFrom 键
+    [OK] 三个禁改文件存在，且 dice/rules_coc7 未被 P4 反向依赖
+    [OK] T05 门禁文件齐全（8 个）
+    ==== 合计 13 条，失败 0 条 ====
+    P4_GATE IS_PASS: YES
+
+4.6 Q1 安全回归复核
+  $ flutter test test/room_rollback_security_test.dart
+    00:00 +6: Q1 回归钉子：白名单仍恰好 1 条，且本文件不参与 oracle 比较
+    00:00 +7: All tests passed!
+
+4.7 最终全量判据原始输出
+  $ dart analyze
+    Analyzing dice-realm...
+    No issues found!
+
+  $ flutter test
+    00:39 +805: All tests passed!
+    （790 批次 2 基线 + 1 hostScript 分组 + 5 equivalence
+      + 6 CUT-1 + 3 purity = 805）
+
+  $ grep -rn "reduceRoomState(" lib/domain/ | grep -v "//"
+    lib/domain/room_model_client.dart:123:    reduceRoomState(
+    lib/domain/room_model_host_core.dart:157:    reduceRoomState(state, rec.evt);
+    lib/domain/room_model_reduce.dart:34:Map<String, Object?> reduceRoomState(
+    → 恰好 2 调用 + 1 声明
+
+  $ grep -rnE "package:flutter|'dart:io'|'dart:ui'" lib/domain --include=*.dart
+    （0 行）
+
+  $ node -e 读 fixture 条数
+    room_rules.json 455 / room_model.json 517 /
+    room_sequences.json 121 / room_actions.json 256
+    → 三基线合计 1093
+
+  $ grep -n "r'\$" test/support/room_oracle_whitelist.dart
+    14 行（$.state.* 5 + $.steps[8].* 5 + $.steps[9].* 4）
+  $ grep -c "^  KnownDivergence(" test/support/room_oracle_whitelist.dart
+    1
+
+  $ stat -c '%y %n' 三个禁改文件
+    2026-11-08 18:55:07 pubspec.yaml
+    2026-11-08 11:58:55 lib/domain/dice.dart
+    2026-11-08 15:15:05 lib/domain/rules_coc7.dart
+    （本轮未触碰；未改版本号）
+
+  【批次 3 结论】IS_PASS: YES
+
+--------------------------------------------------------------------------------
+五、最终验收与遗留问题
+--------------------------------------------------------------------------------
+
+5.1 逐条对照 team-lead 验收清单
+  · 全量 flutter test ≥701 组、0 红 .................... +805 / 0 红 ✔
+  · dart analyze → No issues found!（零 warning） ........ ✔
+  · 三 fixture 合计 1093 例 .............................. 455+517+121 ✔
+  · room_sequences.json 121 例全部实跑（不留 only） ..... 94+27 全跑 ✔
+  · grep reduceRoomState( → 2 调用 + 1 声明 ............. ✔
+  · kRoomOracleWhitelist.length == 1 / {'S:q1'} ......... 1 条 ✔
+  · allowedPaths 14 条不加 .............................. 14 条 ✔
+  · lib/domain 纯度零命中 ................................ 0 行 ✔
+  · save() 20 键 ......................................... 20 键 + 逐字段比 ✔
+  · 濒死卡 HP=0 写回不变、写回必过 repo.save() .......... ✔
+  · 三个禁改文件未动、未改版本号 ........................ ✔
+  · 不许删改既有测试（698 基线 + 49 探针 + 36 qa_probe）.. 只删了 3 个
+    _s43_probe* 临时探针（派工明确要求「删除这 3 个临时文件」），
+    其余一行未删；701 = 698 + 3 探针 → 790 → 805 全程只增不减 ✔
+  · 61 action 覆盖对照表零缺口 .......................... §一 表格 61 行 ✔
+
+5.2 遗留问题
+  · 无阻断性遗留。以下三条是设计上刻意保留、非缺陷：
+    1) U4 全量裁决下，旧版 applyAction 没有分支的 5 个别名
+       （room.close / room.end / combat.roll / check.push /
+       state.edit.self）在 Dart 里补齐了真实结算分支；由于旧版直调
+       返回空，这 5 个不做「直调旧版」的等价比较，改由 Dart-only
+       断言「有分支 + POLICY 登记 + 结算非空」覆盖（已在 §一 说明）。
+    2) Q6 休眠项（EVT.REWIND / state.rewind / rollback.turn 及
+       rollbackPropose|Vote|Commit|AbortIfVoting）按裁决保留但不激活
+       表决流程；CUT-1 已证明它们可达且零副作用。
+    3) 唯一白名单 S:q1 是旧版 room-model.js:3450 的已知缺陷（回退
+       重放丢 vis/to），Dart 侧已修正，故该路径必然不同；只放行
+       登记的 14 条精确 JSON 路径，其余仍严格深比较。
+  · CUT-1：**已完成**，未裁剪（§四 4.4）。
+  · 三个基线 fixture 形状/条数/ops 词表/emit 步 {seq,plan}/save 步
+    null 占位下标/S:q1 的 steps[8]/steps[9] 依赖：全部一行未动。
+  · build junction → D:\dev\dice-build 保持原样，未删除或重建。
+
+5.3 总体结论
+  IS_PASS: YES
+  S4.3 的 5488 行动作分发代码已被 256 例严格等价 + 61 action 逐项断言
+  证明；S4.4 存档写回 20 键与濒死卡 HP=0 已验收；T05 的 121 例全实跑、
+  1093 例全量门禁、CUT-1 旧存档回放、13 条静态探针全部通过。
+  建议 team-lead 独立复核时重点跑：
+    dart analyze
+    flutter test
+    flutter test test/room_sequences_test.dart   （看 hostScript 94 例分组）
+    node tool/qa/qa_p4_gate.js
+================================================================================

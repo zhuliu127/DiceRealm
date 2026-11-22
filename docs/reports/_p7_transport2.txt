@@ -1,0 +1,498 @@
+================================================================
+P7 · 第二批（真机反馈修复）：7 项真机实测失败一次性修复
+                            + 代码/自动化验证 + 重新出包
+================================================================
+日期：2026-11-10
+工程：C:/Users/60965/WorkBuddy/2026-10-08-18-34-17/dice-realm
+执行：software-engineer (Alex / 工程师寇豆码)
+全量：1555 组 0 红（基线 1499 + 本批 56 组，只增不减）
+      默认并发 00:53 +1555 / 串行 03:38 +1555 / 反向恢复后分片 +34
+analyze：No issues found!（全项目）
+门禁：P4 13/13 OK、P5 UI 14/14 OK（jsStr( 仍 14 处，零新增）
+APK：60,635,735 字节 / 57.8MB / SHA256
+      c17cf06b01c25d1540a4a28db3b9948692603dc9c76f7249e0d4ec07da0b622f
+      三 ABI 均带 libapp.so（arm64-v8a 8,323,976 / armeabi-v7a 9,273,928 /
+      x86_64 8,586,120）；出包后 `enable-native-assets: true` 已确认恢复
+结论：IS_PASS: YES
+★ 本批**未跑 adb / 模拟器 / 真机**（用户要求全部做完再统一测）；
+  真机待测项由 QA 补清单，本批一个字未改清单。但已按要求重新出包。
+
+---------------------------------------------------------------
+一、这轮做了什么（A / B / C / D / E / F / G 七件一次做完）
+---------------------------------------------------------------
+A ·【P0 真机 bug】压缩后属性必须是「规则合法」的 5 倍数
+  `lib/domain/ai_caps.dart` 拆成两条路径：
+    · 生产 [_applyAttrCapGrid]：在 genStep=5 的倍数网格上等比压缩，
+      余数按 5 步长补齐，超限从最高项 -5 扣，相邻倒置交换回来。
+    · 旧版逐字等价 [applyAttrCapLegacy]：专供 P3/P4 预言机比对，
+      开关 `legacyAttrCapForOracle`（默认 false = 生产走新算法）。
+  六条不变式写进源码注释并逐条钉死（见第二节 I1–I6）。
+  `lib/domain/preset_gen.dart#attrsFromAi` 增加 5 倍数闸门（选「拒收走
+  重掷」，理由见第二节决策 2）；三条生成路径（AI 卡 / 5 张随机卡 /
+  彩蛋卡）同源，全部覆盖。
+  `test/p7_attr_cap_test.dart`：19 组纯函数 / 路径回归。
+
+B · AI 车卡页（随机角色入口同页）直接填玩家自定义房规数值
+  `lib/ui/ai_create_page.dart` 新增四个可填项：属性总和上限、含幸运开关、
+  每项本职技能上限、每项兴趣技能上限；0/留空 = 不限。
+  三档快捷保留作一键预设；填了自定义值显示「自定义」Chip 且三档全不
+  选中（绝不把自定义伪装成「标准」）；界面常显当前生效值 `caps.text`。
+  新增纯函数 `parseAiCapInput`（负数 / 非数字 / 超范围拒收 + 可见提示），
+  `digitsOnly` + 4 位长度格式化器做前置过滤，两道闸门不写第二套判据。
+  ★ 平台边界：`AiCapsSavePort.save()` 同步 void，生产实现
+    `SettingsRepoCapsSavePort` 用 `unawaited(repo.save())` 发起即返回；
+    widget 里零 await / 零 Timer / 零 Future.delayed / 零 AnimationController。
+    与 `sheet_history_export.dart` 的 RoomHistoryExportPort 同款套路。
+  `SettingsRepo._set()` 同步 `applyToDomain()` → `preset.presetSettings`
+  是**变量**、每次生成现读，所以「保存后立刻生效」不是启动常量。
+
+C · 生成前先选规则 +「继续完善」跳过规则步
+  AI 车卡页顶部新增规则卡片（在生成动作之前），元信息取自
+  `RuleRegistry`（单一真源 = `Coc7.id/name/shortName/rulebook`）；
+  未开放占位项如实标注「未开放」且 `onSelected: null` 不可选。
+  ★ K7：未选规则时**所有**生成入口停用（AI 生成 / 随机卡 / 离线随机卡 /
+    改用规则生成 / 重试 / 重新生成），并给两处明确引导；测试注入
+    `initialRuleSystemId: ''` 模拟「未选」。
+  生成时把 `ruleSystemId` 传给 `preset.generate(5)` / AI 链并写进卡。
+  `WizardSteps` 工厂新增 `skipStepIds`（默认空集合），
+  `CreateFlowPage` 新增 `skipRules`（默认 false）；`_adopt` 传 true，
+  注册表过滤 rules 步 → 8 步，进度条 / 编号 / 末步判定 / 底栏文案
+  全由同一份列表驱动（`1 / 8`，首步「基本资料」）。
+  手动新建卡仍 `1 / 9` 且首步是规则，`validateRules(draft)` 数据层恒 null。
+
+D · 人物卡规则标记 + 可查找注册表（为以后加规则留扩展位）
+  新增 `lib/domain/rule_registry.dart`（纯 Dart、零框架、零 Flutter）：
+    `RuleRegistry.all / placeholders / availableRules / defaultRule`、
+    `byId / resolve / shortNameOf / effectiveId / isAvailable`；
+    已实现项字段全部取自 `Coc7` 常量，不复制字面量。
+  `lib/domain/preset_gen.dart` 新增 `PresetOptions.ruleSystemId` 与
+    `ruleSystemIdOf()`；`newCharacter('coc7')` 硬编码改为
+    `newCharacter(ruleSystemIdOf(opts))`，`generate` 整批透传，
+    `generateAi` 透传，`summaryOf()` 增补 `ruleSystemId` 键。
+  徽标最小变更落在三处现成展示位：
+    `summary_card.dart`（`summary_rule_badge`）、
+    `home_page.dart`（`card_rule_badge_<id>`）、
+    `card_detail_page.dart`（概要首行 `KeyValueRow('规则', …)`）。
+  老卡 `normalize` 缺标记时补默认值（不伪造出处字段）；
+  单卡导出 / 全量存档 / 导入落库往返保留标记，非默认标记不被改写。
+  ★ K3：未碰 `LogRecord.toWireJson()`，未碰任何出站结构。
+
+E · 手动车卡「天命 N 选一」加回来（对齐旧版）
+  `lib/ui/create/steps/step_attrs.dart` 的 SegmentedButton 加第三档
+  「天命 N 选一」，原两档行为不变；N 输入 2–10 +「5 选 1」「10 选 1」
+  两个快捷按钮；每组显示 9 项属性与「总 X（不含幸运 Y）」。
+  纯逻辑全在 `lib/ui/create/chargen_logic.dart`：`ensureFate / fateN /
+  fateRolled / fatePicked / fateOptions / fateOptionSum / rollFate / pickFate`；
+  `fate` 原样存进 `draft.raw['fate']`（纯数据，刷新 / 重进不丢）。
+  ★ 随机源唯一 `genRandom()`（3D6×5 / (2D6+6)×5），不另造公式；
+    `rollFate` 内逐项 assert `%5==0` 且落在 `[genMin, genMax]`。
+  掷出后锁定 N 与重掷（N 框 readOnly、快捷与掷出按钮 onPressed=null）；
+  选组写回 9 项属性 + `attributeMode='fate'` + `fate.picked=i`。
+  `wizard_steps.dart#validateAttrs` 加硬拦截（没掷出 / 没选一组），
+  文案对齐旧版；`checkAttributes` 的 `enforceCap` 仍只在 pointbuy 生效。
+
+F · 大厅（招募期）阶段门控 + 保留必要能力
+  `lib/ui/room/room_lobby_page.dart` 按 `isInGame(state)` 门控 5 类游戏期块：
+    房间管理（切模式 / 战斗准备 / 结束战斗）、探索面板、KP 工具、
+    GpStatus 待办、GpDiceBar 掷骰 → 招募期零渲染；注释写明
+    「游戏期由 RoomGamePage 的 slot 网格承载」。
+  ★ 不误删：`RoomLobbyKeys.closeRoom`（结束房间 / 结团）、`kick`（成员行
+    踢人）、`copyInvite`（房间头复制邀请）在招募期仍必须可用，
+    新拆 `_roomLifecycleBlock`（仅 KP、仅 !inGame）承接，
+    key 沿用 `RoomLobbyKeys.closeRoom`，既有调用点不断裂。
+    `_kpManageBlock` 改挂 `inGame && isKp`（T-30 权限口径不变）。
+  测试：旧断言改成新期望（招募期 findsNothing），并**补正向守卫**
+    证明游戏期 `RoomGamePage` 里 5 类块仍在
+    （`test/p7_lobby_gate_test.dart` 3 组 + `room_ui_lobby_test.dart`
+    内 `_gameHost` 的三处 P7 守卫），不是「为了绿放宽」。
+
+G · 全局一致性审查 + 五项自检 + 三处反向验证 + 出包（见第四 / 七节）。
+
+---------------------------------------------------------------
+二、根因取证 / 旧版对齐 / 关键决策
+---------------------------------------------------------------
+【规则真值（自己核实，不猜）】
+  `lib/domain/rules_coc7.dart:122-124`：genMin=15 / genMax=90 / genStep=5。
+  `genRandomDice`（:126-138）9 项齐全：str/con/dex/app/pow/luck=3D6，
+  siz/int/edu=2D6+6，结果统一 ×5。
+  旧版 `core/ai.js#applyAttrCap` 用 ATTR_MIN=15 / ATTR_MAX=99，
+  生产新算法上界取 `_floorToStep(genMax)=90`（不再是 99）。
+  `lib/ui/create/chargen_logic.dart:26-33 attrFieldError` 才是卡死点：
+  `v % genStep != 0` → 「必须是 5 的倍数」→ `checkAttributes` 报错
+  → 进 `CreateFlowPage` 后无法点下一步。根因链与派工取证一致。
+
+【A 的不变式（写进 `ai_caps.dart` 源码注释）】
+  I1 未超限（sum <= attrCap）→ 返回 false，属性一个字节都不改。
+  I2 超限 → 每个输出值 `v % genStep == 0`。
+  I3 超限 → `genMin <= v <= genMax`。
+  I4 超限 → 总和 `total <= attrCap`（宁可略低于上限，绝不因取整反弹；
+      余数按 5 步长分配，不足一步的零头丢弃）。
+  I5 相对高低不乱：按原始值降序排好后输出值非增（相邻倒置交换，
+      交换不改总和、不改 5 倍数）。
+  I6 withLuck 两种口径只对参与求和的 keys 生效，未参与求和的项不动。
+  ★ 物理下界如实说明：total 最小 = keys.length × genMin
+    （9 项 = 135 / 8 项 = 120）。attrCap 低于它时 I3 与 I4 无法同时
+    成立，算法优先 I3（规则区间），全项压到 genMin 并停止扣减，
+    返回 true（确实动过）。调用方不会拿到非法属性。
+
+【决策 1 · 有意偏离旧版压缩算法（必须让 QA 知道）】
+  依据用户 2026-11-10 真机反馈：旧版 JS `core/ai.js` 的
+  `applyAttrCap` 也是非 5 倍数，改成 5 倍数是**有意偏离旧版**。
+  取舍采用派工给的 ② 方案：**保留一个「原始算法」专供预言机、
+  生产走新算法**，不悄悄改 fixture 让测试变绿。
+    · `applyAttrCapLegacy` 一行未改地复刻旧 JS（等比 + floor +
+      最大余数 +1 + 超限从最高项 -1 + 相邻倒置交换）。
+    · 开关只在 `test/oracle_preset_test.dart` 的 setUp 置 true、
+      tearDown 恢复；其它全部测试与生产默认 false。
+    · `test/fixtures/preset.json`（4,541,338 字节，mtime 11-08 14:55）
+      与 `qa_p3_ai_oracle.json` 等冻结 fixture **一个字节未改**。
+    · 影响面：`qa_p4_gate.js` 是静态探针（不比对 cap 输出），
+      复跑 13/13 全过；`oracle_preset_test.dart` 仍逐字段比对冻结
+      fixture 且全过；`qa_p4_fresh_oracle.js` 属房间模型预言机、
+      与本算法无关。**P4 冻结基线零影响**。
+    · 唯一需要留意的情形：将来若有人用「生产算法」重新生成
+      preset fixture 里的 caps 用例，期望值会变（那是有意偏离，
+      届时需同步基线并写明依据，不能悄悄改）。
+
+【决策 2 · attrsFromAi 选「拒收走重掷」而不是「就地规整」】
+  ① 外部输入闸门，拒收最保守：规则层随后用 `genRandom()` 重掷，
+     一定是 5 倍数且落在规则区间；
+  ② 就地规整会篡改 AI 配好的人物性格，且与 `applyAttrCap` 的
+     5 倍数网格形成「第二套规整实现」，违反单一真源；
+  ③ 压缩路径负责「超限」、闸门负责「未超限」，两者合起来
+     覆盖两种情况，绝不让非法值进卡。
+  顺带把旧的宽松区间 15–99 收紧为规则真值 15–90，并对 luck 同样
+  要求 5 倍数（旧口径只看 8 项、luck 只要能 parse）。
+
+【决策 3 · B 的测试环境硬约束（铁律 T1）】
+  核查结论：`SettingsRepo` 本身有 `MemorySettingsStorage` 内存后端，
+  且 setter 同步 `applyToDomain()`；但 `repo.save()` 仍是 `Future`，
+  真实 `JsonFileSettingsStorage` 在 fake-async 下永不完成。
+  所以做成可注入 port（同步 void + `unawaited`），测试注入同步
+  计数替身，widget 里零 await。与既有 `RoomHistoryExportPort` 同款。
+  **平台边界如实说明**：生产落盘是「发起即返回、不等待」，
+  失败只记 `SettingsRepo.lastError`，不阻塞上屏反馈；本批未验证
+  真机文件系统行为（属真机待测）。
+
+【决策 4 · D 的单一真源与 domain 纯度】
+  `step_rules.dart:5` 提到的 `RuleRegistry.placeholders` **此前并不存在**
+  （已核实：domain 里只有 `Coc7` 常量，占位文案硬编码在 UI 里），
+  本批补齐一个「小而纯」的注册表。
+  `character.dart` 不能 import `rules_coc7.dart`（后者反向 import
+  `character.dart`，会成环），因此 `newCharacter()` 的无参兜底仍保留
+  `'coc7'` 字面量；**所有 UI / 生成入口**都显式走
+  `RuleRegistry.defaultRule.id` / `ruleSystemIdOf()`，不散落
+  `if (id == 'coc7')`（全库扫描零命中，见第七节）。
+
+【旧版对齐（E）】
+  `coc7th-card-app/.../js/ui/steps-a.js:536-660` +
+  `js/app.js:1233-1246`：
+    `c.fate={n:5, rolled:false, options:[], picked:-1, rolledAt:0}`；
+    N 取 2–10，非法回退 5；一次掷出 N 组完整属性；掷出后不可重掷
+    （要换只能新建卡）；每组用 `R.generators.random()`
+    （Dart 对应 `rules_coc7.genRandom()`，现有 `_roll()` 就在用）；
+    选定写回 `c.attributes` + `attributeMode='fate'` + `fate.picked=i`；
+    硬拦截「没掷出 / 没选一组」；每组显示 8/9 项与合计（含/不含幸运）。
+  本批逐项照此实现，未自造随机数公式、未把 fate 只放 widget state。
+
+【F 的取舍】
+  `room_entry_page.dart:741-750 _RoomStageSwitch` 用 `isInGame(state)`
+  决定大厅 / 游戏页，大厅页**永远只在招募期渲染**，故 R7–R12 是错位重复。
+  游戏期 `RoomGamePage` 已有 `GpStatus / GpDiceBar / GpKpTools /
+  GpMapStage / showKpPanel`，不缺块。
+  但「开房后关不掉」不可接受：把结束房间 / 结团从 `_kpManageBlock`
+  拆到 `_roomLifecycleBlock`（仅招募期 KP），`closeRoom` / `kick` /
+  `copyInvite` 全部保留；切模式 / 战斗准备 / 结束战斗随游戏期块移除。
+
+---------------------------------------------------------------
+三、门禁 / 自检抓到的自己的错（都是自己的，不是需求问题）
+---------------------------------------------------------------
+1. **P5 UI 门禁第 7 条抓到注释字面量**：新建的
+   `lib/domain/rule_registry.dart` 头注释写了
+   「零 package:flutter / dart:io / dart:ui」，被 domain 纯度扫描命中
+   → `P5_UI_GATE IS_PASS: NO`（14 条里失败 1 条）。
+   修法：改成不含框架字面量的中文表述。P4 那条扫描更宽松放过了它，
+   P5 没有 —— 这正是双门禁的价值。修后 14/14。
+2. **首轮 `dart analyze` 6 条**：`test/p7_lobby_gate_test.dart` 里
+   照搬别处写法用了 `addTearDown(f.dispose)`，但 `RoomUiFixture`
+   根本没有 `dispose`（3 条 error）；另有 1 条 unused_local_variable、
+   1 条 unused_element_parameter、1 条 prefer_if_null_operators。
+   全部修掉 → `No issues found!`。
+3. **B/C/D/E 三个新测试文件首轮编译失败**：`package:flutter/material.dart`
+   用了 `show` 显式导入，却漏列 `Key` / `Widget`（约 40 条
+   `Couldn't find constructor 'Key'`）。修法：补齐 show 列表。
+4. **一处自己写的断言把 `jsStr(null)` 当空串**：老卡 normalize 用例
+   写 `expect(c.ruleSystemId, isEmpty)`，实际 `jsStr(null) == 'null'`
+   → 假红。修法：改断言 `c.raw.containsKey('ruleSystemId') == false`，
+   语义更准（正好扣住「不伪造原本就带标记」）。
+5. **一处自己写的恒绿断言**：`p7_attr_cap_test.dart` 的
+   「不含幸运」用例把 `_expectOrderKept(after, after)` 自己比自己，
+   永远通过。自查发现后改成 `before` vs `after`（真比较）。
+6. **全量回归抓到 1 条真回归**：`test/room_ui_permission_test.dart`
+   T-30「大厅页 × 三视角」变红（旁观者冒出
+   `room.close / room.end` 锚点）。根因：我把 `_kpManageBlock`
+   挪进 `if (inGame)` 时漏了 `isKp`，而该用例 `_boot(inGame: true)`，
+   于是旁观者也渲染了房间管理块。
+   修法：`_kpManageBlock` 改挂 `inGame && isKp`；
+   `_roomLifecycleBlock` 只在 `!inGame` 渲染，避免同态重复锚点。
+   修后房间 UI 63 例全绿、全量 1555 全绿。
+   ★ 这是本批唯一一次「产品代码被老测试证伪」，不是放宽断言。
+7. **反向验证的自我约束**：三处都先 `cp` 备份 + `sha256sum` 留基准，
+   改完单跑、数红，`cp` 恢复后 `diff -q` + 指纹比对，再复跑分片全绿。
+   没有留下任何临时改动（第四节有指纹自证）。
+
+---------------------------------------------------------------
+四、验收原始输出
+---------------------------------------------------------------
+测试命令前一律：
+  export PATH=/d/dev/flutter/bin:$PATH
+  unset HTTP_PROXY HTTPS_PROXY http_proxy https_proxy
+  export NO_PROXY=127.0.0.1,localhost
+
+1) 全量 `flutter test`
+   默认并发：        00:53 +1555: All tests passed!      （EXIT=0，0 红）
+   串行复核：        03:38 +1555: All tests passed!      （--concurrency=1，EXIT=0）
+   反向恢复后分片：  00:02 +34: All tests passed!
+   出包后分片冒烟：  00:00 +19: All tests passed!      （native assets 已恢复）
+   ★ 账目算平（QA 可逐文件复核）：
+     基线 1499 + 本批 56 = **1555**
+     新增文件运行时用例：
+       test/p7_attr_cap_test.dart        19  （16 个 test( 声明，其中
+                                              1 个 `for cap in [400,460,300,403]`
+                                              循环动态注册 4 个 → +3 动态）
+       test/p7_lobby_gate_test.dart       3
+       test/p7_ai_caps_ui_test.dart      11
+       test/p7_fate_test.dart            12
+       test/p7_rule_registry_test.dart   11
+                                      ----
+                                        56
+     修改文件用例数**不变**：room_ui_lobby_test.dart 18、
+       qa_p5_priv_probe_test.dart 13、oracle_preset_test.dart 13
+       （只加 setUp/tearDown 开关，不加用例）。
+     翻转：上述前两个文件里「大厅存在 R7/R9/R10/R12」的旧期望整体
+       翻成「招募期 findsNothing」，并另起独立文件补游戏期正向守卫；
+       不是把 findsOneWidget 一改了之。
+     除 4-cap 循环外无其它动态注册。
+
+2) `dart analyze`（全项目）
+   Analyzing dice-realm...
+   No issues found!
+
+3) `node tool/qa/qa_p4_gate.js`
+   ==== 合计 13 条，失败 0 条 ====
+   P4_GATE IS_PASS: YES
+   （含「lib/domain 纯 Dart 零命中」、fixture 455/517/121/256、
+     61 个 POLICY 分支零缺口、三个禁改文件存在等）
+
+4) `node tool/qa/qa_p5_ui.js`
+   ==== 合计 14 条，失败 0 条 ====
+   P5_UI_GATE IS_PASS: YES
+   [OK] jsStr( 命中 ≤ 14 且只在白名单 6 文件 —— 实际 14 处，白名单外 无
+   [OK] 门禁字面量不入注释（零命中）—— 扫描 64 个文件
+   [OK] 弹层不走裸 showDialog / showModalBottomSheet 仍只 1 处
+   [OK] lib/ui/room 共 64 个 .dart / 15265 行；view/ 6 个 / 1032 行
+   独立复核：`grep -rho "jsStr(" lib/ui/room --include=*.dart | wc -l` = 14
+
+5) `bash tool/build_apk.sh`（唯一允许的出包脚本，EXIT=0）
+   [1/4] 关闭 native assets（出包期间）
+   [2/4] 构建 release APK
+     Running Gradle task 'assembleRelease'... 77.6s
+     √ Built build\app\outputs\flutter-apk\app-release.apk (57.8MB)
+   [3/4] 校验 AOT 产物
+     8323976  lib/arm64-v8a/libapp.so
+     9273928  lib/armeabi-v7a/libapp.so
+     8586120  lib/x86_64/libapp.so
+   [4/4] 恢复 native assets
+   ===== 出包成功 =====
+   -rw-r--r-- 60635735 2026-11-10 10:04 build/app/outputs/flutter-apk/app-release.apk
+   c17cf06b01c25d1540a4a28db3b9948692603dc9c76f7249e0d4ec07da0b622f
+   签名：debug（signingConfigs.getByName("debug")，可侧载安装、不可上架）
+   独立复核：`stat -c %s` = 60635735 bytes；`sha256sum` 同上；
+             `unzip -l | grep libapp.so` 三 ABI 齐全。
+   `flutter config --list | grep native` → `enable-native-assets: true`
+   build junction 仍是 `build -> /d/dev/dice-build`，未删、未 flutter clean。
+
+6) ★★ 三处反向验证（摘掉修复 → 正例变红 → 逐字节恢复 → 复跑全绿）
+   基准 SHA256 与恢复后 SHA256 完全一致，`diff -q` 均无输出：
+
+   反向 A · 摘掉「5 倍数规整」
+     `ai_caps.dart`：`final stepped = _floorToStep(t);` → `t.floor();`
+     TEST_EXIT=1 / ERROR_MARKERS=10
+     变红正例：`含幸运 cap=400 / 460 / 300 / 403 → 逐项合法` 等
+       （Expected: <0>，即 `v % 5` 不再是 0）
+     SHA 1fed2e7002b887e2764d32f80077de94531034bb478ec6ae48e3a9cd9bbd53bb
+
+   反向 B · 摘掉「天命硬拦截」
+     `wizard_steps.dart`：`if (attributeMode == 'fate')` → `if (false)`
+     TEST_EXIT=1 / ERROR_MARKERS=1
+     变红正例：`没掷出 / 没选一组都不准进下一步（文案对齐旧版）`
+       （Expected: '天命还没掷出：先点「掷出天命」'）
+     SHA 8fdb8f0c7892deb08f6f00a52b469c3aacb30e8cb4bab3d3edfea3679ccb28cb
+
+   反向 C · 摘掉「大厅门控」
+     `room_lobby_page.dart`：`final inGame = isInGame(state);` → `true`
+     TEST_EXIT=1 / ERROR_MARKERS=2
+     变红正例：`RECRUITING：5 类游戏期块零渲染；closeRoom/kick/copyInvite 仍可用`、
+       `玩家视角：游戏期块零渲染`（Expected: no matching candidates）
+     SHA 613d740255c828a3dde7da46be48a00e1ffd353e1619aad7662d13e99b4efebd
+
+   恢复后复跑三文件：`00:02 +34: All tests passed!`
+   ★ 另有**常驻反向**（不是临时改出来的）：
+     · `p7_attr_cap_test.dart`「旧版算法隔离」组：开关 true 时断言
+       输出**确实不是** 5 倍数（证明生产算法与 legacy 不是同一条路径）；
+     · `p7_fate_test.dart`「fate 不误套购点上限」组：同一张卡切
+       pointbuy 后断言**确实会**被拦（防止「放行」是恒绿）；
+     · `p7_lobby_gate_test.dart` 游戏期组：断言 5 类块在游戏页
+       `findsOneWidget`（防止招募期 findsNothing 是恒绿）。
+
+---------------------------------------------------------------
+五、文件清单
+---------------------------------------------------------------
+本批新增（7 个）
+  lib/domain/rule_registry.dart          规则元信息注册表（纯 Dart，零框架）
+  test/p7_attr_cap_test.dart             19 组：5 倍数不变式 / 旧版隔离 /
+                                        attrsFromAi 闸门 / 三条生成路径
+  test/p7_ai_caps_ui_test.dart          11 组：B 自定义房规 + C 规则选择
+  test/p7_fate_test.dart                12 组：E 天命 N 选一
+  test/p7_rule_registry_test.dart       11 组：D 注册表 / 标记 / 徽标 / 往返
+  test/p7_lobby_gate_test.dart           3 组：F 游戏期正向守卫 + 招募期门控
+  _p7_transport2.txt                    本文件
+
+本批修改（15 个）
+  lib/domain/ai_caps.dart               5 倍数网格压缩 + legacy 隔离 + 开关
+  lib/domain/preset_gen.dart            PresetOptions.ruleSystemId /
+                                        ruleSystemIdOf / attrsFromAi 闸门 /
+                                        _build 去硬编码 / generate 透传 /
+                                        generateAi 透传 / summaryOf 补标记
+  lib/ui/ai_create_page.dart            B/C/D：自定义房规 + 保存 port +
+                                        规则卡片 + 生成禁用 + 卡上标记 +
+                                        skipRules 导航
+  lib/ui/create/chargen_logic.dart      E：fate 纯逻辑 8 个函数 + 常量
+  lib/ui/create/steps/step_attrs.dart   E：第三档 + 快捷 + 锁定 + 选组
+  lib/ui/create/steps/step_rules.dart   D：元信息走 RuleRegistry
+  lib/ui/create/wizard_steps.dart       C：skipStepIds；E：validateAttrs 硬拦截
+  lib/ui/create/create_flow_page.dart   C：skipRules；D：手动新建走注册表
+  lib/ui/summary_card.dart              D：卡面规则徽标（_Badge 加 key）
+  lib/ui/home_page.dart                 D：卡列表规则徽标
+  lib/ui/card_detail_page.dart          D：详情「规则」行
+  lib/ui/room/room_lobby_page.dart     F：阶段门控 + 招募期生命周期块
+  test/room_ui_lobby_test.dart          F：旧期望翻转为新期望 + _gameHost
+                                        三处游戏期守卫
+  test/qa_p5_priv_probe_test.dart       F：A-1 招募期期望 + 游戏期守卫
+  test/oracle_preset_test.dart          A：setUp/tearDown 切 legacy 开关
+                                        （fixture 零改动）
+  （以上 16 个修改文件中，`lib/domain/**` 的 2 个是本批派工明确允许的）
+
+零改动（逐项核对，mtime 佐证）
+  pubspec.yaml（11-08 18:55）、lib/net/**（最晚 11-09 21:55）
+  test/fixtures/preset.json（11-08 14:55）、qa_p3_ai_oracle.json
+  （11-08 17:33）、room_sequences.json（11-09 03:53）
+  qa_p7_close_report.md（11-10 08:59）、_manual_test_checklist.md
+  （11-10 08:55）、另一工作区 overview.md（未打开）
+  QA 两个门禁脚本、tool/build_apk.sh、build junction（未删、未 flutter clean）
+  `LogRecord.toWireJson()` / `SendPlan.toJson()` / 任何出站结构
+
+---------------------------------------------------------------
+六、遗留与如实说明（不掩盖、不假装做了）
+---------------------------------------------------------------
+1. **A 有意偏离旧版压缩算法**：见第二节决策 1。生产路径不再与旧 JS
+   逐字等价；冻结 fixture 与 P4 基线零改动、预言机靠 legacy 开关保持
+   13/13。若将来重新生成 fixtures 的 caps 用例，期望值需同步并写明依据。
+2. **B 的平台边界**：`SettingsRepoCapsSavePort` 是「发起即返回」，
+   生产落盘用 `unawaited(repo.save())`，不等待、不阻塞上屏；
+   失败只记 `lastError`。真机上的文件系统行为 / 进程被杀时的持久化
+   **未验证**（属真机待测，QA 清单增补项）。
+3. **D 的云分享载荷不带规则标记**：`lib/net/share_client.dart`
+   的 `buildSharePayload()` 是既有「精简只读视图」，只含
+   name/basicInfo/attributes/derivedStats/status/assets/background 等，
+   **不含 `ruleSystemId`**。本批红线明确 `lib/net/**` 零改动，因此
+   没有动它。已覆盖的是「单卡导出 / 全量存档 / 导入落库」三条往返
+   （`exportCardJson` / `exportBundleJson` / `importIntoRepo`），
+   这三处都保留标记且不改写非默认值。若要让云分享链接也带规则
+   徽标，需另开批次并先解除 `lib/net/**` 冻结，本批如实记为缺口。
+4. **`newCharacter()` 无参兜底仍有 `'coc7'` 字面量**：
+   `character.dart` 不能反向 import `rules_coc7.dart`（会成环），
+   故保留 domain 层最低兜底；所有 UI / 生成入口均显式经
+   `RuleRegistry` 取值。另 `room_model_save.dart` /
+   `room_model_state.dart` 有既有的房间 meta `'coc7'` 默认值，
+   与人物卡规则注册表不是同一概念，本批未动（P4 基线敏感）。
+5. **大厅门控的测试期望翻转是「有正向守卫」的翻转**：
+   `room_ui_lobby_test.dart` / `qa_p5_priv_probe_test.dart` 里旧
+   `findsOneWidget` 改 `findsNothing` 的同时，独立文件
+   `p7_lobby_gate_test.dart` 与 `_gameHost` 三处断言游戏期
+   `RoomGamePage` 里 5 类块 `findsOneWidget`。用例数未减。
+6. **F 保留 / 移除能力清单**（派工点名要交代）：
+   保留：R1 房间头（含 copyInvite）、R2 服务地址（KP）、R3 成员
+     （含 kick）、R4 准备、R5 绑卡、R6 开始游戏、
+     结束房间 / 结团（`RoomLobbyKeys.closeRoom`）。
+   移出招募期大厅（游戏期由 RoomGamePage 承载）：切模式 / 战斗准备 /
+     结束战斗、探索面板与素材/场景入口、KP 工具与 KP 面板入口、
+     GpStatus 待办、GpDiceBar 掷骰。
+   `gate.can(op)` 口径、旁观者零发包未变（T-30 63 例全绿）。
+7. **未跑 adb / 模拟器 / 真机联调**：本批按用户要求只做代码与
+   自动化验证；7 个真机问题的**实际装机复验**仍待统一真机测试，
+   由 QA 把待测项补进清单。本批没有改清单、没有联系 QA。
+8. **APK 仍是 debug 签名**（同 P7 第一批结论）：可侧载安装、
+   不可上架；真机测完再谈 release 签名。
+9. **未改任何 UI 房间弹层为裸 showDialog**，零新增 `jsStr(`、
+   零白名单扩充、门禁字面量未入注释（P5 第 12 条零命中）。
+10. **未直接联系 QA**：跨成员信息流经 team-lead 中转。
+
+---------------------------------------------------------------
+七、全局一致性审查（全量重做，1 轮通过）
+---------------------------------------------------------------
+· 跨文件 import 与循环依赖：
+    `rule_registry.dart → rules_coc7.dart → character.dart / dice.dart /
+      js_compat.dart`，而 `character.dart` **不**反向引用注册表 → 无环。
+    `preset_gen.dart → rule_registry.dart + ai_caps.dart + rules_coc7.dart`；
+    `ai_create_page.dart → rule_registry / preset_gen / ai_caps /
+      settings_repo / create_flow_page / summary_card`；
+    `wizard_steps.dart → chargen_logic.dart → rules_coc7.dart`；
+    三处徽标页各自只 import `rule_registry.dart`。
+    全库无循环；`dart analyze` 零悬空 import。
+· 接口契约与既有调用点：
+    `WizardSteps` 新增的是**带默认值的** `skipStepIds`，
+    5 个既有调用点（create_flow_page / qa_probe×2 / wizard_fix_jump /
+    wizard_steps_test）全部照旧编译通过；
+    `CreateFlowPage` 的 `skipRules` 默认 false，`app.dart` 的
+    `const CreateFlowPage()` 与测试里的 `const` 构造一行未改；
+    `AiCreatePage` / `StepAttrs` / `RoomLobbyPage` 的 `const` 构造未破；
+    `SummaryCard._Badge` 补 `super.key` 后仍是 const 构造。
+    `attrsFromAi` / `applyAttrCap` / `PresetOptions` 都是
+    「签名不变或只加可空字段」，全量 1555 组已证。
+· 数据流：
+    `_selectedRuleId`（AI 页规则卡）→ `AiGenerateRequest.ruleSystemId`
+    / `PresetOptions.ruleSystemId` → `ruleSystemIdOf(opts)` →
+    `newCharacter(...)` → `c.raw['ruleSystemId']` →
+    `summaryOf()` → `SummaryCard` 徽标；
+    卡列表 / 详情直接读 `card.ruleSystemId` 经 `RuleRegistry` 显示。
+    导出/存档走 `card.raw` 全量，导入经 `repo.save` 的 normalize 补默认。
+· 判据 / 规则元信息 / 属性校验**没有第二套实现**：
+    5 倍数判据只有 domain 的 `genStep`（`ai_caps` 网格、
+    `attrsFromAi` 闸门、`chargen_logic.attrFieldError` 既有 UI 校验
+    都读同一个常量），本批**没有**在 UI 里另写一遍；
+    规则元信息只有 `RuleRegistry`（`Coc7` 常量是它的上游唯一来源），
+    `lib/ui` 对 `== 'coc7'` 零命中；
+    上限输入判据只有 `parseAiCapInput` 一处（UI 格式化器是前置过滤，
+    不是判据）；
+    天命随机源只有 `genRandom()`；
+    权限只有 `gate.can(op)`（T-30 63 例逐点等价）。
+· 无重复实现：`applyAttrCap` 是唯一生产入口，legacy 只被开关和
+    一个隔离测试调用；`fate` 纯逻辑只定义在 `chargen_logic.dart`，
+    `step_attrs.dart` 只负责画；`validateAttrs` 是唯一的天命硬拦截。
+· 自检：全量默认并发 + 串行 + 反向恢复后分片 + 出包后冒烟，
+  四遍全绿；analyze 零；P4 13/13、P5 14/14；
+  APK 三 ABI + 字节数 + SHA256 + native-assets 恢复确认；
+  三处反向验证逐字节恢复有 `diff -q` + SHA256 双证。
+· 另有一处自查修掉的恒绿断言（第三节第 5 条），
+  以及三处常驻反向（第四节 6 末尾），避免「为了绿而绿」。
+
+IS_PASS: YES
+（依据：A–F 六件真机反馈修复全部落盘并有针对性用例；G 全局审查通过、
+  四项自检全过、三处反向验证证明不是恒绿断言、按唯一允许脚本重新出包。
+  注意：A 对旧版压缩算法是有意偏离（已隔离预言机、P4 基线零影响）、
+  B 的生产落盘为「发起即返回」未在真机验证、D 的云分享载荷因
+  `lib/net/**` 冻结未带规则标记、真机复验整体待 QA 统一测试 ——
+  均在第六节如实标注，不影响「代码 + 自动化验收」这一结论。）
+
+================================================================

@@ -1,0 +1,136 @@
+================================================================
+P6 · 第七批：Android 多播锁 + 房间存档落盘
+================================================================
+日期：2026-11-09 18:5x
+全量：1394 组 0 红（P6 前批 1363 → +31：多播锁 10 + 文件存档 19 + 入口页 2）
+analyze：No issues found
+门禁：P4 13/13 OK、P5 UI 14/14 OK
+APK：57.5MB（60,340,779 字节）
+SHA256：403b4bab9949312ac51fafecb5eb85070fc7842d388cdbbb50cf53895764695e
+
+本批不是新功能，是**清掉两个会直接毁掉真机验收的技术债**：
+真机一测就会撞上，撞上了用户只会觉得「这 App 有问题」。
+
+---------------------------------------------------------------
+一、Android 多播锁（不做的后果：两台真机互相搜不到）
+---------------------------------------------------------------
+问题：Android 的 WiFi 省电模式会**丢弃广播/多播包**。
+症状极具迷惑性 —— 两台手机连同一个 WiFi，界面都说「局域网已开」，
+但「找附近的房间」永远空，输房号也连不上。
+**模拟器和桌面环境永远暴露不出来**（它们的网络栈不省电）。
+
+三处改动：
+1. `android/app/src/main/AndroidManifest.xml`
+   加 `CHANGE_WIFI_MULTICAST_STATE`（已验证进 APK：aapt2 dump permissions 可见）
+2. `MainActivity.kt`（原来是空的 FlutterActivity）
+   - MethodChannel `dice_realm/multicast`，提供 acquire / release
+   - `setReferenceCounted(false)` —— Dart 侧已经数层了，两边都数会打架
+   - `onDestroy()` 里兜底释放（留一层锁会让系统持续不允许省电，白耗电）
+   - 拿不到锁时静默返回 false，**绝不让建房/加入因此失败**
+3. `lib/net/multicast_lock.dart`
+   - 引用计数：广播器与扫描器各持一层
+   - 非 Android / 平台通道不可用 → 一律 no-op（`flutter test` 跑桌面 VM）
+   - `debugForceSupported` 供测试走 Android 分支
+4. 接入：`LanBroadcaster.start/stop`、`LanDiscoverer.scan`（try/finally 配平）
+
+★ 为什么引用计数是这个模块的核心风险，而不是「能不能拿到锁」：
+   · 少放一层 → 系统持续不允许省电，白耗电（用户看不到，但真实伤害）
+   · 多放一层 → 另一方还以为持着，结果收不到广播（更难查）
+   测试用 `setMockMethodCallHandler` 精确断言「平台被调用了几次」，
+   这是纯 no-op 测试做不到的。
+
+测试（10 组）：非 Android 全 no-op 零平台调用 / 两层持锁只 acquire 一次 /
+放一层不真释放 / 最后一层才释放且只一次 / 多放不会把计数放成负数（否则下次
+acquire 会被误判为「已持有」）/ 平台返回 false 不留假状态 /
+广播器 start-stop 配对 / 重复 start 幂等 /
+扫描结束一定释放（哪怕零收包）/ **扫描与广播同时进行时两层叠加、一方结束不影响另一方**。
+
+---------------------------------------------------------------
+二、房间存档落盘（不做的后果：切后台被回收就丢档）
+---------------------------------------------------------------
+问题：`InMemoryRoomSaveStore` 是纯内存的，杀进程即丢。
+长团打到一半切后台被系统回收，续玩列表就空了。
+P5 的界面上如实写了「关闭 App 后不保留」—— 本批把这句话变成历史。
+
+**为什么是「内存缓存 + 异步落盘」而不是直接读写文件**：
+`RoomSaveStore` 端口的签名是**同步**的（`void put` / `Map? get` / `List list`），
+属 domain、已冻结。文件 I/O 异步，硬塞进同步签名不可能。所以：
+   · 启动时 `loadSync()` 一次性读进内存（之后 list/get 立刻有货，续玩列表首屏就有东西）
+   · `put`/`remove` 改内存 + **排队**异步写盘（调用方不等待）
+   · `flush()` 供测试与「退出前确保落盘」使用
+
+`lib/repo/file_room_save_store.dart`（新，~260 行）守住三件事：
+
+1. **原子写**：先写 `.tmp` 再覆盖目标。写到一半掉电会留下半截 JSON，
+   那份存档就再也读不出来了 —— 存档损坏比丢一次保存严重得多。
+2. **单文件损坏不影响其他**：`loadSync()` 逐文件 try/catch，
+   坏的那个跳过（记进 `lastError`），其余照常可用。
+3. **路径穿越防护**：槽键会被拼进文件名，`../` 能写到任意位置。
+   白名单 `^[A-Za-z0-9_-]{1,64}$` + **排除 Windows 保留设备名**。
+
+★ Windows 保留名这条是测试红出来的：
+  `CON` / `PRN` / `AUX` / `NUL` / `COM1-9` / `LPT1-9` 全是大写字母，
+  光靠字符白名单挡不住。`CON.json` 在 Windows 上会被当成**设备**，
+  写入会静默失败或跑到控制台去。
+
+★ 写入排队：同一槽连续 put 会链式排队，避免两个写并发抢同一文件。
+  测试钉住「连写 5 次 → 落盘的是最后一次」「put 后立刻 remove → 最终不存在」。
+
+**接线**：
+- `room_boot.dart` 的 `roomSaveSlots` 类型从 `InMemoryRoomSaveStore` 改成接口
+  `RoomSaveStoreMutable` + `installRoomSaveStore()`（启动时替换）
+- `main.dart` 的 `_installRoomSaves()`：用 `path_provider` 拿**应用文档目录**
+  下 `room_saves/`，失败就保持内存实现（存档不可用绝不能挡住启动）
+  ★ 用文档目录不用缓存目录：缓存会被系统在空间紧张时清掉，存档放那里等于随机丢档
+
+---------------------------------------------------------------
+三、顺带修掉一处「换后端就变假话」的文案
+---------------------------------------------------------------
+界面原来写死「存档在本机内存里：关闭 App 后不保留」。
+现在有了文件后端，这句对它就变成假话了。
+
+做法：加标记接口 `PersistentSaveStore`（repo 层），UI 认**能力**不认具体类；
+`lib/ui/room/save_persist_hint.dart` 统一出文案，两处（入口页续玩区、
+存档槽弹层）共用，避免写两份一定漂。
+
+三种情况都说真话：
+| 后端 | 文案 |
+|---|---|
+| 文件（`PersistentSaveStore`） | 存档保存在本机文件里：只要不卸载 App 就一直有效 |
+| 内存 | 存档在本机内存里：关闭 App 后不保留 |
+| 无（远端会话，玩家/旁观） | 当前连接不支持本机存档（只有房主能保存） |
+
+测试钉住三种输入，并专门断言「文件后端时不得再出现『关闭 App 后不保留』」
+—— 换后端时最容易漏改的就是这句。
+
+---------------------------------------------------------------
+四、验收
+---------------------------------------------------------------
+1. flutter test → +1394 All tests passed（1363 → +31，只增不减）
+2. dart analyze → No issues found!
+3. node tool/qa/qa_p4_gate.js  → 13/13 OK，P4_GATE IS_PASS: YES
+4. node tool/qa/qa_p5_ui.js    → 14/14 OK，P5_UI_GATE IS_PASS: YES
+5. bash tool/build_apk.sh → 57.5MB，三 ABI libapp.so 齐全
+6. APK 权限清单（aapt2 dump permissions）含
+   `android.permission.CHANGE_WIFI_MULTICAST_STATE`
+7. pubspec.yaml 未改；lib/domain/** 零改动
+
+### 新增/改动文件
+新增：
+  lib/net/multicast_lock.dart
+  lib/repo/file_room_save_store.dart
+  lib/ui/room/save_persist_hint.dart
+  test/p6_multicast_lock_test.dart（10 组）
+  test/file_room_save_store_test.dart（19 组）
+改动：
+  android/app/src/main/AndroidManifest.xml（+1 权限）
+  android/app/src/main/kotlin/.../MainActivity.kt（空壳 → 多播锁服务）
+  lib/net/lan_discovery.dart（广播器/扫描器接入多播锁）
+  lib/repo/room_save_store.dart（+ PersistentSaveStore 标记接口）
+  lib/ui/room/room_boot.dart（roomSaveSlots 改接口类型 + installRoomSaveStore）
+  lib/main.dart（_installRoomSaves 装配文件后端）
+  lib/ui/room/room_entry_page.dart / sheets/sheet_save_slots.dart（文案改按能力）
+  test/room_ui_entry_test.dart（+2 组）
+
+IS_PASS: YES
+================================================================

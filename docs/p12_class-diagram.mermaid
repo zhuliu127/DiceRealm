@@ -1,0 +1,190 @@
+%% 骰境 TRPG v2.35.0+105（P12 / 第 9 期）增量类图
+%% 完整说明见 docs/p12_incremental_design.md §3.3
+%% 注：docs/class-diagram.mermaid 是上期遗留的全局类图历史归档，本期不覆盖（P11 踩坑：docs 归档只增不删不改）
+%% 图例：<<new>> 本期新增；<<modified>> 本期修改；<<existing>> / <<untouched>> 既有且零改动
+classDiagram
+    direction LR
+
+    class RoomUiLocal {
+        <<existing, ChangeNotifier>>
+        +int leftTab
+        +double zoom
+        +bool playersPanelCollapsed
+        +RoomToolMode toolMode
+        +List~Map~ pendingActors
+        +String notice
+        +bool mapFullscreen
+        +Offset mapPanOffset
+        +double mapZoom
+        +bool panArmed
+        +void setMapFullscreen(bool v)
+        +void setMapPanOffset(Offset v)
+        +void setMapZoom(double v)
+        +void resetMapView()
+        +void setTool(RoomToolMode m)
+        +void showNotice(String text)
+    }
+    class RoomToolMode {
+        <<enumeration>>
+        none
+        mark
+        draw
+        erase
+        placeActor
+        placePlayer
+        pan
+    }
+    class RoomScope {
+        <<existing, InheritedNotifier>>
+        +RoomSession session
+        +RoomUiLocal local
+        +RoomController controller
+        +static RoomScope of(BuildContext ctx)
+        +static RoomScope read(BuildContext ctx)
+    }
+    class MapStageControl {
+        <<existing>>
+        +MapStageMode mode
+        +void beginStroke(String color, double width)
+        +void beginErase()
+        +void beginMark(String kind, String label, bool revealed)
+        +void beginPlace(String actorName, String playerSeat)
+        +void cancel()
+        +bool awaitingTap
+    }
+    class GpMapStage {
+        <<existing widget, modified>>
+        +MapStageControl controller
+        +bool readOnly
+        +bool showControls
+        +bool fullscreenMode
+        +bool panMode
+        +Widget build(BuildContext ctx)
+        +void _openFullscreen(BuildContext ctx)
+        +Widget _coverImage(Map a)
+    }
+    class MapFullscreenPage {
+        <<new widget>>
+        +MapStageControl stageControl
+        +bool isKp
+        +Widget build(BuildContext ctx)
+    }
+    class showMapStageFullscreen {
+        <<new function, room_sheet.dart>>
+        +Future~T~ call(BuildContext ctx, MapStageControl ctl, bool isKp)
+    }
+    class SanCheckExpr {
+        <<new pure Dart>>
+        +String okLoss
+        +String loss
+        +static SanCheckExpr parse(String raw)
+        +Map~String_Object~ toIntentPayload()
+    }
+    class SanCheckSheet {
+        <<new widget>>
+        +Widget build(BuildContext ctx)
+    }
+    class RoomIntent {
+        <<existing, 13 values>>
+        +sanCheck
+        +act
+        +confirm
+    }
+    class HostIntent {
+        <<existing domain, modified>>
+        +List~SendPlan~ act(String seat, Map mem, String role, Map p)
+        +List~SendPlan~ confirmPending(String seat, Map p)
+        +List~Map~ pending
+    }
+    class RoomHostActionsCombat {
+        <<existing domain, modified>>
+        +List~SendPlan~ checkOpposed(String bySeat, Map p)
+        +List~SendPlan~ _autoOpposedCheck(String bySeat, Map p)
+        +List~SendPlan~ playerSanCheck(String seat, Map mem, Map p)
+    }
+    class RoomHostActionsSheet {
+        <<existing domain, untouched>>
+        +List~SendPlan~ settleSanCheck(Map m, Map p, String bySeat)
+        +List~SendPlan~ afterSanLoss(Map m, num loss, String bySeat)
+    }
+    class RoomHostCore {
+        <<existing domain, modified>>
+        +Map~String_Object~ combatFor(String seat)
+        +SyncEnvelope makeSync(String seat, Object scene, Object board)
+        +SyncEnvelope syncFor(String seat)
+    }
+    class RoomRequestWatcher {
+        <<existing, modified>>
+        +List~RoomPushRequest~ collectRoomPushRequests(RoomSession s)
+        +String pushInitiatorOf(Map state, String seat)
+        +List~String~ _detailsOf(Map raw, List extra, String initiatorName)
+    }
+    class RoomSaveSyncer {
+        <<existing, modified>>
+        +String resumeKeyOf(String code)
+        +Future~bool~ autoSave(String reason)
+        +Future~void~ onShared(Map save)
+        +Future~void~ onStateChanged()
+        +Future~void~ shareLatest(Map data)
+        +String autoKeyPrefix(String code)
+    }
+    class RoomSaveStore {
+        <<existing port, frozen>>
+        +void put(String code, Map data)
+        +Map~String_Object~ get(String code)
+        +List~String~ list()
+    }
+    class FileRoomSaveStore {
+        <<existing, untouched>>
+        +static bool isSafeKey(String key)
+    }
+    class RoomEntryPage {
+        <<existing, modified>>
+        +void _reloadSaves()
+        +Future~void~ _resume(String key)
+        +Widget _saveRow(ThemeData t, String key)
+    }
+    class RoomController {
+        <<existing, modified>>
+        +Future~bool~ saveNow(String name)
+    }
+    class GpKpPlayers {
+        <<existing widget, modified>>
+        +Widget _panel(BuildContext ctx)
+        +Widget _row(BuildContext ctx, Map m)
+    }
+    class GpKpTools {
+        <<existing widget, modified>>
+        +Widget build(BuildContext ctx)
+    }
+    class GpToolbar {
+        <<existing, untouched>>
+        +List~Widget~ mainActions
+        +List~Widget~ extensions
+    }
+
+    RoomScope *-- RoomUiLocal
+    RoomScope *-- RoomSaveSyncer : holds session
+    RoomUiLocal --> RoomToolMode
+    GpMapStage --> MapStageControl
+    GpMapStage ..> RoomUiLocal : reads mapZoom / mapPanOffset
+    GpMapStage ..> showMapStageFullscreen : _openFullscreen
+    showMapStageFullscreen ..> RoomScope : re-wraps scope
+    showMapStageFullscreen --> MapFullscreenPage
+    MapFullscreenPage --> GpMapStage
+    MapFullscreenPage ..> RoomUiLocal : resetMapView on exit
+    MapFullscreenPage *-- GpKpTools : KP tool rail
+    GpKpTools ..> RoomUiLocal : setTool(pan)
+    SanCheckSheet ..> SanCheckExpr : parse
+    SanCheckSheet ..> RoomIntent : sendIntent(sanCheck)
+    RoomIntent --> HostIntent : dispatch
+    HostIntent --> RoomHostActionsCombat : checkOpposed / playerSanCheck
+    HostIntent --> RoomHostActionsSheet : settleSanCheck
+    RoomHostActionsCombat ..> RoomHostCore : emit public log
+    RoomRequestWatcher ..> HostIntent : confirm with optional value
+    RoomSaveSyncer --> RoomSaveStore : put(resumeKeyOf, data)
+    RoomController --> RoomSaveStore : put(resumeKeyOf, data)
+    RoomSaveStore <|.. FileRoomSaveStore
+    RoomEntryPage --> RoomSaveStore : list / get
+    GpKpPlayers ..> RoomUiLocal : playersPanelCollapsed
+    GpToolbar o-- GpKpTools : not used (toolbar untouched)

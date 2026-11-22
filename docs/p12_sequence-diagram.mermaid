@@ -1,0 +1,49 @@
+%% 骰境 TRPG v2.35.0+105（P12 / 第 9 期）增量时序图 · 主图：GL-1 落档链路
+%% 完整说明见 docs/p12_incremental_design.md §4.1
+%% 其余三张时序图（PL-1c 对抗补值结算 §4.2 / PL-2 San Check §4.3 / 真全屏进入退出 §4.4）在主文档内，
+%% 因 .mermaid 单文件只承载一张图，故此处只放最高风险的 GL-1。
+%% 注：docs/sequence-diagram.mermaid 是上期遗留历史归档，本期不覆盖（P11 踩坑：docs 归档只增不删不改）。
+sequenceDiagram
+    autonumber
+    actor KP as KP（平板横屏）
+    participant SY as RoomSaveSyncer<br/>room_save_syncer.dart
+    participant CT as RoomController
+    participant ST as RoomSaveStore<br/>FileRoomSaveStore（生产）
+    participant NET as hub.broadcast / save.share
+    actor PL as 玩家（非平板横屏）
+    participant EN as RoomEntryPage<br/>③ 续玩本机存档
+    participant RS as RoomResumeService
+
+    Note over KP,PL: 触发路径 A：「存档槽 · 保存」
+    KP->>CT: saveNow(name:'NU9E6R · 第3轮')
+    CT->>CT: data = session.exportSave()
+    CT->>ST: put(name, data)  ⚠ 含中文 → isSafeKey 拒写（旧）
+    CT->>ST: ★ put(resumeKeyOf(code)='NU9E6R', data)  房号安全键
+    ST-->>CT: 落盘成功（_mem['NU9E6R']）
+
+    Note over KP,PL: 触发路径 B：「结束房间」room.close → meta.status=CLOSED
+    KP->>SY: onStateChanged()（session listener）
+    Note over SY: ★ 改前 :120 CLOSED 直接 return → ③ 死代码
+    SY->>SY: CLOSED：跳过 ①round / ②join，进 ③ 终态落档
+    SY->>SY: autoSave(reason:'close')
+    SY->>ST: put('auto/NU9E6R/close-<ts>', data)（保留，滚动淘汰）
+    SY->>ST: ★ put('NU9E6R', data)（续玩可见）
+    SY->>NET: shareLatest(data) → hostAction('save.share', {save})
+
+    NET->>PL: RoomEvt.saveSync（Local / Remote / Cloud 三类会话均已挂 onSharedSave）
+    PL->>SY: onShared(save)
+    SY->>SY: 时间戳去重 → _tagSave(meta.role/seat, members[].self)
+    SY->>ST: put('share/NU9E6R/latest', tagged)（保留，旧语义）
+    SY->>ST: ★ put('NU9E6R', tagged)（续玩可见，玩家端同样落档）
+
+    Note over EN: 用户回到入口页
+    EN->>EN: _reloadSaves()：list() → 按 meta.code.toUpperCase() 去重
+    Note over EN: 优先保留「键 == 房号」那条；auto/ 与 share/ 折叠
+    EN->>ST: get('NU9E6R') → save
+    EN-->>KP: ③ 区出现 NU9E6R（房间名 / 状态副行）
+    EN-->>PL: ③ 区出现 NU9E6R（玩家角色 role/seat）
+    KP->>EN: 点「续玩」
+    EN->>RS: _resume('NU9E6R') → loadRecentCredentialFlexible('NU9E6R')
+    Note over RS: 原样→小写→大写三形态归一；结束房间不清凭据（D-2）
+    RS-->>KP: 联网重连 / 离线副本（按弹窗选择）
+    Note over SY,ST: LAN + 云端双通道；KP + 玩家两端；file backend isSafeKey 零改动

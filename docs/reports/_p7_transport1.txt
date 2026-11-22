@@ -1,0 +1,450 @@
+================================================================
+P7 · 第一批（收尾交付）：P2-06「导出文本」真功能
+                        + 注释/设计文档订正 + P5 结项 L1 报告
+                        + 三项技术债核查 + 全局自检
+================================================================
+日期：2026-11-10
+工程：C:/Users/60965/WorkBuddy/2026-10-08-18-34-17/dice-realm
+执行：software-engineer (Alex)
+全量：1499 组 0 红（基线 1475 + 本批 24 组，只增不减）
+      默认并发 00:49 +1499 / 串行 03:25 +1499 / 恢复源码后 00:50 +1499
+analyze：No issues found!（全项目）
+门禁：P4 13/13 OK、P5 UI 14/14 OK
+APK：60,602,967 字节 / SHA256
+      f143a0b8f228df05a63404b7aa0289f4e94452c6daac9bf5a346524d84db6032
+      三 ABI 均带 libapp.so（arm64-v8a 8,323,976 / armeabi-v7a 9,241,160 /
+      x86_64 8,586,120）；出包后 `enable-native-assets: true` 已确认恢复
+结论：IS_PASS: YES
+
+---------------------------------------------------------------
+一、这轮做了什么（A / B / C / D / E 五件一次做完）
+---------------------------------------------------------------
+A · P2-06「导出文本」从「如实缺口」做成真功能
+  新增纯函数层 `lib/ui/room/room_history_export.dart`
+      state + 视角 → 导出文本；零 UI 框架、零文件读写、零平台通道、零网络。
+  新增弹层 `lib/ui/room/sheets/sheet_history_export.dart`
+      走 `showRoomSheet`；完整文本用 `SelectableText` 上屏（可长按全选复制）；
+      「复制全文」「系统分享」两个真动作；平台动作做成可注入 port。
+  入口 `MiscSheetKeys.historyExport` 装在「更多工具 → 本机工具」一节，
+  并给玩家补一条生产可达路径（见第二节第 10 条）。
+  新增 `test/room_history_export_test.dart`（24 组：纯函数 14 + 静态 3 + 接线 7）。
+  两轮反向验证见第四节。
+
+B · 注释 / 设计文档过期表述订正
+  `lib/ui/room/room_entry_page.dart:6-9`（P5 历史注释；含顺带查实的两条）
+  `lib/ui/room/widgets/gp_pl_char_card.dart:231-234`
+  `lib/ui/room/sheets/sheet_misc.dart:40,43`（原两处）+ 文件头补 P2-06 说明
+  `_p6_design.md §11`：`1363 组` → `1475 组`；多播锁「当前没做」→
+      「已实现，真机只需确认 ROM 是否放行；兜底仍是手输服务地址」。
+  全库扫描结果与「为什么历史报告不改」见第七节第 5 条。
+
+C · 补写 P5 结项遗留 L1：`_p5_engineer_t05a.txt`
+  按 `_p5_engineer_t0*.txt` / `_p5_engineer_wiring.txt` 体例，只写有证据事实；
+  证据不足处逐条标「据现有文档推断 / 原始输出未留存」。
+
+D · 三项已接受技术债**只核查、不动手**：结论见第六节。
+  未改 `lib/domain/**`、未生成 keystore、未写密钥、未实现三条动效子项。
+
+E · 全局一致性审查（第八节）+ 五项自检（第四节）。
+
+---------------------------------------------------------------
+二、旧版对齐与关键决策（A 的第一件事：先读旧版再动手）
+---------------------------------------------------------------
+旧版源码在另一工作区（只读）：
+  `coc7th-card-app/web/js/ui/room-ui.js`
+    :479  resumeArchiveCard   「游戏历史记录」卡片（只读回看）
+    :505  archiveLogTime      YYYY-MM-DD HH:MM:SS
+    :513  archiveLogActor     host→KP名 / seat→成员昵称·角色名 / 空→系统
+    :529  archiveLogText      `[时间] 执行者：内容`
+    :535  exportArchiveText   导出 .txt
+    :565  archiveDetailSheet  只读回看 + 「⬇ 导出文档」按钮
+  `coc7th-card-app/web/js/core/room-store.js:161 archive(state, extra)`
+    注释写「只留摘要」，v2.11.8 起：logs 全量、dice 最近 20、chats 不存。
+  `coc7th-card-app/web/js/core/room-model.js:612 EVT.DICE` reduce 字段。
+
+旧版 `exportArchiveText(a)` 的确切格式（逐字对齐）：
+  跑团游戏历史记录
+  ================================
+  房间：{name || '房间 '+code}（房间号 {code}）
+  KP：{kpName || '—'}
+  结束时间：{endedAt ? archiveLogTime(endedAt) : '—'}
+  成员：{members.map(nickname + （charName）).join('、') || '无'}
+  （空行）
+  游戏记录（共 {logs.length} 条）
+  --------------------------------
+  {i+1}. [{时间}] {执行者}：{text}
+  （无记录时：'（该团没有游戏记录）'）
+  最后 `UI.saveFile('游戏历史记录-<safeName>-<code>.txt', text, 'text')`，
+  成功才 toast「已导出 N 条记录」。**只有 logs 一节，不含 chats**。
+
+★ 关键决策（逐条写清「为什么」）
+ 1. **导出对象改了**：旧版导出的是「结团归档」实体 `a`（有 endedAt / members /
+    logs / dice）；本工程当前没有归档实体，只有 `session.state` 与存档槽。
+    因此导出的是「**当前会话视角的公开信息流**」，抬头「结束时间」改成
+    「导出时间」（由调用方注入时钟，纯函数不读系统时间），并新增
+    「导出视角」与「说明」两行如实交代边界。这是能力差异，不假装是归档文件。
+ 2. **包含列（只公开）**：房间名 / 房号 / KP / 导出时间 / 成员（昵称 + 角色名）/
+    导出视角 / 说明 / 游戏记录（编号、时间、执行者、公开 text）/ 聊天记录（同款）。
+    公开骰走 `diceLine` 的 UI 文案（'1D100 → 42 · 困难成功'），不按 rolls 重算。
+ 3. **是否过滤秘密字段：过滤，且是结构性过滤**。纯函数**只**调用
+    `view/room_view.dart` 的 `codeOf / roomNameOf / kpNameOf / membersOf /
+    roleText` 与 `view/feed_view.dart` 的 `collectFeeds / collectChats /
+    checkLine`，也就是项目既有的「当前玩家可见公开字段」唯一裁剪口径。
+    它绝不遍历 `state['privates']`、`state['logs']` 原始行、`state['dice']`
+    原始表，绝不调 `LogRecord.toWireJson()`（那份带明文 `p`），不读角色卡
+    `sheet`、不读 `wire` / `p` / `opp` / `rolls` / `label` 原始结构，
+    不读私有素材、暗骰结果、私密笔记、其它座位私有字段。
+    测试用 10 个哨兵串逐一断言零泄漏，同时用正例断言「公开内容确实在」，
+    防止靠「什么都不输出」骗过断言。
+ 4. **redacted（暗骰）行**：照 `feed_view.dart` 口径只取 `text`，`opp` /
+    `seat` / 结构化结果一律不进导出。**执行者统一写「系统」**，不写旧版的
+    「KP（暗骰）」—— 连「这里发生过暗骰」这一元信息都不写进导出文本。
+    这是与旧版唯一有意的行为差异，理由就是 K3 收紧。
+ 5. **顺序与旧版一致**：两节都按 `at` 升序（同 at 按 seq，复用 `collectFeeds`
+    的排序），编号从 1，行格式 `[YYYY-MM-DD HH:MM:SS] 执行者：内容`。
+    没有第二套排序或第二套解析。
+ 6. **分节**：旧版只有「游戏记录」一节（logs）；本工程把公开聊天单列
+    「聊天记录」一节，因为 `collectChats` 是既有公开只读口径、界面上本来
+    就有聊天栏。两节各自「共 N 条」+ 分隔线 + 独立空态文案。
+ 7. **上限与截断**：`feedLimit=120` / `chatLimit=60` 与 U11「记录 120、
+    聊天 60（只裁显示）」同源，取最近 N 条；单行按 Unicode 码点截断到 160
+    （不拆坏 emoji），换行 / 制表符摊平成空格（否则会伪造出额外记录行），
+    超出追加「…（已截断）」；`maxLineChars <= 0` 显式表示不截断。
+ 8. **null 不印 null**：所有取值走既有 `roomText`（null → 空串），
+    **零新增 `jsStr(`、零白名单**。门禁复核 `jsStr(` 总数仍是 14、白名单
+    外 0 个文件。
+ 9. **视角**：入参 `state` 已是「按座位裁剪过的会话态」，过滤发生在数据层；
+    `seat` / `role` 只用于抬头如实写清导出视角，**不做二次隐藏**（T8：
+    二次隐藏会让跨视角用例假绿，等于第二套权限实现）。测试专门断言
+    「同一 state 换视角，去掉抬头行后正文逐字一致」。
+10. **K7 不造假入口**：旧版靠 `UI.saveFile` 下载 .txt；本工程在自动化环境里
+    平台通道不返回，所以底线是「**完整文本 SelectableText 上屏 + 可全选
+    复制**」，再叠加「复制」「系统分享」两个真动作。没有「已导出成功」假提示、
+    没有文件名、没有本地文件写入；用户可以复制 / 分享文本后自行保存。
+    平台动作抽象成 `RoomHistoryExportPort`（同步返回 void）：测试注入同步
+    计数替身 / 空 port；生产用 `SystemRoomHistoryExportPort`
+    （`Clipboard.setData` + `SharePlus.instance.share`）。
+    widget 里**零 await**：先 `setState` 同步上屏反馈，再触发平台动作；
+    反馈不依赖副作用完成。零 Timer / 零 Future.delayed / 零 AnimationController。
+    `share_plus ^13.3.1` 是现有依赖，`pubspec.yaml` 未改。
+11. **权限沿用 `gate.can(op)`**：导出是「公开信息流的本机只读副本」，不是新
+    的权威动作，所以**不新增 POLICY op、不加白名单、不另写一套权限判断**，
+    直接复用 `kRoomHistoryExportPolicyOp = 'chat'`（POLICY = [kp, player]）。
+    该常量只在 `sheet_history_export.dart` 定义一次，三处使用：
+    `MiscSheet` 入口（结构上不渲染）、`RoomGamePage` 玩家「更多工具」路径、
+    弹层 `canExport` 二次防御。旁观者 `gate.can('chat') == false` → 不渲染入口，
+    且零发包。
+    ★ **待 QA 判的拿不准处**：`room_model_host_core.dart#syncFor(seat)` 对
+      spectator 也下发公开 `chats / logs / dice`，理论上旁观者看得到公开
+      历史。按派工「权限不足不渲染入口」取了保守口径（排除旁观者）。
+      是否应向旁观者开放只读导出，请 QA 判定；若放行，只需改这一处常量映射。
+12. **生产可达路径**：`MiscSheet` 此前**只能从 KP 工具面板**打开，玩家没有
+    可达路径。P2-06 的真入口装在 MiscSheet 里，于是给
+    `RoomGamePage._buildToolbar` 的非 KP、且 `gate.can(chat)` 为真的视角
+    补一个「更多工具」入口（`RoomGamePage.miscToolsKey`）。KP 不重复摆
+    （它走 KP 面板）；旁观者不渲染。**导出入口本身只有 MiscSheet 一处**。
+13. **零发包 / 零网络 / 零 state**：弹层不调 `hostAction` / `sendIntent`，
+    不写任何 `state[...]`，不碰 `local.notice`（反馈在弹层内 setState）。
+    接线测试用四项真值前后对比钉死：`f.sent.length`、`session.lastSeq`、
+    `jsonEncode(stateOf)`、`local.notice`。
+
+---------------------------------------------------------------
+三、门禁 / 自检抓到的自己的错（都是自己的，不是需求问题）
+---------------------------------------------------------------
+1. **首轮 `dart analyze` 4 条 info**：`test/room_history_export_test.dart` 里
+   用 `if (x != null) 'key': x` / `if (extra != null) ...extra` 造数据，
+   Dart 3.13 的 `use_null_aware_elements` 建议换成 `?` 标记。
+   修法：改成本地 Map 先建、再用语句 `out['k'] = v` / `out.addAll(extra)`。
+   改完全项目 `dart analyze` → No issues found!。
+2. **首轮单跑 2 条红，都是自己写的断言太朴素**：
+   (a) 「redacted 行不还原 seat」用 `text.contains('玩家2')` 扫**全文**，
+       命中了抬头「成员：玩家1（…）、玩家2」→ 假红。
+       修法：只扫编号记录行（`_numbered(text).single`），并写清理由。
+   (b) 静态口径用 `src.contains('Timer')` 扫**整个源码**，命中我自己在
+       `sheet_history_export.dart` 头注释里写的回顾性「零 Timer」→ 假红。
+       修法：按门禁同款 `code()` 口径先剥掉 `//` 行注释再扫，**断言反而
+       更强**（连注释里偷偷夹带真代码也拦不住）。
+       这正是 `_p6_transport9.txt` 第六节第 3 条记过的同一个坑，本批又踩一次，
+       据实记录、不掩饰。
+3. **反向验证的自我约束**：两轮都先 `cp` 备份 + `sha256sum` 留基准，
+   改完单跑、数红，恢复后 `diff -q` + 指纹比对，再复跑分片 + 全量全绿。
+   没有留下任何临时改动（第四节有指纹自证）。
+
+---------------------------------------------------------------
+四、验收原始输出
+---------------------------------------------------------------
+测试命令前一律：
+  export PATH=/d/dev/flutter/bin:$PATH
+  unset HTTP_PROXY HTTPS_PROXY http_proxy https_proxy
+  export NO_PROXY=127.0.0.1,localhost
+
+1) 分片 `flutter test test/room_history_export_test.dart --reporter compact`
+   首次：00:04 +22 -2: Some tests failed.   （第 2 条原因见第三节）
+   修后：00:04 +24: All tests passed!      （EXIT=0）
+
+2) 全量 `flutter test --reporter compact`
+   默认并发：        00:49 +1499: All tests passed!      （EXIT=0，0 红）
+   串行复核：        03:25 +1499: All tests passed!      （--concurrency=1，EXIT=0）
+   恢复源码后复跑：  00:50 +1499: All tests passed!      （EXIT=0）
+   出包后 config 恢复复跑分片：00:04 +24: All tests passed!
+   账目：P6 基线 1475 + 本批 24 组（14 纯函数 + 3 静态 + 7 接线）= **1499**，
+        只增不减，QA 可逐文件算账。
+
+3) `dart analyze`（全项目）
+   Analyzing dice-realm...
+   No issues found!
+
+4) `node tool/qa/qa_p4_gate.js`
+   ==== 合计 13 条，失败 0 条 ====
+   P4_GATE IS_PASS: YES
+
+5) `node tool/qa/qa_p5_ui.js`
+   ==== 合计 14 条，失败 0 条 ====
+   P5_UI_GATE IS_PASS: YES
+   [OK] jsStr( 命中 ≤ 14 且只在白名单 6 文件 —— 实际 14 处，白名单外 无
+   [OK] 门禁字面量不入注释（零命中）—— 扫描 64 个文件
+   [OK] showModalBottomSheet 只许 sheets/room_sheet.dart 一处
+   [OK] 弹层不走裸 showDialog
+   [OK] lib/ui/room 共 64 个 .dart / 15214 行；view/ 6 个 / 1032 行
+
+6) `bash tool/build_apk.sh`（唯一允许的出包脚本，1m28s，EXIT=0）
+   [1/4] 关闭 native assets（出包期间）
+   [2/4] 构建 release APK
+     Running Gradle task 'assembleRelease'... 81.1s
+     √ Built build\app\outputs\flutter-apk\app-release.apk (57.8MB)
+   [3/4] 校验 AOT 产物
+     8323976  lib/arm64-v8a/libapp.so
+     9241160  lib/armeabi-v7a/libapp.so
+     8586120  lib/x86_64/libapp.so
+   [4/4] 恢复 native assets
+   ===== 出包成功 =====
+   -rw-r--r-- 60602967 2026-11-10 08:35 build/app/outputs/flutter-apk/app-release.apk
+   f143a0b8f228df05a63404b7aa0289f4e94452c6daac9bf5a346524d84db6032
+   签名：debug（可侧载安装、不可上架）
+   独立复核：`stat -c %s` = 60602967 bytes；`sha256sum` 同上；
+             `unzip -l | grep libapp.so` 三 ABI 齐全。
+   `flutter config --list | grep native-assets` → `enable-native-assets: true`
+   build junction 仍是 `build -> /d/dev/dice-build`，未删、未 flutter clean。
+
+7) ★★ 反向验证（两轮，都留原始输出）
+   基准 SHA256（反向验证前）
+     sheet_misc.dart          58be7c119bec6b0bd8d1a589aa5662d50690f5d3d87d00edf516eb7db4189b0f
+     sheet_history_export.dart e1fcde0a60e8e30c639046a7d33c2cfc5ea7f5ad06510cba8142a378fff9ea0e
+
+   反向 A · 摘掉入口（`MiscSheet` 的守卫临时改成 `if (false)`）
+     00:04 +19 -5: Some tests failed.   （EXIT=1，5 条正例变红）
+     变红用例：
+       ★ 入口可点 → 弹层出现 → 完整文本可见（SelectableText）
+       ★ 复制 / 系统分享两个真动作：同步替身计数 + 反馈先于平台动作
+       ★★ 空 port 也不丢文本、不说假话（K7 底线常在）
+       ★★ 零发包 / 零网络 / 零 state / 零 notice（四项真值前后对比）
+       玩家视角入口存在（POLICY chat = [kp, player]）
+     失败形态：4 条 `Bad state: No element` + 1 条 `Found 0 widgets with key
+       [<'misc/historyExport'>]`。
+     恢复：sha256 与基准一致，`diff -q` 无输出。
+
+   反向 B · 摘掉文本渲染（弹层 body 临时改成 `const Text('（占位）')`）
+     00:04 +20 -4: Some tests failed.   （EXIT=1，4 条正例变红）
+     变红用例：上表前 4 条接线正例。
+     恢复：两文件 sha256 均与基准一致，两次 `diff -q` 均无输出。
+
+   恢复后复跑：分片 `00:04 +24: All tests passed!`，
+               全量 `00:50 +1499: All tests passed!`。
+   ★ 另有**常驻反向**：`_SilentPort`（空 port，平台动作什么都不做）用例
+     断言文本仍完整可见、反馈仍如实、不出现「已导出成功 / 文件已保存」。
+     等价「传空 port」的反向一直留在测试文件里，不是临时改出来的。
+
+---------------------------------------------------------------
+五、文件清单
+---------------------------------------------------------------
+本批新增（5 个）
+  lib/ui/room/room_history_export.dart              纯函数：state + 视角 → 文本
+  lib/ui/room/sheets/sheet_history_export.dart      弹层 / 平台 port / 权限常量
+  test/room_history_export_test.dart                24 组（14 纯 + 3 静态 + 7 接线）
+  _p5_engineer_t05a.txt                            P5 结项 L1 补写报告
+  _p7_transport1.txt                               本文件
+
+本批修改（5 个）
+  lib/ui/room/sheets/sheet_misc.dart               头注释订正 + 40/43 注释订正 +
+                                                   historyExport key + 注入参数 + 真入口
+  lib/ui/room/room_game_page.dart                  + miscToolsKey + 玩家「更多工具」
+                                                   生产路径（import 两行 + 工具栏一段）
+  lib/ui/room/room_entry_page.dart                 头注释 4 行改成 P6 事实
+  lib/ui/room/widgets/gp_pl_char_card.dart         头注释 1 段改成事实表述
+  _p6_design.md                                   §11 两处订正（1475 / 多播锁已实现）
+
+★ `sheet_misc.dart` / `sheet_history_export.dart` 的 mtime 是 08:32，
+  那是反向验证**逐字节恢复**时 `cp` 回写造成的，不是二次改动：
+  两文件 SHA256 与反向验证前基准完全一致，`diff -q` 零输出。
+
+零改动（逐项核对）
+  lib/domain/**（room_types.dart mtime 2026-11-08 20:59）
+  pubspec.yaml（mtime 2026-11-08 18:55，4068 字节）
+  lib/net/**、build junction（未删、未 flutter clean）
+  qa_p6_close_report.md（mtime 2026-11-09 22:53）
+  _manual_test_checklist.md（mtime 2026-11-09 22:51）
+  另一工作区 overview.md
+  GpFeeds 等既有组件：`room_game_page.dart:382/385` 两个
+      `const GpFeeds(pane: ...)` 一行未动；`gp_feeds.dart` 未打开过。
+  QA 两个门禁脚本、tool/build_apk.sh 均未改。
+
+---------------------------------------------------------------
+六、D · 三项已接受技术债核查结论（只核查、不动手）
+---------------------------------------------------------------
+【D1 · K16 奖惩骰语义进状态层】
+  现状（读过的证据）：
+    · `lib/ui/room/room_ui_local.dart:46-47`：`bonus` / `penalty` 是纯 UI
+      本地草稿，**不进 state、不进存档、不参与规则**。
+    · `lib/ui/room/widgets/gp_dice_bar.dart:84-85`：发 intent 时把
+      `bonus` / `penalty` 作为载荷送进权威端。
+    · `lib/domain/dice.dart:60 d100Bonus(int bonus, [JsRng? rng])`：只返回
+      最终 int，不返回 bonus/penalty 结构。
+    · `lib/domain/room_model_reduce.dart:90-105 EVT.DICE`：落 state.dice 的键
+      是 seq / seat / nickname / expr / rolls / total / level / levelText /
+      label / at，**没有 bonus / penalty**；重连后只看得到 total 与 expr。
+    · `lib/domain/room_model_log.dart`：RoomLog 持久化完整 RoomEvent
+      （vis/to/seq 都在），但 `LogRecord.toWireJson()` 会带 `'p': evt.p`，
+      属 K3 禁碰的明文面，不能拿来当「语义已在状态层」的依据。
+  旧版同源证据：`coc7th-card-app/web/js/core/room-model.js:612-619 EVT.DICE`
+    reduce 落的字段与本工程逐项一致，也没有 bonus/penalty；
+    `Host.prototype.diceRoll`（:2984）在 emit 载荷里带 detail，但 reduce 不落。
+    → **旧版同源，不是本工程重写造成的需求违约**。
+  判断：是**已接受的取舍**，不是真需求违约（PRD P2-06 未要求复盘奖惩语义；
+    `_manual_test_checklist.md` 第 3 条已如实登记）。
+  要不要做：**本批不做**。
+  代价：中——要改 `lib/domain/room_model_reduce.dart` 的 dice 归约、
+    20 键存档形状与旧存档迁移、host/client 裁剪口径、大量 fixture 基线
+    （P4 门禁冻结了 455/517/121/256 与 61 个 POLICY 分支），还要重新出包。
+  依赖：需要先由 PM/用户确认「复盘要看到奖励/惩罚语义」是**新需求**，
+    并给出字段口径（是存原始 bonus/penalty，还是存展开的骰列）。
+  建议：维持现状 + 真机清单保留记录；若将来做，单开一个批次，
+    不要塞进收尾期，也不要碰 K3 的明文日志面。
+
+【D2 · 上架签名】
+  现状：`android/app/build.gradle.kts:32-36` release 分支仍是
+    `signingConfig = signingConfigs.getByName("debug")`，脚本出包尾部也
+    如实打印「签名：debug（可侧载安装、不可上架）」。
+  改成 release 签名需要：
+    · 用户提供 release keystore（私钥）与口令 / alias；
+    · `key.properties`（路径 / 口令 / 别名），且**必须**留在工程外或
+      被 .gitignore 排除；
+    · `android/app/build.gradle.kts` 里新增 `signingConfigs { create("release"){...} }`
+      读取 `key.properties`，并把 `buildTypes.release.signingConfig` 指过去。
+  为什么本批不能做：私钥必须由用户生成 / 提供并自行保管，写进工程或
+    由智能体生成 keystore 都是泄密面；而且真机测试尚未做，签完再改包
+    会换指纹、让已侧载的装机失效，**真机测完再签更合理**。
+  要不要做：**本批不做**。代价：低（改一个 gradle 文件 + 一份外部配置），
+    但依赖是**人**（私钥 + 上架主体），不是代码。
+  建议：真机 P0 清单跑完、确认要上架时，由用户提供 keystore 后单独一批做；
+    本批**没有**生成任何 keystore、没有写任何密钥、没有改 gradle。
+
+【D3 · P2-05 三条子项（操作播报错峰堆叠 / 角标持续脉冲 / 轮次提示音）】
+  裁决核实：`_p5_design.md:1858` U7 原文「只做『新条高亮』+
+    notice 2s 自消；不做居中播报、不做提示音」—— **仍成立**。
+  PRD `_p5_prd.md:763` 写的是「feed 新增闪烁、操作播报（居中 2s）、
+    角标脉冲、轮次提示音」；`_p6_transport9.txt` 第二节表格逐条记录取舍：
+    · feed 新增闪烁 ✅ 已落地（Round 2 还修了两条真缺陷）；
+    · 「居中 2s 自消」的**显示机制**由既有 `RoomNoticeOverlay` 承担并有测试，
+      但旧版 optoast 的「逐条播报 + 最多 3 条错峰堆叠」靠 setTimeout 队列，
+      U7 明确不做，且 Timer 堆叠在 fake-async 下会挂测试；
+    · 角标持续脉冲用「一次性新增角标」代替（AnimationController 持续动画在
+      fake-async 下 Future 永不完成）；
+    · 轮次提示音需要音频资源 / 播放插件，pubspec 冻结、不打包音频，U7 不做。
+  判断：**维持「无假入口」是正确取舍**，三条都没有用禁用按钮或假提示凑数。
+  要不要做：**不做**。代价：新增音频插件（违反依赖冻结）+ 引入动画 / Timer
+    （违反测试环境硬约束）+ 推翻 U7 裁决。依赖：新需求 + 依赖清单解冻 +
+    测试环境约束重新议定。
+  建议：保持现状，不要为了「P2 全表打勾」放假入口；P2-06 本批已补齐，
+    P2 表其余项见 `_p6_transport9.txt` 第五节。
+
+---------------------------------------------------------------
+七、遗留与如实说明（不掩盖、不假装做了）
+---------------------------------------------------------------
+1. **旁观者能否看/导出历史，待 QA 判**：事实是 `syncFor(seat)` 给旁观者
+   也下发公开 chats/logs/dice；本批按「权限不足不渲染入口」取保守口径，
+   用 `gate.can('chat')` 把旁观者排除。若 QA 判定应放行，只改一处常量映射，
+   不需要动纯函数（它本来就只读当前视角的 state）。
+2. **导出 ≠ 下载 .txt 文件**：旧版 `UI.saveFile` 会落地一份带文件名的
+   `.txt`；本批给的是「完整文本上屏 + 复制 / 系统分享」，没有文件名、没有
+   本地文件写入。这是 K7 下的能力边界，用户复制后自行保存。报告不把它
+   写成「已实现文件导出」。
+3. **导出的是当前会话视角，不是结团归档**：旧版导出对象有 endedAt / 归档
+   members；本工程没有归档实体，因此抬头是「导出时间」并多两行说明。
+   若要严格复刻旧归档导出，需要先做归档实体，属新需求。
+4. **未跑 adb / 模拟器 / 真机联调**：系统分享面板、剪贴板在真机上的实际
+   表现未验证；「更多工具」多占一个工具栏格子，真机横屏窄档建议看一眼
+   是否挤压（自动化只验了结构与可点性）。
+5. **全库过期字面量扫描结果**（B 的收尾）：
+   · `lib/` 全库（含注释）对「下一期 / 后续版本提供 / 当前没做 / 未申请」
+     **零命中**——4 处必改注释与头注释已全部改成事实表述。
+   · 工程内 `*.md/*.txt` 仍有命中，全部落在两类文件，刻意不改：
+     (a) 派工明确禁改的 QA 产物：`qa_p6_close_report.md`（7 处）、
+         `_manual_test_checklist.md`（4 处）——它们是**当时的事实记录与
+         真机验收判据**，改了就篡改了 QA 的历史结论；
+     (b) 历史批次报告：`_p6_emulator_verify.txt`、`_p6_legacy_survey.txt`、
+         `_p6_transport3.txt`、`_p6_transport6.txt`、`_p6_transport8.txt`、
+         `_p6_transport9.txt`——它们记录的是「当时怎么说的、当时踩了什么坑」，
+         属于时间线快照；把历史叙述改成现状反而会让后来的读者误判
+         「那批当时就做完了」。
+     `_p6_design.md`（设计文档，面向当前读者）已按要求订正，
+     所以它不是历史报告，不适用上面这条理由。
+   · 另一工作区 `overview.md` 的 `多播锁未申请` 属工程外文件，
+     派工明确不改，仅记录。
+   · 用户可见字面量（代码里的字符串 / hint / 弹层文案）为零。
+6. **APK 仍是 debug 签名**：见第六节 D2，可侧载、不可上架。
+7. **`_p5_engineer_t05a.txt` 是补写件**：只写有证据事实，未重跑任何 P5
+   命令；T05 逐子批次的原始输出未留存，报告里已逐处标注推断 / 未留存。
+8. **P2-05 三条子项**维持不做，理由见第六节 D3。
+9. **未直接联系 QA**：跨成员信息流经 team-lead 中转；QA 两个产物未动。
+10. **红线复核**：零新增 `jsStr(`、零白名单、不裸 `showDialog`、不改门禁
+    字面量到注释行（门禁第 12 条零命中）、不改 `lib/domain/**` /
+    `pubspec.yaml` / `lib/net/**` / build junction / QA 产物 / overview.md；
+    零 Timer / Future.delayed / AnimationController（widget 侧）；
+    零发包、零网络、不改房间 state；不跑 adb / 模拟器 / 真机。
+
+---------------------------------------------------------------
+八、全局一致性审查（全量重做）
+---------------------------------------------------------------
+· 跨文件 import 与循环依赖：
+    room_history_export.dart → room_text.dart / view/feed_view.dart /
+      view/room_view.dart / domain/room_types.dart（全是纯 Dart 下游）；
+    sheet_history_export.dart → room_history_export.dart / room_scope.dart /
+      widgets/room_panel_kit.dart / sheets/room_sheet.dart + Flutter 三件套；
+    sheet_misc.dart → sheet_history_export.dart / sheet_music.dart /
+      room_sheet.dart；
+    room_game_page.dart → sheet_history_export.dart（只取常量）/ sheet_misc.dart。
+    `view/` 零反向引用，`sheet_kp_panel.dart` 原有 `openMiscSheet` 调用不变。
+    全库无循环；`dart analyze` 零悬空 import。
+· 接口契约：`MiscSheet` 仍是 `const` 构造，新增的是两个可空具名参数，
+    `openMiscSheet` 的 `const MiscSheet()`、`sheet_music_test.dart` 与
+    `room_ui_gap_fill_test.dart` 里的 `const MiscSheet()` 全部照旧编译通过
+    （全量 1499 组已证）。`RoomGamePage` 的 `const` 构造 / `pageKeyOf` /
+    `zoomKey` / `kpPanelKey` 未改；两个 `const GpFeeds(...)` 一行未动。
+    `RoomHistoryExportSheet` 的 `const` 构造只被 `showRoomSheet` 的 body 用。
+· 数据流：session.state（已按座位裁剪）→ buildRoomHistoryExportText
+    （只读 collectFeeds / collectChats / checkLine / membersOf / roomText）
+    → String → SelectableText（上屏）/ port.copy / port.share（同步发出）
+    → setState 反馈。全程不写 state、不发 intent、不联网、不碰 local.notice。
+· 判据 / 权限 / 脱敏唯一性：文本生成只有 `buildRoomHistoryExportText` 一处；
+    权限只有 `kRoomHistoryExportPolicyOp = 'chat'` 一处定义、三处引用；
+    脱敏只有 `collectFeeds / collectChats / checkLine` 既有口径，没有第二套
+    解析、没有第二套隐藏、没有白名单。`redacted` 行只取 text 与 `checkLine`
+    同源。测试用「同一 state 换视角，去抬头后正文逐字一致」钉死这一点。
+· 无重复实现：`exportArchiveText` 只在第二节的旧版对齐里被引述，工程内
+    没有第二份格式化函数；`formatHistoryTime` 是纯函数层唯一时间格式化。
+· 门禁 / 自检：P4 13/13、P5 UI 14/14（jsStr 总数仍 14、注释字面量零命中、
+    showModalBottomSheet 仍只 1 处）、analyze 零、全量 1499 组 0 红
+    （默认并发 + 串行 + 恢复后共三遍）、APK 三 ABI + SHA256 + native-assets
+    恢复确认。
+· 反向验证：摘入口 → 5 条正例变红；摘文本渲染 → 4 条正例变红；
+    两轮均 `cp` 备份 / `sha256sum` / `diff -q` 逐字节恢复并复跑全绿；
+    常驻空 port 反向保留在测试文件里。
+
+IS_PASS: YES
+（依据：A 的真功能有纯函数 + 真入口 + 两个真动作 + 24 组用例，且两轮反向
+  验证证明不是恒绿断言；B/C/D/E 全部落盘并逐条如实说明；四项自检全过、
+  出包成功、源码逐字节恢复有自证。注意：旁观者权限口径待 QA 判、
+  真机 / 系统分享未验证、APK 仍是 debug 签名，均在第七节如实标注，
+  不影响「代码 + 自动化验收」这一结论。）
+
+================================================================

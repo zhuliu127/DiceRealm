@@ -1,0 +1,215 @@
+================================================================
+P5-T02 工程师交付报告（游戏页壳体：S2.1 → S2.4）
+工程：C:/Users/60965/WorkBuddy/2026-10-08-18-34-17/dice-realm
+环境：Flutter 3.47.9 / Dart 3.13.7
+================================================================
+
+零、先回复两条裁决（已按你的口径补断言，未改任何 lib 代码）
+----------------------------------------------------------------
+1) 「logs 里非 Map 元素归一成空 Map」：保持现状，但已补**显式断言**钉住语义 ——
+   test/room_legacy_migrate_test.dart：
+   `★ 非 Map 元素被归一成空 Map（原值不保留，记录现状而非放水）`
+   断言：3 个脏元素（'oops' / 42 / null）→ 迁移后 3 个空 Map、migrated==0、
+   且**入参仍是原值**。用例注释写明「若将来改成原值透传，这个用例会红」。
+2) 「只认顶层 logs」：不改，已补**链路断言** ——
+   `★ 接线链路：顶层 logs 迁移后经 adoptSave 进 state.logs（嵌套层无需处理）`
+   构造同时含顶层明文 logs 与嵌套 state.logs 的存档 → 迁移只动顶层（migrated==1）
+   → `host.adoptSave(migrated.save)` 后 `host.state.logs` 是脱敏行（seat 空串 /
+   统一文案 / redacted / seq 保留），并断言明文**不会随 adoptSave 复活**，
+   同时反向确认嵌套那份保持原样（adoptSave 只读顶层，所以它不影响结果）。
+   → S1.3 从 18 组升到 **20 组**。
+
+一、改动文件清单（含行数，全部为本轮新增）
+----------------------------------------------------------------
+【lib/ 新增（页面 + 两个 widget，共 665 行）】
+  lib/ui/room/room_game_page.dart                 325
+  lib/ui/room/widgets/gp_topbar.dart              199
+  lib/ui/room/widgets/gp_toolbar.dart             141
+
+【test/ 新增（共 673 行）】
+  test/room_ui_shell_test.dart                    354  （15 组）
+  test/room_ui_layout_test.dart                   319  （12 组）
+
+【test/ 修改（按裁决补 2 组，+61 行）】
+  test/room_legacy_migrate_test.dart              377  （18 → 20 组）
+    └ 上一轮 316 行，本轮 +61（新增两条断言 + 两个 import）
+
+未改：lib/domain/**（含 room_model_save.dart）、lib/ui/room/room_session*.dart、
+      room_scope.dart、room_controller.dart、room_ui_local.dart、room_keys.dart、
+      view/**、widgets/room_panel_kit.dart、pubspec.yaml。
+
+二、T02 五条验收判据（逐条实测）
+----------------------------------------------------------------
+判据 1  flutter test test/room_ui_shell_test.dart test/room_ui_layout_test.dart → 0 红
+  $ flutter test test/room_ui_shell_test.dart  → 00:02 +15: All tests passed!
+  $ flutter test test/room_ui_layout_test.dart → 00:01 +12: All tests passed!
+  合计 27 组，0 红  ✅
+
+判据 2  12 / 13 个容器 key 各自 findsOneWidget；KP 专属块玩家侧 findsNothing
+  · KP：`RoomKeys.kpSlots`（12）逐个 findsOneWidget，且 takeException == null
+  · 玩家：`plSlots`（13）逐个 findsOneWidget
+  · 旁观：同样 13 个（走 PL 骨架）
+  · KP 专属（gpKpLeft/gpKpTools/gpMap/gpScene/gpCombat/gpPlayers/gpChat/gpLog）
+    在玩家侧 findsNothing；PL 专属（gpPlCharCard/gpPlMap/gpPlChat/gpPlLog/
+    gpPlCombat/gpPlScene/gpPlMates/gpPlSketch/gpPlNotes）在 KP 侧 findsNothing  ✅
+  注：布局占位块是 `<KeyedSubtree(key: RoomKeys.keyOfSlot(slot))>` 包
+      `PlaceholderBlock`，所以「每槽位独立子树 + ValueKey」成立且不重复 key。
+
+判据 3  360×640 与 780×320 下 takeException() == null
+  · 360×640（单列）：null（并几何断言「私密栏 top < 素材舞台 top」且左边界相同）
+  · 780×320（多列 + compact）：null（并几何断言前两块同排：top 相同、left 递增）
+  · 780×400 / 360×640 玩家侧：均 null  ✅
+
+判据 4  结构断言：gpToolbar 不在任何 Transform 子树内
+  test/room_ui_layout_test.dart `_hasTransformAncestor()` 用
+  `element.visitAncestorElements` 反查祖先链：
+    gpToolbar → isFalse（不在缩放容器里）
+    gpTopbar  → isFalse（顶栏同样钉住）
+    gpChat / gpPriv → isTrue（反证：内容区确实被 Transform 包着，断言不是空转）
+  另断言「缩放从 1.0 → 0.6 后 gpToolbar 的 rect.top / height 完全不变，
+  height == GpToolbar.height(56)」  ✅
+
+判据 5  dart analyze 零 issue；全量 flutter test ≥1066 组、0 红
+  $ dart analyze → No issues found!
+  $ flutter test  → 00:34 +1095: All tests passed!
+  1066（T01 收尾）+ 27（T02）+ 2（S1.3 补断言）= 1095，0 红  ✅
+
+三、四个子批次的实现要点（含设计决策与理由）
+----------------------------------------------------------------
+S2.1 稳定 key + 骨架装配（room_game_page.dart）
+  · `RoomGamePage` 按 `session.role` 选 `RoomKeys.kpSlots`(12) / `plSlots`(13)；
+    旁观者走 PL 骨架 → 同样 13。
+  · 每槽位 `<KeyedSubtree(key: RoomKeys.keyOfSlot(slot))>`，块体除顶栏/工具栏外
+    一律 `PlaceholderBlock`（10 个 KP / 11 个 PL）。
+  · 整页重建：最外层 `KeyedSubtree(key: ValueKey('gp/<role>/<inGame>'))`，
+    生成处统一在 `RoomGamePage.pageKeyOf(role, inGame)`（实现与测试共用，
+    避免字面量漂移）。测试验证：kp→player 换视角、开团前后 status 翻转，
+    旧 key 都 findsNothing。
+S2.2 网格 + compact + 单列 order
+  · 唯一真相源仍是 `view/room_view.dart#RoomGridSpec.of(w,h,landscape)`；
+    页面只调它，不复制阈值。
+  · 新增两个纯函数（可被纯 Dart 断言，不必量像素）：
+      `roomOrderedContentSlots(slots, spec)`：剔除顶栏/工具栏；单列时把
+        第 1 位换成私密栏（等价旧版 `order:-1`）。
+      `roomBlockGap(spec)`：compact → 4.0，否则 `RoomTheme.panelGap`(8)。
+  · 几何反证也做了：compact 档「第 1 行 → 第 2 行」的 top 差严格小于常规档。
+S2.3 顶栏（gp_topbar.dart，块 1）
+  · 房间名 / 房间号 / 身份行(whoLine) / 角色 / 模式 / 回合 / 场景 / 观众数
+    + 连接态徽标（连接中 / 在线 / 补拉中 / 离线，`online` 是 `connected` 别名，
+    不另算一档）+ 服务地址块（**仅 KP**，`if (isKp)` 分支：玩家侧压根不建）。
+  · P0-04 的实现方式：顶栏由页面**钉在 Column 顶部**（不在滚动区），
+    所以「连接态三档始终可见」是结构保证。测试逐档切换 link 断言文案。
+  · 点观众数 → `showRoomSheet` 只读弹层；测试断言弹层打开且 `sent` 长度不变。
+  · 版式全部用 `Wrap`：360 宽也不 overflow。
+S2.4 折叠 + 缩放 + 工具栏壳（gp_toolbar.dart，块 11）
+  · `GpToolbar({List<Widget> extensions})` 用**插槽参数**注入骰子条与扩展按钮；
+    T02 只传 `PlaceholderBlock`，**零 import T03/T04/T05 文件**（已 grep 自证 = 0）。
+  · 缩放：百分比按钮按 `RoomUiLocal.zoomSteps`（60/70/80/90/100）循环，
+    `RoomKeys.gpZoomReset` 复位；实际缩放由页面 `Transform.scale`（只包内容区）。
+  · 快捷动作 `round.next` / `scene.mode`：`enabled` **恰好** `gate.can(op)`，
+    不加业务前置条件（T-30 表驱动探针口径；业务条件写进 hint）。
+  · 折叠：单列档每块带 `FoldHeader`（`roomFoldKey(slot)` = `gpFold/<slot>`），
+    多列档不显示（横屏省空间，测试断言 findsNothing）。折叠态存 `RoomUiLocal`，
+    测试断言「重绘后仍折叠」（T-08）。
+
+四、本轮踩到并修掉的两个真实缺陷（都属「测试逼出来的实现问题」）
+----------------------------------------------------------------
+① 工具栏百分比数字不刷新。
+   原因：`RoomScope` 是 `InheritedNotifier<RoomSession>`，只订阅**会话**；
+   工具栏在缩放容器之外、也不在页面内容区的 `ListenableBuilder` 里，所以
+   `local.setZoom()` 后数字不变。修法：`GpToolbar.build` 内部自己
+   `ListenableBuilder(listenable: scope.local, ...)`（`_bar()` 承载本体）。
+   → 这条正是布局测试 `find.text('60%')` 抓出来的，不是靠肉眼。
+② 折叠头在滚动区下方时 `tester.tap` 会 miss（warnIfMissed）。
+   修法：测试侧先 `await tester.ensureVisible(toggle)` 再 tap（T4 铁律的落点）。
+
+五、门禁 / 硬约束自检（全部实测）
+----------------------------------------------------------------
+· 注释里的门禁字面量（package.flutter / dart.io / dart.ui / state[...]= /
+  rules?.check( / rollExpr( / opposedFull(）：新 5 个文件注释命中 **0**。
+· `lib/domain` 违规文件数 **0**（未动 domain）。
+· `pubspec.yaml` mtime：2026-11-08 18:55:07.401805200（未动）
+· `lib/domain/room_model_save.dart` mtime：2026-11-09 01:30:33.416056900（未动）
+· widgets 三件里 `RoomHost` / `room_rules` / `room_model_host_core` 命中 **0**
+  （不碰权威端与规则）。
+· T03/T04/T05 文件 import 命中 **0**。
+· 时钟推进：全程用 `pump()` / `pump(Duration)`，**没有**用 pumpAndSettle 等节流。
+
+六、留给 T03 / T04 / T05 的断点
+----------------------------------------------------------------
+· T03（信息流 / 战斗 / 骰子条）：
+  - 骰子条走 `RoomGamePage(toolbarExtensions: [GpDiceBar(...)])` 注入，
+    不要改 `gp_toolbar.dart` 的结构。
+  - 替换 `gpChat` / `gpLog` / `gpPriv` / `gpCombat`（KP）与
+    `gpPlChat` / `gpPlLog` / `gpPlCombat` / `gpPlMates`（PL）的占位块：
+    直接把 `PlaceholderBlock` 换成真组件，**保留 `KeyedSubtree` 的槽位 key**
+    （`_slotView()` 里换 `_bodyFor(slot)` 的那一行即可）。
+· T04（KP 面板）：
+  - 替换 `gpKpLeft` / `gpKpTools` / `gpMap` / `gpScene` / `gpPlayers` / `gpStatus`。
+  - 地图/手绘板通过 `MapStageController`（room_panel_kit 已声明）交互；
+    块 3 与块 4 必须保持**两个独立子树**（当前结构已满足：每个槽位一个子节点）。
+· T05（玩家面板 + 收尾）：
+  - 替换 `gpPlCharCard` / `gpPlMap` / `gpPlScene` / `gpPlSketch` / `gpPlNotes`；
+  - K-01 收尾判据：`find.byType(PlaceholderBlock)` 必须 `findsNothing`；
+  - T-30 探针：现有 `RoomKeys.action('round.next')` / `action('scene.mode')`
+    两个按钮已经在页面上，`enabled` 恒等于 POLICY，探针会直接生效；
+  - 旧名清理清单见 `_p5_engineer_t01.txt` 第四节（`linkState` / `changes` /
+    `RoomLinkState.online` 三个零调用别名可直接删）。
+· 夹具注入点（已就绪，无需再改夹具）：
+  `f.pageBuilder = (seat, role) => RoomGamePage(toolbarExtensions: [...])`
+  → T02 自己的两个测试就是这么接的；T03–T05 沿用同一写法。
+
+
+七、R2 勘误同步（K14 / K15 / §5.0）—— 已全部对齐并加守卫用例
+----------------------------------------------------------------
+收到架构师 R2 版设计（1876 行）后做的三件事：
+
+1) §7 K15「容器 key 断言必须先注入真页面」
+   · 已核对：T02 的两个测试文件**本来就是**先 `f.pageBuilder = ...` 再断言容器 key，
+     没有任何一条用例用默认壳断言容器 key（不存在 K15 说的假红/假绿）。
+   · 为了让设计里那段「标准片段」能原样抄，给 `RoomGamePage` 补了两个**可选**
+     具名参数：`RoomGamePage({String? seat, String? role, ...})`。
+       - 不传 → 以 `RoomScope` 里的会话视角为准（生产路径）；
+       - 传了 → 注入值优先（夹具 / 跨骨架对比）。
+     设计 §7 K15 的 `RoomGamePage(seat: seat, role: role)` 现在可直接编译。
+   · 新增守卫用例（test/room_ui_shell_test.dart，`K15 / K14 · 夹具契约守卫` 组）：
+     `★ K15：默认夹具壳不含任何容器 key；注入真页面后才出现`
+       —— 先断言默认壳里 12 个 key **全部 findsNothing** 且 PlaceholderBlock
+          findsNothing（把「夹具刻意不含 key」变成可执行的契约）；
+          再用设计原样写法注入 → 12 个 key 全部 findsOneWidget。
+   · 数据类断言（stateOf / sent / hostState）仍走默认壳，未为它们 pump 真页面。
+
+2) §7 K14「throttle 必须读夹具注入的 now()」
+   · 实读 `lib/ui/room/room_controller.dart` 核实：**已合规，无需改动**。
+       46-47：`RoomController({..., int Function()? nowMs}) : _nowMs = nowMs ?? _systemNowMs;`
+       56   ：`final int Function() _nowMs;`
+       83-85：`bool throttle(String key, ...) { final now = _nowMs(); ... }`
+     即 `throttle` 读的是注入的时钟；`DateTime.now()` 只在**未注入**时兜底。
+     夹具 `_buildRoom` 也是 `nowMs: () => nowMs`（可写字段），链路完整。
+   · 新增守卫用例：`★ K14：节流读的是夹具注入的时钟（f.nowMs += 500 后再次放行）`
+       桶内第二下 false → 推 500ms 后 true → 再推 399ms 仍 false → 再 +1ms 正好放行，
+       并把「不同 key 独立分桶」一并钉住。若实现改回系统时钟，这条必红。
+   · 结论：**没有改动 room_controller.dart 一行**（前序实例写对了）。
+
+3) §5.0「T01 已交付清单」
+   · 逐项核对：`RoomKeys.kpSlots/plSlots/keyOfSlot/action`、
+     `RoomGridSpec.of` + 五档阈值、10 个通用件、`RoomSession/RoomHostRead/
+     LocalLoopbackSession`、`RoomController`、`RoomUiLocal`、`migrateLegacySave`、
+     `RoomNotesStore`、夹具 `boot/bootSync/nowMs/pageBuilder/useRoomScreen`
+     —— 全部直接复用，T02 期间**没有重造任何一件**（新增代码只有页面 + 顶栏 +
+     工具栏 + 三个纯函数 + 两个测试文件）。
+   · §0.3 file_picker 13.3.2 勘误：S1.3/S1.4 不涉及，无需动作；已记录，
+     以后不会按 8.x 形态改 `room_image_picker.dart`。
+
+补跑实测（本次追加后）：
+  $ flutter test test/room_ui_shell_test.dart  → +17 All tests passed!（原 15 + K15/K14 两条）
+  $ flutter test test/room_ui_layout_test.dart → +12 All tests passed!
+  $ flutter test                               → +1097 All tests passed!（1066 + 29 + 2）
+  $ dart analyze                               → No issues found!
+
+（本文件第二、三节的「27 组 / 1095 组」为 R2 同步前的数字；以本节 29 组 / 1097 组为准。）
+
+================================================================
+结论：T02 完成。五条判据全部实测通过（29 组新测试 + 全量 1097 组 0 红 +
+analyze 零 issue + 结构断言「工具栏不在缩放容器内」成立 + K14/K15 守卫用例就位）。
+================================================================

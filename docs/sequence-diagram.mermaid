@@ -1,0 +1,77 @@
+sequenceDiagram
+    autonumber
+    participant PC as RoomClient (玩家 p1)
+    participant P6 as 传输层 P6 (本期仅模拟)
+    participant H  as RoomHost (KP 权威端)
+    participant POL as kRoomPolicy / needs()
+    participant RU as CocRules (RoomRulesPort)
+    participant AP as RoomHost.apply() ★唯一写口
+    participant LG as RoomLog
+    participant RD as reduceRoomState()
+    participant PL as plan() / cropFor()
+    participant ALL as 所有在线玩家
+    participant CL as RoomClient.receive()
+
+    rect rgb(235, 245, 255)
+    Note over PC,CL: 流程一 · intent → Host 校验 → emit/apply → plan() 出站
+    PC->>P6: intentMsg(op='act', p={op:'check.request', ...})
+    P6->>H: intent('p1', msg)
+    H->>H: isHost = (seat == 'host')；roster.get('host')==null 不得判旁观者
+    H->>H: locked 全局操作锁白名单 (1344-1369)
+    alt 撕卡/疯狂/昏迷/濒死 且非白名单
+        H->>PL: _sysTo(seat, 锁定提示)
+        PL-->>P6: [{to:'p1', msg:{k:'evt',...}}]
+    else 正常
+        H->>POL: _act → needs(role, op) 查 61 action
+        alt 未登记 action / 越权
+            POL-->>H: {allowed:false, confirm:null}
+            H->>PL: _sysTo(seat, '你没有权限执行该操作')
+            PL-->>P6: [{to:'p1', msg:{k:'evt',...}}]
+        else confirm≠null 且发起者非 KP
+            POL-->>H: {allowed:true, confirm:'kp'|'owner'|'all'|'twice'}
+            H->>H: pending 去重 (by + op + JSON.stringify(p)，键序必须稳定)
+            H->>PL: '已提交，等待确认'
+        else 允许直接执行
+            POL-->>H: {allowed:true, confirm:null}
+            H->>RU: rules.check / rollExpr / resolveAttack (opts.rng=nowRng, opts.now=nowClock)
+            RU-->>H: 结果对象（randUsed 由 LCG 计数）
+            H->>H: emit(t, p, vis, to) → hasSecret/scrub + warnings
+            H->>AP: apply(evt, persist:true)
+            AP->>LG: push(evt) → ++seq, evt.withSeq(seq), 持久化 t/vis/to/p
+            LG-->>AP: LogRecord(seq, evt)
+            AP->>RD: reduceRoomState(state, rec.evt)  ★含 vis/to
+            RD-->>AP: state.seq = rec.seq（末尾无条件写）
+            AP->>AP: _accumulatePrivate / _onRoundBoundary / _maybeSnapshot
+            AP-->>H: rec
+            H->>PL: plan(rec)
+            PL->>PL: VIS.KP → []；VIS.SEAT → to 单发 evt + 其余在线者 skip；PUBLIC → 逐人 cropFor
+            PL-->>P6: List<SendPlan>[{to,msg}]（顺序与 seq 一致，不直接发网络）
+            P6-->>ALL: {k:'evt'|'skip', seq, ...}
+            ALL->>CL: receive(raw)
+            CL->>CL: gate(seq)（skip 与 evt 共用）；sync 重置 lastSeq/gapFrom
+            CL->>RD: reduceRoomState(state, RoomEvent(vis:null)) 客户端回放（旧版 undefined→PUBLIC）
+        end
+    end
+    end
+
+    rect rgb(255, 245, 235)
+    Note over H,ALL: 流程二 · rollback → 快照 + 重放 → syncFor（Q1 修正落点）
+    H->>H: rollback(beforeSeq=4) → target=3；prevStatus=meta.status
+    H->>H: snap = 最近快照 seq<=target（本例 @seq2）
+    H->>H: state = emptyRoomState(snap.state.meta) + 逐键 roomClone 覆盖；state.seq=snap.seq
+    H->>LG: items.filter(2 < seq <= 3) → [rec@3 = CHECK VIS.SEAT to='p1']
+    loop 每条待重放记录
+        H->>AP: apply(rec.evt, persist:false)  ★同一 apply 单口，不另写补丁分支
+        AP->>RD: reduceRoomState(state, rec.evt)  ← vis='seat' / to='p1' 来自持久化日志
+        RD-->>AP: CHECK 分支落 {text:'KP 秘密进行了一次检定', redacted:true}
+        Note over AP,RD: 旧版 3450 行只传 {t,seq,p} → 明文；Dart 传完整 evt → 脱敏保持
+    end
+    H->>H: prevStatus==IN_GAME && 恢复出 RECRUITING → 保持 IN_GAME
+    H->>H: state.members = members()（当前花名册，不把在线玩家变没）
+    H->>LG: rollbackBefore(4) → dropped=1, log.seq=3
+    H->>H: snapshots 裁掉 >3；_rebuildRoundStarts()
+    H->>PL: rollbackPlan → 每个在线者 syncFor(seat) 全量（不发反向事件）
+    PL->>PL: _makeSync 复用增量同一套 cropFor/combatFor 规则
+    PL-->>ALL: {k:'sync', seq:3, state}（不含明文检定 / hp / secret / kpOnly / attrs）
+    Note over ALL: T06 安全回归：对每个在线 seat 断言载荷 JSON 无明文/hp/secret/kpOnly/attrs
+    end

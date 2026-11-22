@@ -1,0 +1,119 @@
+================================================================
+P5 接线交付报告（T02 页面 × T03/T04 真块）
+工程：C:/Users/60965/WorkBuddy/2026-10-08-18-34-17/dice-realm
+环境：Flutter 3.47.9 / Dart 3.13.7
+================================================================
+
+结论：**IS_PASS = YES**
+  · 全量 `flutter test` → **+1178 All tests passed**（1169 + 9 接线用例）
+  · `dart analyze` → **No issues found!**
+  · 五条指定断言全部实测通过（见第三节）
+  · 门禁零命中；`pubspec.yaml` / `room_model_save.dart` mtime 未变
+
+一、改动清单
+----------------------------------------------------------------
+| 文件 | 行数 | 改动 |
+|---|---|---|
+| `lib/ui/room/room_game_page.dart` | 461（原 339） | 改 `StatefulWidget`；持页面级 `MapStageControl`；新增 `_bodyOf()` 槽位装配、`_buildToolbar()`；`_slotView/_content/_zoomHost` 增加 `role` 透传 |
+| `lib/ui/room/sheets/room_sheet.dart` | 142（原 118） | ★ 修真实缺陷：`showRoomSheet` / `showFullscreenReader` 打开时抓一份 `RoomScope` 并在弹层内重新提供（见第四节） |
+| `lib/ui/room/widgets/gp_kp_left.dart` | +2 | `GpKpLeftKeys.root` 字符串 `gpKpLeft` → `gpKpLeft/root`（消除与槽位 key 的重名） |
+| `lib/ui/room/widgets/gp_kp_tools.dart` | +2 | 同上（`gpKpTools/root`） |
+| `lib/ui/room/widgets/gp_kp_players.dart` | +2 | 同上（`gpKpPlayers/root`） |
+| `test/room_ui_wiring_test.dart` | 248（新增） | 9 组接线验收 |
+| `test/room_ui_shell_test.dart` | 1 处断言 | KP 侧占位块 11 → 1（只剩注入的探针），注释同步为「接线后」 |
+
+未改：`lib/domain/**`、`pubspec.yaml`、`view/**`、`room_keys/scope/controller/
+ui_local/session`、T03 的 6 个块、T04 的弹层（除上面 3 行 key 字符串）。
+
+二、14 个槽位的接线对照（实读 `_bodyOf`）
+----------------------------------------------------------------
+| 槽位 | 接的组件 | 归属 |
+|---|---|---|
+| `gpTopbar` | `GpTopbar`（钉在 Column 顶部） | T02，未动 |
+| `gpToolbar` | `GpToolbar(extensions: [GpDiceBar(), (KP) KP 入口, ...注入])`（钉在 Stack 底部） | T02 + T03 骰子条 |
+| `gpKpLeft` | `const GpKpLeft()` | T04 |
+| `gpKpTools` | `GpKpTools(stage: stageControl)` | T04（共用舞台控制面） |
+| `gpMap` / `gpPlMap` | `GpMapStage(controller: stageControl, readOnly: role != kp)` | T03 |
+| `gpScene` | `GpSceneCheckKp(onOpenEditor: (ctx) => showSceneSheet(ctx))` | T04 |
+| `gpCombat` / `gpPlCombat` | `const GpCombatList()` | T03 |
+| `gpPlayers` | `const GpKpPlayers()` | T04 |
+| `gpChat` / `gpPlChat` | `const GpFeeds(pane: FeedPane.chat)` | T03 |
+| `gpLog` / `gpPlLog` | `const GpFeeds(pane: FeedPane.record)` | T03 |
+| `gpPriv` | `const GpPrivates()` | T03 |
+| `gpStatus` | `const GpStatus()` | T03 |
+| `gpPlCharCard` / `gpPlScene` / `gpPlMates` / `gpPlSketch` / `gpPlNotes` | `PlaceholderBlock`（**留 T05**） | T05 |
+
+三、五条指定断言（实测）
+----------------------------------------------------------------
+1. **K-01**：KP 侧 `find.byType(PlaceholderBlock)` → `findsNothing`（0 个）；
+   并逐块点名 `GpKpLeft / GpKpTools / GpMapStage / GpSceneCheckKp / GpCombatList /
+   GpKpPlayers / GpFeeds×2 / GpPrivates / GpStatus` 各 findsOneWidget（避免
+   「占位没了但换成空壳」）。  ✅
+2. **玩家侧 5 个占位**：`findsNWidgets(5)`，且逐槽位确认是
+   `gpPlCharCard / gpPlScene / gpPlMates / gpPlSketch / gpPlNotes`；
+   旁观者同样 5 个。  ✅
+3. **MapStageControl 单实例**：
+   `identical(mapStage.controller, kpTools.stage) == true`；
+   另外做了行为旁证（`beginMark` 后 `stage.awaitingTap == true` 在工具窄栏
+   那一侧可见）。  ✅
+4. **gpToolbar 仍不进缩放容器**：用 `find.ancestor(of: 目标, matching:
+   find.byKey(RoomGamePage.zoomKey))` 反查 —— `gpToolbar` / `kpPanelKey` /
+   `gpDiceBar` 三者都 `findsNothing`（即不在缩放容器内）；反证 `gpChat`
+   `findsOneWidget`（内容区确实在缩放容器里）。  ✅
+   ⚠️ 口径修正：不再用「祖先链上有任意 `Transform`」——Material 3 的
+   `StretchingOverscrollIndicator` 会给**每个**滚动视图插一个 Transform，
+   拿它断言会误红。真正的约束是「不进缩放容器」，所以按 zoomKey 反查。
+5. **12 / 13 容器 key 不退化**：KP 12 个、PL 13 个逐槽位
+   `findsOneWidget`；780×320 横屏同样 12 个全在且零异常。  ✅
+
+四、本轮发现并修掉的一个真实缺陷（重要，影响所有房间弹层）
+----------------------------------------------------------------
+**症状**：点工具栏的「KP」入口 → `RoomScope 未挂载` 断言崩。
+**根因**：`showModalBottomSheet` / `MaterialPageRoute` 把弹层挂在 **Navigator 的
+浮层**上，而 `RoomScope` 在**页面路由内部** —— 弹层与页面是**兄弟路由**，
+弹层里的 `RoomScope.of(ctx)` 命中 `room_scope.dart:39` 的断言。
+这不只是测试环境问题：**真机上任何从房间页打开的弹层都会崩**（T04 的
+`KpPanel`、以及 `showSceneSheet` 等所有走 `showRoomSheet` 的入口）。
+**修法（一处，最小）**：`sheets/room_sheet.dart` 在打开时用
+`context.getInheritedWidgetOfExactType<RoomScope>()` 抓一份（只取不订阅），
+在弹层 body 外**原样重新提供**同一份 session / local / controller
+（不产生第二个写口）；`scope == null`（纯弹层单测）时行为不变。
+`showFullscreenReader` 同理（`MaterialPageRoute` 也是兄弟路由）。
+**验证**：接线用例「KP 入口…点开是「KP 工具」弹层」实测通过（弹层内能正常
+`RoomScope.of`，`KpPanel` 渲染出来）。
+
+五、另一个接线细节：3 处 key 重名（已消除）
+----------------------------------------------------------------
+T04 的三个块把「块自己的根 key」直接用了槽位名
+（`ValueKey('gpKpLeft')` / `'gpKpTools'` / `'gpKpPlayers'`），与页面统一挂的
+`RoomKeys.keyOfSlot(...)` **同名** → `find.byKey` 命中 2 个，T02 的
+「12 容器各 findsOneWidget」直接红。
+处理：只改那 3 个常量的**字符串值**为 `.../root`（常量名不变，T04 的测试
+全部仍然编译且更绿），页面继续做容器 key 的唯一持有者（K-01 与 12/13 断言
+因此对全块统一成立）。
+
+六、门禁 / 硬约束自检
+----------------------------------------------------------------
+· `lib/ui/room/widgets/` + `lib/ui/room/sheets/` + `room_game_page.dart` 里
+  `RoomHost` / `room_rules` / `rules?.check(` / `rollExpr(` / `opposedFull(`
+  命中 **0**；旧面板死代码名（LegacyPanel / panelLegacy / kpPanelOld /
+  oldPanel / RoomUiLegacy）命中 **0**
+· 新/改文件注释里的被扫字面量（`package:flutter` / `dart:io` / `dart:ui` /
+  `state[...]=` / `rules?.check(` / `rollExpr(` / `opposedFull(`）命中 **0**
+· `pubspec.yaml` mtime `2026-11-08 18:55:07.401805200`（未动）
+· `lib/domain/room_model_save.dart` mtime `2026-11-09 01:30:33.416056900`（未动）
+· 全程 `pump()` / `pump(Duration)`，未用 pumpAndSettle 等 400ms 节流
+
+七、留给 T05 的断点
+----------------------------------------------------------------
+· 只剩 5 个槽位是 `PlaceholderBlock`：`gpPlCharCard / gpPlScene / gpPlMates /
+  gpPlSketch / gpPlNotes`。T05 接完后 **K-01 的「全页 0 占位」才真正成立**
+  （现在 KP 侧已经 0 个，玩家侧 5 个）。
+· 弹层作用域已由 `showRoomSheet` 自动补，T05 新写弹层**不需要**自己再包
+  `RoomScope`；但**新写全屏页**请走 `showFullscreenReader`（同样已补）。
+· `GpCombatList` / `GpDiceBar` / `GpToolbar` / T04 的块都已各自订阅 `local`，
+  页面里**不要**再套 `ListenableBuilder(listenable: scope.local)`。
+· 页面新增了两个公开 key：`RoomGamePage.zoomKey`（缩放容器）与
+  `RoomGamePage.kpPanelKey`（KP 入口）；T05 新增「房间页 / 入口页」时若也要
+  验结构，沿用同一套「按 key 反查祖先」写法。
+================================================================

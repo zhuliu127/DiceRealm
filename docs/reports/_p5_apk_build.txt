@@ -1,0 +1,111 @@
+================================================================
+P5 出包验证报告 —— release APK（含一个「静默坏包」陷阱的完整复盘）
+================================================================
+日期：2026-11-09 14:40
+执行：主理人齐活林代行
+结论：**出包成功**。但过程中发现一个会静默产出废包的构建陷阱，已固化成脚本。
+
+----------------------------------------------------------------
+一、最终产物
+----------------------------------------------------------------
+路径      build/app/outputs/flutter-apk/app-release.apk
+大小      59,619,611 字节（56.9 MB）
+SHA256    617e7c9f6ccbe17e7caae935c68a28a02fff06367fbc954d1be9aa8e4ee5446f
+签名      C=US, O=Android, CN=Android Debug
+          （android/app/build.gradle.kts 里 signingConfig = signingConfigs.debug
+            ⇒ 可侧载安装，不可上架；上架需配 key.properties + release keystore）
+ABI       arm64-v8a / armeabi-v7a / x86_64（fat APK）
+AOT       lib/arm64-v8a/libapp.so   7,996,296
+          lib/armeabi-v7a/libapp.so 8,913,480
+          lib/x86_64/libapp.so      8,258,440
+minSdk    24（Flutter 默认）
+
+实机验证：**未做**。本机 adb 无连接设备，且未安装 emulator
+          （D:\dev\android-sdk\emulator 不存在）。
+          静态验证已确认 AOT 产物齐全 + 签名有效；建议首次上真机时
+          重点看：首页 → 骰境入口 → 创建房间 → 开团 → 房间页九块布局。
+
+----------------------------------------------------------------
+二、陷阱复盘（这是本期最重要的产出）
+----------------------------------------------------------------
+【现象】
+第一次 `flutter build apk --release` 打印
+    √ Built build\app\outputs\flutter-apk\app-release.apk (32.8MB)
+构建"成功"，但解包发现：
+    · 没有 lib/…/libapp.so
+    · 没有 kernel_blob.bin / vm_snapshot / isolate_snapshot
+    · 72 个文件里**完全没有 Dart 代码**
+⇒ 这个包装到手机上必定白屏。而工具链全程没有报一个错。
+
+【为什么之前一直没暴露】
+P4 / P5 全部 1305 组测试都是 `flutter test`（Dart VM 模式），
+走的是 kernel 解释执行，**根本不经过 AOT 编译**。
+AOT（gen_snapshot → libapp.so）只在 `build` 时发生。
+所以测试再全绿，也不能证明包是好的。
+
+【根因（两层）】
+
+① 增量构建的失效判断错位（真正原因）
+   `build` 是指向 `D:\dev\dice-build` 的 junction。
+   Flutter 的增量缓存按 **C 盘路径** 判断输出是否最新，
+   而实际文件在 D 盘 —— 时间戳/存在性判断出现偏差，
+   于是 verbose 日志出现：
+       Skipping target: kernel_snapshot_program
+       Skipping target: android_aot_release_android-arm
+       Skipping target: android_aot_release_android-arm64
+       Skipping target: android_aot_release_android-x64
+   但下游照常跑：
+       aot_android_asset_bundle: Complete
+       android_aot_bundle_release_*: Complete
+   ⇒ 打包阶段拿不到 app.so，**静默完成**，产出无 AOT 的包。
+
+② native assets 与 test/build 的死锁（次生原因，也很关键）
+   path_provider 的两个平台实现把 native assets 拖了进来：
+       path_provider_android    → jni + jni_flutter
+       path_provider_foundation → objective_c
+   objective_c 强制要求 dart assets：
+       · enable-native-assets = true  → `flutter test` 正常
+       · enable-native-assets = false → `flutter test` 直接拒绝：
+         "Package(s) objective_c require the dart assets feature to be enabled."
+   所以不能简单地"永久关掉 native assets"。
+
+【解法（已固化为 tool/build_apk.sh）】
+   出包期间临时关 native assets（规避 ②），
+   出完立刻恢复（否则测试跑不了），
+   并且**强制校验 libapp.so 存在**（兜住 ①，防止再次静默产出坏包）。
+
+   脚本 = 关 → build → 校验 libapp.so → 恢复 config（trap EXIT 保证异常也恢复）
+
+【实测对比】
+   坏的：32.8MB，无 libapp.so
+   好的：56.9MB，三 ABI 各带 libapp.so（+24MB 正是 AOT 代码体积）
+   ⇒ **体积差 24MB 是最直观的健康信号：APK 小于 ~50MB 基本可以判定是坏包。**
+
+----------------------------------------------------------------
+三、防复发规则（写给以后的自己）
+----------------------------------------------------------------
+1. **出包只用 `bash tool/build_apk.sh`**，不要裸跑 `flutter build apk`
+2. 拿到任何 APK，先 `unzip -l <apk> | grep libapp.so` —— 三行都有才算好包
+3. APK 体积 < 50MB ⇒ 直接判为坏包，别浪费时间安装
+4. **`flutter test` 全绿 ≠ 包能用**。测试走 VM 不走 AOT，这是两套链路。
+   每期收尾必须真出一次包并校验产物，否则问题会一直藏到用户手上。
+5. 若脚本报「缺 libapp.so」，说明缓存又串了：
+   删 `.dart_tool/flutter_build` 与 `build/app/intermediates/flutter` 后重跑
+   （注意：删这两个目录时本机安全策略会因文件数 >50 拦一次，需分批或手动确认；
+     **绝不要 `flutter clean`** —— 它会连 build junction 一起删掉）
+
+----------------------------------------------------------------
+四、其他环境事实（本轮实测）
+----------------------------------------------------------------
+· 平台目录只有 android/ —— 无 windows/，所以"出包"只能是 Android。
+  （overview 里提到的 junction 是为解决 Windows 桌面构建的文件锁，
+   但当前工程并未启用 windows 平台，Visual Studio 也未安装。）
+· Android SDK 36.0.0；build-tools 35.0.0 与 36.0.0 都在。
+· JAVA_HOME 未设时 apksigner 不可用 —— 需先 `source /d/dev/env.sh`。
+· Gradle 走本地代理 127.0.0.1:9194（android/gradle.properties 已配
+  systemProp.http(s).proxyHost/Port；Gradle 不读 HTTP_PROXY 环境变量）。
+· flutter doctor 的 "Windows Version" 检查项会崩（reg.exe 被安全策略拦），
+  不影响构建，忽略即可。
+
+APK_BUILD IS_PASS: YES（静态验证通过；实机未验）
+================================================================

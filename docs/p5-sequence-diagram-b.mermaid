@@ -1,0 +1,21 @@
+%% P5 时序图 B：导入旧存档 → room_legacy_migrate → adoptSave → 渲染
+%% 源：_p5_design.md §4.2
+
+sequenceDiagram
+    autonumber
+    actor U as 玩家
+    participant DB as GpDiceBar
+    participant H as RoomHost
+    participant CL as RoomClient(本人)
+    participant CP as RoomClient(其他玩家)
+    participant KP as KP 视图(hostRead)
+
+    U->>DB: 开「🕶暗骰」→ 点掷骰
+    DB->>H: intent('dice', {expr, direct:true, secret:true})
+    Note over H: diceDirect 的 secret 分支（B1-F1）<br/>不发 EVT.DICE，改发两条 EVT.PRIVATE
+    H->>CL: EVT.PRIVATE(to:本人) —— p 含 total/levelText/detail
+    H->>KP: EVT.PRIVATE(to:'host') —— p 同上
+    H->>CP: skip 信封（水位推进，不带内容）
+    CL->>CL: reduce PRIVATE → state.privates += {seq,text,at,kind,title}
+    Note over CL: ★ 只落 5 键，结构化字段丢失（§0.2）<br/>UI 只能渲染 text
+    Note over CP: state.dice 里**没有**这条（公共骰才有）

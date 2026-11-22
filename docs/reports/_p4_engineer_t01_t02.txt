@@ -1,0 +1,261 @@
+================================================================
+P4 工程师交付报告 · T01 + T02（寇豆码 / software-engineer）
+生成时间：2026-11-08
+工程根：C:\Users\60965\WorkBuddy\2026-10-08-18-34-17\dice-realm
+================================================================
+
+0. 结论
+----------------------------------------------------------------
+IS_PASS: YES
+
+T01（基础设施 + oracle fixture + 覆盖矩阵 + 白名单）与 T02（CocRules 全量 53 导出）
+均已完成并通过本地全部判据；T03 未开工（无余力），T03/T04/T05 文件一个未碰。
+
+基线保持只增不减：
+  · flutter test：572 组 → 635 组，0 红
+  · dart analyze（全工程）：No issues found!
+  · pubspec.yaml / lib/domain/dice.dart / lib/domain/rules_coc7.dart：未改动
+
+
+1. 改动文件清单（含行数）
+----------------------------------------------------------------
+【新增 · lib/domain（纯 Dart）】
+   481  lib/domain/room_types.dart            D01 常量/枚举/值对象/信封
+   355  lib/domain/room_ports.dart            D02 端口 + 结构化结果
+   293  lib/domain/room_rules.dart            D03 门面（library + 5 part + 53 成员）
+   428  lib/domain/room_rules_core.dart       D04 阈值/等级/rollD100/check/推动/幸运
+   220  lib/domain/room_rules_opposed.dart    D05 对抗（含模式敏感 + 重掷）
+   370  lib/domain/room_rules_expr.dart       D06 骰式/伤害/连发/故障
+   529  lib/domain/room_rules_sheet.dart      D07 SAN/伤势/卡读数/场景步骤
+   376  lib/domain/room_rules_combat.dart     D08 行动顺序/攻击结算
+    26  lib/domain/room_model.dart            D09 barrel
+
+【新增 · lib/domain 空壳桩（仅中文头注释，T03/T04 填实现）】
+    11  room_model_state.dart        (D10)
+    11  room_model_reduce.dart       (D11)
+    11  room_model_log.dart          (D12)
+     8  room_model_envelope.dart     (D13)
+    12  room_model_host_core.dart    (D14)
+    10  room_model_rollback.dart     (D15)
+    10  room_model_host_intent.dart  (D16)
+    10  room_model_actions_room.dart (D17)
+    10  room_model_actions_combat.dart (D18)
+    11  room_model_actions_sheet.dart  (D19)
+    11  room_model_client.dart       (D20)
+    15  room_model_save.dart         (D21)
+
+【新增 · tool/oracle（Node 预言机，零改动 load.js）】
+    51  tool/oracle/load_p4_room.js      O01 同一 ctx 追加加载 room-rules → room-model
+  1276  tool/oracle/dump_p4_room.js      O02 用例注册表 + 覆盖矩阵自检
+
+【新增 · test 支持库与测试】
+   193  test/support/room_oracle.dart            S01 严格比较器 + 白名单闸门
+   104  test/support/room_oracle_whitelist.dart  S02 恰好 1 条 KnownDivergence
+   212  test/support/room_fakes.dart             S03 内存后端 + 确定性替身
+   231  test/room_coverage_test.dart             T01 覆盖矩阵可追溯
+   233  test/room_rules_oracle_test.dart         T02 F01 全量等价性
+    94  test/room_purity_test.dart               T10 静态不变式
+
+【生成的 fixture】
+   259 KB  test/fixtures/room_rules.json      455 例
+   250 KB  test/fixtures/room_model.json      517 例
+   827 KB  test/fixtures/room_sequences.json  121 例
+                                  合计 1093 例（≥1000）
+
+【未改动（实测 mtime 早于本次开工）】
+  pubspec.yaml            4068 B  Nov 8 18:55
+  lib/domain/dice.dart    3611 B  Nov 8 11:58
+  lib/domain/rules_coc7.dart 32430 B Nov 8 15:15
+  （docs/class-diagram.mermaid / sequence-diagram.mermaid 已由架构师生成，未重复写）
+
+
+2. T01 判据逐条实测
+----------------------------------------------------------------
+[判据 1] dart analyze 干净 + domain 零 Flutter/IO 命中
+$ dart analyze
+  Analyzing dice-realm...
+  No issues found!
+
+[判据 1b] room_*.dart 中 package:flutter / dart:io / dart:ui 命中数 = 0
+（test/room_purity_test.dart 逐行扫描，绿）
+  注：room_ports.dart / room_model_save.dart 的头注释原本提到这些字样，已改写成
+      「不得引入 Flutter 包、文件 I/O 或 UI 库」，避免静态探针误报。
+
+[判据 2] fixture ≥1000 例，每例带 name/fn/args/seed/expect/randUsed/tag
+$ node tool/oracle/dump_p4_room.js
+  room_rules.json: 455 例 / 56 个 tag
+  room_model.json: 517 例 / 359 个 tag
+  room_sequences.json: 121 例 / 35 个 tag
+
+  ✅ 覆盖矩阵零缺口；合计 1093 例
+
+  （脚本自带自检：低于 420/460/120 或任一成员无 tag 即 process.exit(1)）
+
+[判据 3] room_coverage_test.dart 全绿（tag 零缺口）
+  · CocRules 53 导出（8 常量 + 45 方法）逐个断言 tag 存在；并断言 8+45==53
+  · 27 EVT / 13 INTENT / 61 POLICY 逐项断言；61×3 角色 needs 逐个断言
+  · 27 reduce 分支（26 有分支 + TEMP_COMMIT 走 default）每支 ≥3 组输入
+  · 25 个 M:* 助手 tag + 9 个常量组 tag + 8 个 S:* 序列 tag + 27 个 S:emit
+  · §5.11 边界：55 的困难阈值 27/28、45 vs 46、01/96/100、critMax=5、fumbleMin=90、
+    00+0=100、十位骰 1/0 + 个位 0（奖励骰先组合再比大小的关键例）全部有用例
+
+[判据 4] 白名单恰好 1 条且字段齐全
+  kRoomOracleWhitelist.length == 1                      ✔（测试断言）
+  caseId='S:q1'（7 个用例命中）                          ✔
+  legacyRef 含 room-model.js:965/:3450/:685/:762          ✔
+  reproInput 含 snapshotEvery=2 / 5 条 emit / rollback(5) ✔
+  allowedPaths 15 条（含 $.state.logs[1].* / $.state.privates /
+    $.steps[8].state.logs[1].* / $.steps[9].state.logs[1].*） ✔
+  forbiddenKeys = [hp, hpMax, secret, kpOnly, attrs]       ✔
+  其余 tag 未开白名单（断言 whitelistedTags == {'S:q1'}）    ✔
+
+[判据 5] pubspec.yaml / dice.dart / rules_coc7.dart diff 为空
+  本工程不是 git 仓库（fatal: not a git repository），改用 mtime 证据 + 内容检查：
+  · 三个文件 mtime 均早于本次开工（18:55 / 11:58 / 15:15）
+  · 新增 room_*.dart 不含 "d100Bonus" / "successLevel" / "import 'dice.dart'"（grep 0 命中）
+  · dice.dart / rules_coc7.dart 不含 "room_"，无反向依赖（purity test 绿）
+
+
+3. T02 判据逐条实测
+----------------------------------------------------------------
+[判据 1] F01 ≥420 例逐字段全绿 + 每例 randUsed 相等
+$ flutter test test/room_rules_oracle_test.dart
+  ...+46: sceneStepResolve（12 例）
+  00:00 +47: fixture 覆盖完整性（room_rules.json 455 例）
+  00:00 +48: 53 个导出成员 100% 有 handler（未知集合为空）
+  00:00 +49: Q4：RNG 消耗三组合恒定（2 / 4 / 0）× 3 seed
+  00:00 +50: 奖励骰/惩罚骰必须先组合再比大小（dice.dart 的 d100Bonus 缺陷不复刻）
+  00:00 +51: All tests passed!
+  （455 例逐字段 expectJsonMatch + 每例 Lcg.used == randUsed，零跳过零异常）
+
+[判据 2] Q4 三组合 × 3 seed 钉死在测试里
+  check({base:50,value:42})                         → randUsed 2
+  check({base:50,value:42,bonus:2})                 → randUsed 4
+  check({base:50,value:42,ones:3,forcedTens:[2]})   → randUsed 0
+  seeds = 7 / 12345 / 4294967295，三条断言在 Dart 侧独立复算（不只依赖 fixture）
+
+[判据 3] 53 导出 100% handler
+  handler 表 46 项（45 方法 + 'const' 常量派生器），测试断言
+  handlers.keys.where(k != 'const').length == 45 且 missing == []
+  另断言 8 个常量均可经 _constOf 取到、非 null
+
+[判据 4] rollD100 不变式 + 静态检查
+  · 奖励骰：ones=0, forcedTens=[0,1], bonus=1 → value == 10（不是 100）
+  · 惩罚骰：ones=0, forcedTens=[1,0], penalty=1 → value == 100
+  · grep "d100Bonus|successLevel|dice.dart" lib/domain/room_rules_*.dart → 0 命中
+  · lib/domain/dice.dart 未被 import（purity test 断言 dice.dart 不含 room_）
+
+[判据 5] dart analyze 干净 / domain 零命中 / dice.dart 一行未动 → 同上
+
+
+4. 关键实现说明（与设计的对应关系）
+----------------------------------------------------------------
+4.1 Q1 机械设计已落到数据结构层（T03/T04 直接可用）
+  · RoomEvent 持久化 t/p/vis/to/seq + withSeq()；LogRecord(seq, evt)
+  · LogRecord / RoomSnapshot / RoomWarning / SendPlan / sealed RoomEnvelope(4)
+  · 白名单闸门 expectJsonMatchExcept()：只放行 allowedPaths，其余仍严格深比较；
+    支持 `.*` 后缀匹配后代路径
+4.2 K1/K2 键序
+  · 所有 toJson() 用 Map 字面量（LinkedHashMap），键序按旧版赋值顺序
+  · ReceiveResult 用「显式键序 + 可空字段」复刻旧版 6 种不同键集合的分支
+    （ignore / sync / skip-ok / skip-dup / evt-ok / evt-dup），
+    **返回体不凭空加 gapFrom**（§0.3）
+4.3 K5 RNG 口径
+  · 所有掷骰入口收 `opts['rng']`，缺省回落 nowRng（测试经 setRng 注入 Lcg）
+  · die10 = 1 次；ones+forcedTens 全给 = 0 次；check 无条件先 rollD100
+  · 无任何「跳过无用掷骰」优化
+4.4 K3 结构化结果
+  · 9 个结果类全部带 toJson()，字段名/键序与旧版一致
+  · 旧版不抛异常的分支一律返回结构；异常只用于程序员错误
+4.5 端口与 53 导出的签名冲突（**需要你知会架构师/QA**）
+  §3.1 的端口草案把多参数捆成 Map（opposed(Map) / impaleDamage(Map)），
+  但附录 C 的 53 导出是位置参数（opposed(a,b) / impaleDamage(expr,db,rng)）。
+  Dart 不允许同名方法两套签名，且 T02 判据以「53 导出」为准 →
+  **端口签名一律照抄 53 导出**，CocRules 一处实现同时满足端口与 fixture。
+  room_ports.dart 头注释已写明该取舍。唯一改动：端口 `skillValue/attrValue` 返回
+  `int?`（旧版查不到返回 null，Host 依赖这个 null 回落；§3.1 写 int 会丢信息）。
+4.6 localeCompare
+  `initiativeOrder` 的同名排序用 `String.compareTo`（码位序），旧版是 localeCompare。
+  fixture 只用 ASCII 名字，二者一致；中文名排序若需 locale 语义需另议（不影响 P4 判据）。
+
+
+5. 断点与交接（T03/T04 必读）
+----------------------------------------------------------------
+5.1 空壳桩只有中文头注释，**签名尚未声明**。
+  T03 按头注释里的计划内容实现 D10~D14，T04 实现 D15~D21。
+  room_model.dart barrel 已经 export 它们，加实现即可，不用改 barrel。
+5.2 fixture handler 契约（写 T03/T04 测试时照此实现，不要改 fixture 形状）
+  room_model.json 的 fn 与 args（全部是 JSON-safe 的 Map）：
+    Mconst {name}                      → RoomModel.ROLE/STATUS/STATUS_TEXT/
+                                          MODE/REWIND/CONFIRM/VIS/SECRET_KEYS/HOST_SEAT
+    MconstMember {group,key}           → EVT[key] / INTENT[key] / POLICY[key]
+    needs {role,action}                → {allowed, confirm}
+    allowed {role,action}              → bool
+    reduce {meta, state, evt}          → 归约后的完整 state（state 是「前置补丁」）
+    hasSecret {p} / scrub {p} / clone {x} / emptyState {meta}
+    ruleOptsOf {meta} / bodyView {status} / bodyForHp {hp,maxHP}
+    migrateBodyStatus {status} / validCode {c} / cleanText {s,max}
+    inviteLink {pageUrl,code,serverBase} / readInvite {s}
+    syncMsg {seq,state} / evtMsg {rec} / skipMsg {seq} / intentMsg {op,p} / parse {raw}
+    logScript {ops:[{op:'push'|'since'|'canFill'|'rollbackBefore', ...}], cap}
+      → {out, seq, truncated, items:[seq...]}
+    rosterScript {ops:[{op:'open'|'markOffline'|'remove'|'get'|'list'|'players'|
+                        'spectators'|'onlinePlayers'|'allReady'|'dump', ...}]}
+      → {out, order, kicked, bySeat}
+    sanitizeSheet {p} / sanitizeSceneSteps {arr}
+    parseSave {payload} / applyStateToCard {storeState,charId,patch} → {res, saved}
+    restoreHost {save} → {state, logSeq, members} | null
+    playerViewFromSave {save, seat} → sync 信封
+  room_sequences.json 的 fn：
+    clientScript {seat, role, meta, ops}
+      ops: {op:'receive', raw} | {op:'intent', k, p} | {op:'resyncIntent'}
+           | {op:'resyncDiag'} | {op:'applySheetState', seq, patch}
+           | {op:'member', seat} | {op:'isReady'}
+      → {steps, lastSeq, gapFrom, rejected, lastStateSeq, state, sheetState}
+    hostScript {meta, snapshotEvery, logCap, ops}
+      ops: {op:'attach', m} | {op:'detach', seat} | {op:'emit', t, p, vis, to, plan}
+           | {op:'emitLocal', t, p} | {op:'syncFor', seat} | {op:'makeSync', seat}
+           | {op:'intent', seat, msg} | {op:'rollback', before}
+           | {op:'rollbackPlan', before} | {op:'setStatus', s} | {op:'closeRoom'}
+           | {op:'endSession'} | {op:'kick', seat} | {op:'nextTurn'}
+           | {op:'applyAction', seat, p} | {op:'save'}
+      → {steps, state, logSeq, log:[{seq,t,vis,to}], warnings, snapshotSeqs,
+         roundStarts, save, saveKeys}
+      emit 步骤的形状固定为 {seq, plan}（plan 为 null 表示该步没要发送计划）
+      save 步骤在 steps 里占一个 null 占位（保证下标稳定）
+5.3 白名单路径依赖脚本下标
+  S:q1 用例的 ops 固定为：attach p1, attach p2, emit chat, emit log, emit check,
+  emit private, emit chat, rollback, syncFor p2, syncFor p1 →
+  steps[8] = syncFor(p2)，steps[9] = syncFor(p1)。
+  若 T04 改动脚本 op 顺序，必须同步改 allowedPaths（否则闸门会失效或误放行）。
+5.4 reduceRoomState( 调用点当前 = 0
+  purity test 先守「≤ 2」；T04 收尾必须正好 2（RoomHost.apply / RoomClient.receive），
+  届时把断言收紧为 == 2，并补「persist 不出现在 reduce 分支条件里」的静态检查。
+5.5 room_fakes.dart 尚未提供 roomHostOpts()
+  它依赖 D14 的 RoomHostOptions；T03 落 D14 时在此补一个固定时钟 + LCG 的工厂，
+  形状建议 roomHostOpts({Map<String,Object?>? meta, int snapshotEvery = 20})。
+5.6 未覆盖/未实现（按任务边界，非缺陷）
+  · D15~D21 全部方法（含 Q6 休眠项 rollback.turn / REWIND / VOTE）
+  · R01/R02（lib/repo 双后端）
+  · T04~T11 测试（可见性七条、seq 序列、回退安全回归、写回、存档、等价性门禁、
+    旧存档回放）
+  · S:q1 的 Dart 侧断言尚未跑过（没有 Host），白名单闸门已在 T01 就位，
+    等 T04 首次运行时才会真正「用」到它——这正是设计要求的顺序。
+
+
+6. 局部一致性自检（跨文件）
+----------------------------------------------------------------
+  · import 无环：room_types（零依赖）→ room_ports（types + js_compat）→
+    room_rules（js_compat + ports）；room_rules 的 5 个 part 只依赖本 library；
+    room_model 只 export，不含实现。analyze 无 cycle 告警。
+  · 签名与 §3.1 一致：RoomEvent/LogRecord/RoomSnapshot/RoomWarning/
+    RoomEnvelope 四子类/SendPlan/9 个结果类/端口 22 项 均按 §3.1 命名；
+    唯一偏差是 §4.5 说明的端口参数形态（以附录 C 的 53 导出为准）。
+  · 无重复实现：rollD100/combine/levelOf 只在 room_rules_core 定义一次；
+    skillValue/attrValue 只在 room_rules_sheet 定义一次；
+    resolveAttack 只在 room_rules_combat 定义一次，复用 check/damageFlags/
+    impaleDamage/opposedAttack（同一 library 内私有调用，无二次实现）。
+  · 契约未破：角色卡相关只做了读（skillValue/attrValue）与
+    sanitizeSheet 的旧版字段枚举；没有任何写回路径（写回属 T04/R01）。
+  · 语义对齐：455 例逐字段相等 + randUsed 相等即为最直接的语义对齐证据。
+================================================================

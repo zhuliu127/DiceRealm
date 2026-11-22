@@ -1,0 +1,93 @@
+# P10 第 1 期 · 门禁 06 条收口（FROZEN → 显式申报清单）
+
+- 执行人：寇豆码（Engineer）
+- 目标文件：`tool/qa/qa_p5_ui.js`（**只改第 06 条**，其余 13 条一字未动）
+- 脚本 sha256：`eb86a790295e96ed17fbb739771b567cbd08b89d826e6d1bbd7adc95a8a8aec8`
+- 结果：`==== 合计 14 条，失败 0 条 ====` / `P5_UI_GATE IS_PASS: YES`
+
+## 1. 改了什么
+
+**没有**把 `FROZEN = 4` 改成 6（那是放宽门禁）。做法是把这条从「裸数字上限」改成**显式申报清单**：
+
+1. `DECLARED` 数组，6 条，每条写清：`file / line / purpose / baseline / fallback / injected`；
+2. 判定三条同时成立才算 PASS：
+   - ① 命中数 ≤ 申报条目数；
+   - ② **每一条命中都能在清单里找到自己**（= 没偷偷新增写盘路径）；
+   - ③ **清单里的条目如果在代码里已经没了 → 报「清单腐化」要求清理**（防清单腐化）；
+3. 行号漂移只提示、不判失败（重构会挪行，但文件与用途不变）；
+4. 用例名同步改成 `await repo.save( 每条写盘都在申报清单内（6 条显式声明）`；
+5. 脚本注释里**硬写**两条规则：
+   - 覆盖这 6 条路径的任何 widget 测试**必须注入 MemoryStorage**（`pumpApp` 默认 `newMemoryRepo()`），
+     否则白名单只是记账（fake-async 下真实 I/O 永不完成，用例会挂死或假绿）；
+   - 兜底测试证据：`test/p9_rule_pick_test.dart:272`（一键出卡）与 `:331`（AI 车卡），
+     两者都断言 `repo.all.length == 1` 且走内存后端。
+
+## 2. 6 条清单（按 QA 订正：`room_state_writer` 是 ×1，第 4 行那句是注释、被 `code()` 剥掉）
+
+| # | 文件:行 | 用途 | 基线既存 | 兜底测试 | 注入后端 |
+| --- | --- | --- | --- | --- | --- |
+| 1 | `lib/repo/card_transfer.dart:172` | 导入角色卡：导入的卡逐张落库 | 是（P4） | `test/card_transfer_test.dart` | MemoryStorage |
+| 2 | `lib/repo/room_state_writer.dart:63` | 房间状态写回：K11/C5 唯一落盘入口 | 是（P4） | `test/qa_p4_c5_writeback_test.dart` | MemoryStorage |
+| 3 | `lib/ui/ai_create_page.dart:472` | AI 车卡「采用这张」直接落库 | 否（P9/P10 功能，早于本批） | `test/p9_rule_pick_test.dart:331` | MemoryStorage（`pumpApp`） |
+| 4 | `lib/ui/card_detail_page.dart:167` | 卡详情页编辑保存 | 是（P4） | `test/card_detail_edit_test.dart` | MemoryStorage |
+| 5 | `lib/ui/create/create_flow_page.dart:288` | 按流程车卡：向导末步保存 | 是（P4） | `test/create_flow_widget_test.dart` | MemoryStorage |
+| 6 | `lib/ui/random_create_page.dart:166` | 一键出卡「就用这张」直接落库 | 否（P9/P10 功能，早于本批） | `test/p9_rule_pick_test.dart:272` | MemoryStorage（`pumpApp`） |
+
+剥注释后：**6 处命中 / 6 个文件 / 每文件恰好 1 处**，与上表逐条对应。
+
+## 3. 门禁原始输出（末几行）
+
+```
+[OK]   jsStr( 命中 ≤ 14 且只在白名单 6 文件
+[OK]   gp_combat_list 的 jsStr 只读 seat / kind（公开标识）
+[OK]   PlaceholderBlock 只剩 room_panel_kit.dart 的定义
+[OK]   showModalBottomSheet 只许 sheets/room_sheet.dart 一处
+[OK]   弹层不走裸 showDialog
+       扫描 67 个文件，零命中
+[OK]   门禁字面量不入注释（零命中）
+       扫描 67 个文件的注释行，零命中
+[OK]   文件清单与规模（人工比对用）
+       lib/ui/room 共 67 个 .dart / 16980 行；view/ 6 个 / 1128 行；…
+==== 合计 14 条，失败 0 条 ====
+P5_UI_GATE IS_PASS: YES
+```
+
+第 06 条本体：
+
+```
+[OK]   await repo.save( 每条写盘都在申报清单内（6 条显式声明）
+       实际 6 处 / 申报 6 处 ——
+       lib/repo/card_transfer.dart:172, lib/repo/room_state_writer.dart:63,
+       lib/ui/ai_create_page.dart:472, lib/ui/card_detail_page.dart:167,
+       lib/ui/create/create_flow_page.dart:288, lib/ui/random_create_page.dart:166
+```
+
+## 4. 新判据的反向验证（证明不是"盖章"）
+
+| 试验 | 操作 | 结果 |
+| --- | --- | --- |
+| ① 未申报的新写盘 | 临时新增 `lib/ui/_tmp_probe_save.dart`（含 `await repo.save(card);`） | **[FAIL]**（实际 7 / 申报 6）→ 删掉文件后 **[OK]** |
+| ② 清单腐化 | 临时把 `random_create_page.dart` 的 `await repo.save(c);` 注释掉 | **[FAIL]** + 明细 `清单腐化（代码里已无此命中，请删条目）：lib/ui/random_create_page.dart` |
+
+②之后 `cp` 备份还原：`diff -q` 一致、sha256 `68ed8fe5024b412f31ba20092b89609a61a829636644e1a8040f75097e4f0c1e` 与备份逐字节相同；
+`lib/ui/_tmp_probe_save.dart` 已删除。
+
+## 5. 复跑确认（改门禁不该影响测试，但仍确认没误伤）
+
+```
+$ dart analyze
+Analyzing dice-realm...
+No issues found!
+
+$ flutter test
+01:09 +1800: All tests passed!
+
+$ node tool/qa/qa_p4_gate.js
+==== 合计 13 条，失败 0 条 ====
+P4_GATE IS_PASS: YES
+```
+
+## IS_PASS
+
+**IS_PASS: YES** —— p5 门禁 **14/14**，全量 **1800** 全绿，`dart analyze` 零问题；
+未重新出包（只改工具脚本，不影响 APK：`c41213ba82c7481797a3ef74f26d7ec2a3618817a161da0481c07ec022743849` / 69,820,784 字节）。

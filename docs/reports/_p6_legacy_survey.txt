@@ -1,0 +1,131 @@
+================================================================
+P6 旧版传输层调研（room-net.js + room-lan.js）
+================================================================
+日期：2026-11-09 14:50
+性质：**技术现状调研，不是 PRD / 不是设计**
+      主理人为下一期准备输入材料；正式 PRD 须由产品经理（许清楚）出，
+      架构方案须由架构师（高见远）出。
+旧版路径：coc7th-card-app\dist\coc-lan-allinone\js\core\
+（同级还有 coc-lan-allinone (2) / coc-lan-site 两份副本，内容需确认哪份是最新）
+
+----------------------------------------------------------------
+一、两个文件的规模与职责
+----------------------------------------------------------------
+room-net.js   78,837 B（≈1670 行）  传输层：HTTP + WebSocket
+room-lan.js    6,458 B（≈171 行）   局域网门面：只做「地址从哪来」
+
+**room-lan.js 的核心洞察（直接决定 P6 的架构走向）**
+  它的注释原话：
+    「局域网不是「另一条链路」，只是「地址从哪来的问题」。」
+  具体做法：把外壳返回的 {ok, base, ip, port} 写进全局 ROOM_SERVER_BASE，
+  于是 room-net.js 的 base() 立刻可用 —— **传输层一行都不用改**。
+
+  对照 P5：`_p5_prd.md` §9.4 已按这个思路留了 `RoomSession` 端口 +
+  `LocalLoopback` 同进程实现。P6 要做的是把这个端口的**远端实现**补上，
+  而不是重写 UI 那套。
+
+----------------------------------------------------------------
+二、room-lan.js 对外面（10 个）
+----------------------------------------------------------------
+available()   本环境能否开局域网房（有外壳 + 有局域网地址）
+isApp()       是否跑在安卓外壳里（只问有没有桥）
+ip()          本机局域网 IP
+start()       开房 → {ok, base, ip, port, wifi}
+stop()        关房 + 清注入地址
+injected()    当前注入的地址（空串 = 不在局域网模式）
+running()     桥报告的服务是否在跑
+discover(ms)  UDP 广播发现，默认 1600ms，兜底 +600ms
+asRoomEntry() 把发现结果转成「房间目录」同一形状（界面复用同一段渲染）
+DISCOVER_PORT 4210
+
+**三个容易漏的细节（旧版踩过的坑，P6 别重犯）**
+1. `wifi: false` 表示外壳把 base 退化成 `http://127.0.0.1:4211` ——
+   那间房只有自己能进，邀请链接对同伴是死路。
+   ⇒ **必须在建房之前就提示**，不能等用户拿两台手机试半天。
+2. discover 的超时要在**调用方**再套一层：外壳的桥调用可能因权限被拒
+   而静默失败、回调永不到来，界面会一直转圈。
+3. injected() 必须单独存在：光看 running() 不够 ——
+   桥可能说没跑、地址却还留着（上次异常退出）。
+
+----------------------------------------------------------------
+三、room-net.js 对外面（38 个导出，按域分组）
+----------------------------------------------------------------
+【地址 · 16】
+  normalizeBase / base / baseList / baseCount / activeBase / splitBases /
+  resolve / wsBase / wsUrlFor / configured / looksValid / isPrivateHost /
+  inviteBase / injectedBase / userBase / presetBase / inviteParams
+  → 多 base 的概念（baseList / activeBase / splitBases）说明旧版支持
+    「多个候选地址挨个试」，这对局域网场景很关键（IP 变了/多网卡）。
+
+【HTTP · 18】
+  health / list / probe / create / join / closeRoom / req
+  deviceId
+  saveState / getState / suspendRoom / resumeRoom
+  unbind / createSave / listSaves / getSave / loadSave / deleteSave
+
+【自检 · 5】
+  pingBase / selfCheck / lanDiagnose / swapHost / DEFAULT_TIMEOUTS
+  → lanDiagnose 与 swapHost 说明旧版处理过「多网卡/换主机」的真实问题。
+
+【WebSocket · 4】
+  connect / RECONNECT_DELAYS / HostSide / PlayerSide
+  → HostSide / PlayerSide 是两套角色适配器：
+      HostSide  把 RoomModel.Host 的 SendPlan 发出去
+      PlayerSide 把收到的帧喂给 RoomModel.Client.receive()
+    与 P4 已经落地的 `RoomHost.plan()` / `RoomClient.receive()` 正好对接。
+
+----------------------------------------------------------------
+四、移植到 Dart 的关键差异（架构师要先回答的）
+----------------------------------------------------------------
+旧版：WebView + AndroidBridge（Java 外壳开端口跑 HTTP 服务 + UDP 广播）
+Dart：**能直接开 socket，外壳可以整个不要了**
+  · HTTP 服务：dart:io HttpServer 直接绑端口
+  · WebSocket ：同端口 upgrade，或独立端口
+  · UDP 发现  ：RawDatagramSocket 广播/监听 4210
+⇒ room-lan.js 那层「委托给外壳」的门面在 Dart 里**没有存在必要**，
+  它的三个坑（wifi 退化 / discover 静默失败 / injected 残留）会变成
+  纯 Dart 里的等价问题，仍需处理，但不再需要桥接。
+
+**红线（P4/P5 已确立，P6 必须守）**
+K3：中继**禁止**直接序列化 `LogRecord.toWireJson()`（含明文 p），
+    否则 Q1 修正在补拉路径被绕开。
+    ⇒ 中继只能转发 `plan()` 产出的已裁剪 SendPlan / 已脱敏信封。
+
+----------------------------------------------------------------
+五、留给产品经理（PRD 必须回答的问题）
+----------------------------------------------------------------
+Q1  P6 的交付边界：只做「局域网直连（一台手机当服务端）」，还是
+    同时做「公网中继（一台服务器转发）」？旧版两套都支持（base 可配）。
+Q2  服务端由谁当：KP 手机固定当服务端？还是任意玩家可当、支持中途 swapHost？
+Q3  房间发现的范围：仅同网段 UDP 广播（4210），还是加房间码手输兜底？
+    （旧版两者都有：discover + 手输 base）
+Q4  断线重连的验收标准：重连后要不要自动补拉缺失事件（旧版有补拉）？
+    补拉窗口多大？多久放弃并提示「房间已解散」？
+Q5  `wifi: false`（没连 WiFi，退化成 127.0.0.1）时的产品行为：
+    禁止建房？还是允许建房但明确警告「只有你自己能进」？
+Q6  存档 / 挂起 / 复活这一组（saveState / suspend / resume / 存档槽）
+    是否算 P6 范围？还是 P5 已经做完了（P5 有 sheet_save_slots）？
+
+----------------------------------------------------------------
+六、留给架构师（设计必须回答的问题）
+----------------------------------------------------------------
+A1  Dart 侧是否保留「多 base 候选择优」？如果保留，探测策略是什么？
+A2  HTTP + WebSocket 用同一端口还是分开？（旧版可从 base 推导 wsUrlFor）
+A3  `RoomSession` 端口的远端实现如何与 P5 的 `LocalLoopback` 共存，
+    切换点在哪个对象上（controller？boot？）
+A4  设备标识（deviceId）在 Dart 侧怎么落地？旧版有 device-id.js。
+A5  UDP 广播在 Android 需要权限（INTERNET + 多播锁）；是否需要在
+    AndroidManifest 加 CHANGE_WIFI_MULTICAST_STATE？
+
+----------------------------------------------------------------
+七、风险提示
+----------------------------------------------------------------
+· 旧版有 3 份 dist 副本（coc-lan-allinone / coc-lan-allinone (2) / coc-lan-site），
+  必须先确认哪份是最终版，否则移植的是旧代码。
+· room-net.js 78KB 里大量是「地址容错」逻辑（多 base、私网判断、邀请参数），
+  这部分最容易在移植时被简化成「一个 base 变量」，然后局域网就时通时不通。
+· 这一期涉及真机双设备联调，无法用单元测试覆盖 —— 验收必须含
+  「两台手机实测」这一条，成本要提前排进去。
+
+P6_SURVEY IS_PASS: YES（仅调研，供 PRD/设计引用）
+================================================================

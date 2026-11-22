@@ -1,0 +1,163 @@
+================================================================
+P5-T05 收尾修复报告 —— 5 条红 + 3 个 analyze warning
+================================================================
+时间：2026-11-09 14:3x
+执行：主理人齐活林代行（两次 429 限流，engineer 实例不可用，非标准 SOP）
+基线：+1296 -5（5 红）+ 3 warning
+结果：+1302 全绿（0 红）+ analyze「No issues found!」
+
+----------------------------------------------------------------
+一、逐条根因诊断（重点）
+----------------------------------------------------------------
+
+【红 1 & 红 2】test/qa_p5_priv_probe_test.dart → A-4 state.self / state.edit.self
+  现象：① 旁观者点了能发出 state.self；② 点「轻伤」后 UI 宣称「已更新」
+
+  根因（两处，都在实现侧，是真缺陷）：
+  A. lib/ui/room/widgets/gp_pl_char_card.dart:195
+     `GpPlCharCardKeys.stateBtn` 在 `if (!locked)` 分支里**无条件渲染**。
+     旁观者（sp1）没有「我的角色」语义，却看到了「状态管理」入口。
+     违反 T03 已确立的口径：**权限不足应「不渲染」而非「禁用」**。
+
+  B. lib/ui/room/sheets/sheet_self_state.dart:_applyBody / _applyMental
+     两个方法**完全没有权限门控**，直接：
+         scope.controller.hostAction('state.self', {...});
+         scope.local.showNotice('身体状态已更新（立即生效）');
+     权威端按 POLICY 拒绝（state.self 只放 player/kp，spectator 不在内），
+     但 UI 已经无条件宣布成功 —— 直接违反 K7「不乐观提示成功」。
+     这比测试描述的更严重：**任何能打开弹层的路径都能造成假成功提示**。
+
+  修法（双保险，与 T-20/T-30 同一模式）：
+    第一层 · 入口不渲染：
+      gp_pl_char_card.dart  stateBtn 外包 `if (scope.controller.gate.can('state.self'))`
+    第二层 · 内层门控：
+      _applyBody / _applyMental / _submitNumbers 开头加
+        `if (!scope.controller.gate.can(<op>)) { showNotice('你没有权限…'); return; }`
+      不乐观提示：无权时只说事实，不改任何「已更新」文案。
+
+  测试改动（把「现状记录」翻转为修复后的正确期望）：
+    · 「旁观者点「轻伤」后…」重写为两条：
+      1. 旁观：入口结构性不渲染（stateBtn findsNothing）+ 点遍页面零发包 + 权威态不变
+      2. 双保险：绕过入口强行 openSelfStateSheet 打开弹层，点「轻伤」
+         → 仍零发包 + 权威态不变 + notice 不含「已更新」
+    · 保留正向守卫：玩家侧 stateBtn findsOneWidget、点「轻伤」真的发 1 条 state.self
+
+【红 3 & 红 4】test/room_ui_permission_test.dart → T-30 锚点表
+  现象：Expected <31> / Actual <30>；③ 无锚点清单 at [8] is 'combat.enqueue' instead of 'combat.prepare'
+
+  根因（实现演进，不是缺陷）：
+    `combat.enqueue`（加入战斗的候选行）的入口从 `RoomKeys.action('combat.enqueue')`
+    改成了专用 key `GpCombatKeys.enqueueRow(seat)`。
+    原因成立：候选列表**每行一个座位**，必须区分（p1/p2/p3…），
+    单值 `act/<op>` 锚点表达不了多行 —— 一个 op 只能挂一个 key。
+    于是它从「有锚点」迁到「无锚点」，两侧清单各让一位：
+      锚点表 31 → 30；无锚点清单 30 → 31；两者相加仍 = POLICY 61 条。
+    门控没有丢失：`_CombatEnqueueBody` 里 `enabled: can`（= gate.can('combat.enqueue')）。
+
+  修法：
+    · `expect(table.length, 31)` → 30，并写明迁移理由（不写理由就是裸改数字）
+    · `kFrozenNoAnchor` 按字典序插入 'combat.enqueue'（在 combat.prepare 前）
+    · 保留 `noAnchor.length + table.length == 61` 这条铺满校验 —— 它证明没有漏测
+
+  为什么这不是「改测试让它绿」：
+    如果 combat.enqueue 的闸门真的丢了，T-30 的原断言会失效，但
+    `qa_p5_priv_probe_test.dart` 的专用 key 探针 + `enabled == gate.can`
+    的等价检查仍会抓到。锚点迁移只是换了覆盖手段，覆盖面没缩小。
+
+【红 5】test/room_ui_lobby_test.dart → jsStr 预算（冻结）
+  现象：gp_combat_list.dart 新增 4 行直接渲染 jsStr
+
+  根因（合理使用，非泄漏）：
+    4 处读的都是 `seat`（'p1'/'p2'/'sp1' 座位号，公开标识）与 `kind`（'pc'/'npc'）：
+      265  构建「已在队列」集合：读 kind 判 pc + 读 seat 入集合
+      269  比较是否已在队列：读 seat
+      303  key: GpCombatKeys.enqueueRow(seat)：读 seat
+      312  发包 payload {'seat': seat}：读 seat
+    秘密字段是 HP / SAN / 笔记 / 私有素材，这些一处没有。
+    座位号本来就广播给全房间，不存在泄漏。
+
+  修法（放行 + 带约束，别把整个文件一律开绿灯）：
+    · 白名单加 gp_combat_list.dart
+    · 新增专项校验：该文件的 `jsStr(` 行必须含 'seat' 或 'kind'，
+      否则判定失败 —— 防止未来在该文件里渲染秘密字段
+    · 总数上限 6 → 11（JS 侧按出现次数算，265 行有两次 jsStr(）
+
+  同步改了 tool/qa/qa_p5_ui.js（Node 门禁是独立脚本，Dart 测试改管不到它）：
+    · BUDGET 6 → 11、白名单加该文件、新增同一条 seat/kind 专项校验
+    · 门禁条目 13 → 14 条
+
+【3 个 analyze warning】test/qa_p5_priv_probe_test.dart
+  :19 unused_shown_name RoomRole
+  :24 unused_import showRoomSheet
+  :26 unused_shown_name CombatSheetKeys
+  修法：删掉未用的 import / show 成员；本文件新增的 import `openSelfStateSheet`
+        是真用到（双保险用例），保留。
+  结果：dart analyze → No issues found!
+
+----------------------------------------------------------------
+二、改动文件清单
+----------------------------------------------------------------
+实现（2 个，修真缺陷）：
+  lib/ui/room/widgets/gp_pl_char_card.dart      stateBtn 加闸门（+5 行注释）
+  lib/ui/room/sheets/sheet_self_state.dart      3 个提交方法加门控（+18 行）
+
+测试（3 个）：
+  test/qa_p5_priv_probe_test.dart              清理 3 个 warning + 翻转 A-4 两条断言 + 新增双保险用例
+  test/room_ui_permission_test.dart            锚点 31→30、无锚点清单加 combat.enqueue
+  test/room_ui_lobby_test.dart                 jsStr 白名单加文件 + seat-only 校验 + 上限 6→10
+
+门禁脚本（1 个）：
+  tool/qa/qa_p5_ui.js                          08 段：BUDGET 6→11、白名单+1、新增 seat-only 校验
+
+未动：lib/domain/**、pubspec.yaml、room_model_save.dart
+
+----------------------------------------------------------------
+三、验收实测（原始输出）
+----------------------------------------------------------------
+$ dart analyze
+  Analyzing dice-realm...
+  No issues found!
+
+$ flutter test
+  00:43 +1302: All tests passed!
+  （基线 +1296 -5 → 现 +1302，净增 6 组，0 红）
+
+$ node tool/qa/qa_p4_gate.js
+  ==== 合计 13 条，失败 0 条 ====
+  P4_GATE IS_PASS: YES
+
+$ node tool/qa/qa_p5_ui.js
+  [OK]   jsStr( 命中 ≤ 11 且只在白名单 5 文件
+  [OK]   gp_combat_list 的 jsStr 只读 seat / kind（公开标识）
+  ==== 合计 14 条，失败 0 条 ====
+  P5_UI_GATE IS_PASS: YES
+
+$ ls -la pubspec.yaml
+  -rw-r--r-- 4068 2026-11-08 18:55 pubspec.yaml     （未改动）
+
+$ grep -rn "package:flutter\|dart:io\|dart:ui" lib/domain/
+  （零命中）
+
+----------------------------------------------------------------
+四、规模
+----------------------------------------------------------------
+lib/ui/room  51 个 .dart / 12558 行
+  view/ 6 个 / 1032 行
+  分布：lib/ui/room=13  sheets=13  view=6  widgets=18  painter=1
+
+----------------------------------------------------------------
+五、遗留与提醒
+----------------------------------------------------------------
+1. 【流程】本次由主理人代行工程师职责 —— 两次 429（engineer-5 → engineer-7），
+   配额重置时间被推到 2026-11-10 11:39。恢复后建议补一次 QA 独立复核（严过关），
+   重点复核本次翻转的两条 A-4 断言，确认不是「为了绿而放宽」。
+
+2. 【待确认】`state.edit.self`（数值需 KP 同意）走 confirm=kp 待确认队列，
+   但本次只验证了「拒绝的路径」，未验证「KP 同意后数值真生效」的端到端链路。
+   若 T05 任务书里有这项（GpSelfState 的待确认队列 UI），需下一轮补。
+
+3. P5-T05 的交付报告仍缺（engineer-5 未产出 _p5_engineer_t05a.txt）。
+   T01-T05 代码已全部落盘且全绿，报告可在限流恢复后补写。
+
+IS_PASS: YES
+================================================================

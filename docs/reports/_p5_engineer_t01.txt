@@ -1,0 +1,310 @@
+================================================================
+P5-T01 工程师交付报告（S1.3 + S1.4 收尾）
+工程：C:/Users/60965/WorkBuddy/2026-10-08-18-34-17/dice-realm
+环境：Flutter 3.47.9 / Dart 3.13.7
+说明：本实例承接 S1.1 / S1.2 已完成之后的最后两个子批次，只写 test/ 下的文件。
+================================================================
+
+一、改动文件清单（含行数）
+----------------------------------------------------------------
+【S1.3 · K4 旧存档脱敏迁移测试】本轮新增
+  test/room_legacy_migrate_test.dart                     316 行   （18 组，全绿）
+
+【S1.4 · 房间 UI 测试夹具】本轮新增
+  test/support/room_ui_harness.dart                      635 行   （夹具本体，非测试文件）
+  test/room_ui_harness_test.dart                         341 行   （14 组自证，全绿）
+
+【S1.1 · 会话端口 / 控制器 / 本地态】前序实例已完成（仅列文件名 + 行数，本轮未改）
+  lib/ui/room/room_session.dart                          224
+  lib/ui/room/room_session_local.dart                    307
+  lib/ui/room/room_scope.dart                             53
+  lib/ui/room/room_controller.dart                       166
+  lib/ui/room/room_ui_local.dart                         209
+  lib/ui/room/room_keys.dart                             134
+  test/room_session_test.dart                            555 行（16 组）
+
+【S1.2 · 纯视图层 + 画笔 + 通用件 + 弹层壳】前序实例已完成（本轮未改）
+  lib/ui/room/view/room_view.dart                        141
+  lib/ui/room/view/scene_view.dart                       248
+  lib/ui/room/view/combat_view.dart                      122
+  lib/ui/room/view/feed_view.dart                        194
+  lib/ui/room/view/member_view.dart                      168
+  lib/ui/room/view/sheet_view.dart                       153
+  lib/ui/room/painter/stroke_painter.dart                167
+  lib/ui/room/widgets/room_panel_kit.dart                455
+  lib/ui/room/sheets/room_sheet.dart                     114
+  lib/ui/room/room_theme.dart                             68
+  lib/domain/room_legacy_migrate.dart                     81   （生产实现，本轮只写测试）
+  lib/repo/room_notes_store.dart                         149
+  test/room_view_test.dart                               719 行（33 组）
+
+本轮合计新增：3 个文件、1292 行；未修改任何 lib/ 文件、未改 pubspec.yaml。
+
+----------------------------------------------------------------
+二、各子批次实测输出尾巴
+----------------------------------------------------------------
+① 基线（本轮开工前）
+  $ flutter test
+  00:38 +1034: All tests passed!
+
+② S1.3
+  $ flutter test test/room_legacy_migrate_test.dart
+  00:00 +17: S1.3 · 边界（不崩 + 语义正确） 结果可序列化（toJson 两键，供日志/诊断使用）
+  00:00 +18: All tests passed!
+
+③ S1.4
+  $ flutter test test/room_ui_harness_test.dart
+  00:00 +13: S1.4 · FakeImagePicker 选中 / 取消 / 超限三种返回
+  00:00 +14: All tests passed!
+
+④ 全量（本轮收尾）
+  $ flutter test
+  00:35 +1066: All tests passed!
+
+⑤ 静态分析（全工程）
+  $ dart analyze
+  Analyzing dice-realm...
+  No issues found!
+
+----------------------------------------------------------------
+三、T01 五条可独立验收判据（逐条实测）
+----------------------------------------------------------------
+判据 1  三个纯 Dart 测试文件 0 红
+  $ flutter test test/room_view_test.dart test/room_session_test.dart test/room_legacy_migrate_test.dart
+  00:00 +67: All tests passed!
+  → 33（view）+ 16（session）+ 18（migrate）= 67 组，0 红  ✅
+
+判据 2  dart analyze 零 issue；lib/ui/room/view/** 中 package:flutter 命中数 == 0
+  $ dart analyze                        → No issues found!   ✅
+  $ grep -rln "package:flutter" lib/ui/room/view/ | wc -l   → 0   ✅
+
+判据 3  pubspec.yaml 未动
+  该工程目录**不是 git 仓库**（`git diff` 报 Not a git repository），故改用 mtime 证据：
+  $ stat -c '%n %y' pubspec.yaml
+  pubspec.yaml 2026-11-08 18:55:07.401805200 +0800   ← 与任务书要求一致  ✅
+  另：本轮所有写入都在 test/ 下（见第一节清单），未触碰依赖声明。
+
+判据 4  lib/domain 零 package:flutter / dart:io / dart:ui；room_model_save.dart 一行未动
+  $ grep -rln "package:flutter\|dart:io\|dart:ui" lib/domain/ | wc -l   → 0   ✅
+  $ stat -c '%n %y' lib/domain/room_model_save.dart
+  lib/domain/room_model_save.dart 2026-11-09 01:30:33.416056900 +0800  ← 未动  ✅
+
+判据 5  全量 flutter test 在 1034 组基线上只增不减、0 红
+  $ flutter test → +1066 All tests passed!
+  1034 + 18（S1.3）+ 14（S1.4）= 1066，只增不减、0 红  ✅
+
+----------------------------------------------------------------
+四、旧名 → §3.1 新名 对照表（T05 收尾清理清单）
+----------------------------------------------------------------
+（实读 lib/ui/room/room_session.dart：224 行；行号为该文件当前行号；
+  「调用点」列已排除该文件自身，统计范围 lib/ + test/）
+
+| # | 旧名（预置稿保留）        | 行号  | §3.1 新名                   | 关系与实现                                        | 调用点 |
+|---|---------------------------|-------|-----------------------------|---------------------------------------------------|--------|
+| 1 | `linkState`               | 164   | `link`                      | getter 转发 `=> link`（同一个值，非两份状态）      | **0**  |
+| 2 | `sendAction(action, p)`   | 196-197 | `hostAction(action, [p])` | 转发别名；`room_session_local.dart:247` 又 override 一层 | 3（local 1 + 测试 2） |
+| 3 | `pullSync(seat)`          | 201   | `pullSync()`（§3.1 无参）    | 同一方法用可选位置参数兼容两种签名；实现 `local:251` 取 `seat ?? this.seat` | 11 |
+| 4 | `stateFor(seat)`          | 204   | 无（§3.1 未定义该名）        | 跨视角取裁剪态，测试/harness 依赖它                | 14（local 1 + 测试 11 + harness 2） |
+| 5 | `seats`                   | 186   | 无（保留）                   | 已挂载座位表，实现 `local:150`                     | 3 |
+| 6 | `rollback(beforeSeq)`     | 208   | 保留（未改名）               | K1 守卫 + P4 回退，实现 `local:271`                | 测试 5 |
+| 7 | `lastRollbackBeforeSeq`   | 211   | 保留（未改名）               | K1 断言用，实现 `local:284`                        | 4 |
+| 8 | `sent`（SessionSendLog）  | 177   | 保留                         | 唯一发送记录；§6.1 的 `RoomUiFixture.sent` 就是它  | 35 |
+| 9 | `changes`                 | 180   | `Listenable`（即 `this`）    | `Listenable get changes => this`，纯别名            | **0**  |
+|10 | `onNotice`                | 183   | 保留                         | 预留回调（当前无人挂）                             | 0 |
+|11 | —（旧名无）               | 167   | `lastSeq`                   | 新名，实现 `local:135`（KP 取 log.seq）            | 30 |
+|12 | —（旧名无）               | 171   | `lastNotice`                | 新名，实现 `local:139`（sysTo 抓取）               | 6 |
+|13 | —（旧名无）               | 215   | `clampBeforeSeq(v)`         | 新名；基类给默认纯函数实现，`local:272` 调用        | 4 |
+|14 | `RoomLinkState.online`    | 49    | `connected`                 | 枚举别名（`static const online = connected`）      | **0**  |
+|15 | §3.2 写的 `abstract class RoomHostRead` | 62 | 具体类 + unmodifiable 视图 | 约束等价，调用方（T04 KP 面板）可直接构造          | — |
+
+T05 清理建议（按风险从低到高）：
+  a) 直接删：`linkState`(#1)、`changes`(#9)、`RoomLinkState.online`(#14) —— 全仓零调用，删了不疼。
+  b) 保留但标 deprecated：`sendAction`(#2) —— 只有 `local` 的 override 与 2 处测试在用；
+     清理时把 `local:247` 的 override 一并删掉，测试改用 `hostAction`。
+  c) 收窄签名：`pullSync`(#3) —— 把可选参改成无参，同步改 `local:251` 与 6 处测试调用。
+  d) 不要动：`stateFor`(#4)、seats、rollback、lastRollbackBeforeSeq、sent、onNotice
+     —— 它们是测试可观测性的地基（T6/T8 全靠 `sent` 与 `stateFor`）。
+  ⚠️ 本次收尾的 3 个新文件**只用了新名**（`hostAction` / `pullSync()` / `lastSeq` /
+     `lastNotice` / `stateFor` / `sent`），没有新增对旧名的依赖。
+
+----------------------------------------------------------------
+五、设计勘误（请转告架构师，改 _p5_design.md §0.3）
+----------------------------------------------------------------
+`file_picker` **13.3.2** 的 API 与设计 §0.3 写的 8.x 形态不同：
+  · 设计原文：`FilePicker.platform.pickFiles(withData: true)`
+  · 实际 13.3.2：`await FilePicker.pickFile(type: FileType.image, dialogTitle: ...)`
+    → 返回 `PlatformFile?`，再 `await picked.readAsBytes()` 拿字节；
+    `withData` 参数在 13.x **已不存在**，硬写会编译失败。
+  · 权限 / 依赖结论不变：仍是「零新增依赖」，仍是「选一张图 → 拿字节 → base64」。
+  · 实现已按 13.x 正确落地（lib/ui/room/room_image_picker.dart:47-58），
+    且产出形状与旧版 `FileReader.readAsDataURL` 一致（`data:image/<ext>;base64,...`）。
+  · 顺带确认：`pubspec.yaml` 里就是 `file_picker: ^13.3.2`，无需改动。
+
+另有两处口径差异，建议一并写进设计，避免 T02–T05 各自发明：
+  1) 座位命名：设计 §6.4 示例用 `s1 / s2 / sp1`，本次夹具按任务书统一为
+     `p1 / p2 / sp1`（`playerSeat(i)` / `spectatorSeat(i)` 两个函数可生成任意数量）。
+  2) `useRoomScreen(tester, w, h, {landscape})`：**不做宽高交换**。
+     横屏就直接传 `(780, 320)`；`landscape` 只作为 `RoomGridSpec.of(..., landscape:)`
+     的语义入参（与 `view/room_view.dart:132` 的签名对齐）。
+
+----------------------------------------------------------------
+六、通用注意事项（机械门禁 / 环境坑）
+----------------------------------------------------------------
+1) 机械门禁用**朴素 grep**，会误伤注释里的字面量。以下字面量不要出现在注释里：
+   `package:flutter`、`dart:io`、`dart:ui`、`state[...] =`、`rules?.check(`、
+   `rollExpr(`、`opposedFull(`。
+   · 判断依据：同目录里已通过门禁的 test/room_session_test.dart（2 处）、
+     test/room_view_test.dart（3 处）都只在 **import 行**命中 `package:flutter`，
+     说明 import 行不触发红灯，**注释行会**。本轮 3 个新文件注释命中数 = 0。
+2) `pumpAndSettle()` **不能**用来等 400ms 节流窗口（会直接跳过窗口 → 用例永远绿）。
+   要么精确 `pump(Duration(milliseconds: 100))`，要么用夹具的可推进时钟：
+   `f.nowMs += 500;` 再断言下一次放行。
+3) 夹具里每个 seat 的 `RoomUiLocal.scheduleDismiss` 已换成空实现
+   （`(_, _) => null`）—— fake-async 区域里真实 Timer 永不返回，不关它会把用例挂死或污染 pump。
+4) 头像 / 素材的图片选择在测试里一律换 `FakeImagePicker`（夹具已把同一份注入所有
+   controller 的 `imagePicker`），**不要**让 `FilePickerImagePicker` 进到 widget 测试里。
+5) 环境：`engine.stamp` 报错时把 `/d/dev/flutter/bin/cache/engine.stamp` 挪走再跑；
+   **不要并行起多个 flutter 命令**（会互相锁 pub cache）。
+6) 本次踩到的工程坑（供后续实例避雷）：`test/support/room_ui_harness.dart` 与
+   `test/room_ui_harness_test.dart` 在前一个实例里已留下半成品草稿，
+   首次覆盖写入后磁盘内容仍是旧稿（疑似同步进程回写）。处置办法：
+   写完立刻 `wc -l` + `grep` 关键符号确认落盘，不一致就用 shell 重写一次。
+   **每次改动后都要验行数/标记，不要只看 Write 的返回值。**
+
+----------------------------------------------------------------
+七、留给 T02 的断点（游戏页壳体）
+----------------------------------------------------------------
+T02 可直接复用的地基（全部已全绿、可编译）：
+  · `test/support/room_ui_harness.dart`
+      - `RoomUiFixture()..boot()` / `..bootSync()` —— KP + p1 + p2 + sp1 四份视角
+      - `kpPage()` / `playerPage(seat)` / `spectatorPage(seat)` / `lobbyPage()` / `entryPage()`
+      - `stateOf(seat)`（T8 必用）、`hostState()`（T6 权威侧断言用）、`sent` / `lastSent` / `clearSent`
+      - `controllerOf(seat)` / `localOf(seat)` / `sessionOf(seat)` / `roleOf(seat)`
+      - `useRoomScreen(tester, 360, 640)` 与 `(780, 320)`
+      - `pageBuilder` 注入点：T02 只需 `f.pageBuilder = (seat, role) => RoomGamePage(...)`，
+        全套 P5 用例自动切到真页面（夹具其余部分一行不改）
+      - `scoped(seat, child: ...)`：已有宿主自带 MaterialApp 时，只补房间作用域用
+  · 容器 key / 槽位（S1.1 已交付）：`RoomKeys.kpSlots`(12) / `RoomKeys.plSlots`(13) /
+    `RoomKeys.slotKey(slot)` / `RoomKeys.keyOfSlot(slot)` / `RoomKeys.action(op)`（派生 key，
+    供 T-30 表驱动探针；**按钮必须用它**，否则探针要自己维护映射表）
+  · 布局唯一真相源：`RoomGridSpec.of(w:, h:, landscape:)`（view/room_view.dart:112，
+    五档阈值 wide=820 / narrowLo=520 / narrowHi=599 / minH=290 / compactH=360）
+  · 通用件：`SectionBox` / `RoomTap`（48dp 热区 + disabled hint）/ `FoldHeader` /
+    `PanelTabs` / `ScrollBox` / `StatBar` / `AvatarDot` / `ChipRow` / `ConfirmTwice` /
+    `PlaceholderBlock`（T02 占位用，T05 收尾必须 findsNothing）
+  · `RoomUiLocal`：`folded` / `toggleFold` / `isFolded` / `zoom` / `setZoom`（0.6–1.0 夹取）/
+    `bonus` / `penalty`（互斥，0–5）
+
+T02 需要自己做的第一件事：
+  1) 建 `lib/ui/room/room_game_page.dart`，按 `role` 走 `_KpSkeleton`(12) / `_PlSkeleton`(13)，
+     每槽位 `KeyedSubtree(key: RoomKeys.keyOfSlot(slot))`，整页外层
+     `key: ValueKey('gp/$role/$inGame')` 以便「状态翻转 → 整页重建」可断言。
+  2) 写完立刻把 `pageBuilder` 接到夹具，跑夹具自证 + 全量，确认没有回归。
+     （夹具壳里刻意不含任何容器 key，所以「12/13 容器各 findsOneWidget」不会假绿。）
+  3) 注意：夹具的壳只画「身份行 + 成员数值 + 信息流计数」，不含骰子条 / 手绘板 /
+     素材舞台——这些属于 T03/T04/T05，不要以为夹具已有。
+
+================================================================
+结论：S1.3 / S1.4 完成。T01 五条判据全部实测通过
+（组合 67 组 0 红、analyze 零 issue、view/ 零框架依赖、全量 1066 组 0 红、
+ pubspec 与 room_model_save.dart 未动）。
+================================================================
+
+================================================================
+附录：S1.1 / S1.2 实例补充（与上文合并阅读，不覆盖上文任何结论）
+================================================================
+
+A. 前序实例实测输出（上文第二节只列 S1.3/S1.4，这里补齐）
+  ① 开工基线（P4 交付后）
+     $ flutter test
+     00:32 +985: All tests passed!
+  ② S1.1（会话端口 / 控制器 / 本地态）
+     $ dart analyze                          → No issues found!
+     $ flutter test test/room_session_test.dart
+     00:00 +16: All tests passed!
+  ③ 纯度红修复（domain 头注释字面量）后的全量检查点
+     $ flutter test
+     00:31 +1001: All tests passed!        （985 + 16，0 红）
+  ④ S1.2（纯视图层 + 画笔 + 通用件 + 弹层壳）
+     $ dart analyze                          → No issues found!
+     $ flutter test test/room_view_test.dart
+     00:00 +33: All tests passed!
+     $ flutter test
+     00:34 +1034: All tests passed!         （1001 + 33，0 红）
+  ⑤ 四文件组合（最终，含夹具自证）
+     $ flutter test test/room_view_test.dart test/room_session_test.dart \
+         test/room_legacy_migrate_test.dart test/room_ui_harness_test.dart
+     00:01 +81: All tests passed!
+  ⑥ 全量（最终）
+     $ flutter test
+     00:36 +1066: All tests passed!
+
+B. 判据 5 对「原始 985 基线」的口径
+  上文第二/三节以本实例开工时的 1034 为基线；按任务书原始口径：
+     985（P4 基线）→ 1001（S1.1 +16）→ 1034（S1.2 +33）
+       → 1066（S1.3 +18 / S1.4 +14）
+  累计 +81 组、只增不减、0 红。  ✅
+
+C. view/ 零框架依赖的原始 grep（判据 2 补原始输出）
+  $ grep -rn 'package:flutter' lib/ui/room/view/ | wc -l              → 0
+  $ grep -rn 'dart:ui'          lib/ui/room/view/ | wc -l              → 0
+  $ grep -rnE 'state\[[^]]+\][[:space:]]*=' lib/ui/room --include='*.dart' \
+        | grep -v '/view/' | wc -l                                     → 0
+  $ grep -rnE 'rules\?\.check\(|rollExpr\(|opposedFull\(' lib/ui/room \
+        --include='*.dart' | wc -l                                     → 0
+  $ grep -rnE 'plBottomBar|plFeeds|kpChat|kpGameLog' lib/ui/room \
+        --include='*.dart' | wc -l                                     → 0
+  $ grep -n 'image_picker' pubspec.yaml                                → 0 命中
+  view/ 六份文件只 import `dart:math` 与 lib/domain 纯 Dart 模块；
+  `NormPoint / NormBox / RgbColor` 按 §3.0 自建，widget / painter 层才转
+  Offset / Color。`pubspec.yaml` mtime 2026-11-08 18:55:07 未变；
+  `room_model_save.dart` mtime 2026-11-09 01:30:33 未变。
+
+D. 补充实现决策 / 勘误（请一并转告架构师与 T02–T05）
+  1) `charStatusText(mem)` 不能用 `bodyViewOf(mem)`：domain 的 `bodyView`
+     优先级是「死亡 > 濒死 > 昏迷 > body」，重伤+濒死会被归一成「濒死」，
+     设计示例「重伤·濒死」拿不到。实现改读 `sheet.status.body` 原始值
+     （view/sheet_view.dart），并加了专门用例钉死。
+  2) `attrRows` / `skillRows` 键名实读 domain：`kRaAttrKeys` =
+     [str,con,siz,dex,app,int,pow,edu,luck]（UI 显示前 8 项）、skills 项是
+     `{name,total}` **不是 value**；兼容老卡 `value` + `custom` 标记。
+     他人视图 attrs 整块被删时显示「—」而非 0（K4 缺键 ≠ 0）。
+  3) 机械门禁是**朴素 grep**，会扫注释：`room_legacy_migrate.dart` 头注释
+     原含 `package:flutter` / `dart:io` / `dart:ui` 三个字面量，曾造成
+     `domain_purity_test.dart` 与 `room_purity_test.dart` 两条红（+999 -2）。
+     已改写为「不得依赖 Flutter 框架，也不得做任何平台 I/O 或 UI 绘制」，
+     **测试一行未动**，全量回到 1001 全绿。
+  4) 同类坑：`room_panel_kit.dart` / `room_sheet.dart` 头注释原写
+     `state[...] =` 字面量，已改成「零权威状态赋值」。后续在 lib/ui/room/
+     下写注释请避开上文第六节 1) 列的六个被扫字面量。
+  5) `RoomGridSpec.compact` 必须与 grid 同源（§1.5）：专门加了
+     「560×320 横屏 → 不 grid 也不 compact」与「compact 恒蕴含 grid」
+     遍历 10×7×2 组合的用例，防「compact = h<=360」的简化回归。
+  6) §3.9 跨任务契约由 `room_view_test.dart` 的
+     `_FakeStage implements MapStageController` **编译期钉死**（六成员），
+     `RoomTap.enabled` / 48dp / `MaterialTapTargetSize.padded` 同批断言。
+
+E. 并行写入说明（重要，供 team-lead 协调）
+  本工程目录收尾阶段出现**两个实例同时写 T01**：
+   · 实例 A（S1.1 / S1.2）：09:29–10:04 落盘 21 个 lib/ 文件 + 2 个测试文件；
+   · 实例 B（S1.3 / S1.4）：10:11–10:18 落盘 3 个 test/ 文件 + 本报告正文。
+  10:14–10:16 之间 `test/support/room_ui_harness.dart`、
+  `test/room_ui_harness_test.dart`、`test/room_legacy_migrate_test.dart`
+  被实例 B 覆盖为更完整版本（635 / 341 / 316 行；座位 p1/p2/sp1；
+  `shell()` + `pageBuilder` 注入点）。实例 A 复核后**不再抢写**，以磁盘
+  最终版本为准：`dart analyze` 零 issue、4 个 T01 测试文件 81 组全绿、
+  全量 1066 组 0 红。S1.1/S1.2 的 lib/ 文件未被实例 B 触碰。
+  ⚠️ 后续批次请明确单一 owner，或约定「先落盘者为准 + 后者只追加」。
+
+F. 全局一致性复核
+  跨文件 import：`view/` 只依赖 lib/domain 与同目录；`widgets/sheets/painter`
+  只依赖 room_theme / view/ / room_panel_kit；`room_controller` 只依赖
+  domain + repo + 本目录端口；无循环依赖。  ✅
+  接口契约：§3.1 / §3.4 / §3.6 / §3.9 签名逐条比对，调用点类型一致。  ✅
+  数据流：`LocalLoopbackSession.pumpPlans` → `RoomClient.receive` →
+  `RoomScope.of(ctx).session.state` → `view/` 纯函数只读深拷贝。  ✅
+  重复实现：无（每种派生只在对应 view/ 文件出现一次）。  ✅
+
+  IS_PASS: YES
+
+================================================================

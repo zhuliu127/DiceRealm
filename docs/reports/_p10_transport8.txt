@@ -1,0 +1,417 @@
+================================================================================
+_p10_transport8.txt — 骰境 P10 第 6 期交付报告（版本 2.24.0+94）
+生成时间：2026-11-11 20:40 左右（本机本地时间）
+出包人：software-engineer-2（布局专项 + 本期收尾）
+================================================================================
+
+【一句话结论】
+P10 第 6 期五项真机反馈全部修复并验证通过；用户追加的「推送弹窗后 KP 工具箱
+里不要再有待处理」已按新口径撤块重做；全量测试 2106/2106 全绿（并发 5m43s 串行
+亦全绿，基线 2079 → 2106 只增不减）、dart analyze 零 issue、P4 13/13、P5 14/14、
+6 项反向证伪全部「改坏→红→逐字节恢复→复绿」、release APK 已出（67.1MB，三 ABI
+带 libapp.so）。IS_PASS: YES。真机未跑（红线：不跑 adb/模拟器），待测项见清单。
+
+
+================================================================================
+一、五项逐条：真因 → 改动 → 证据
+================================================================================
+
+■ 问题 1 · 大厅预览角色显示全部信息
+  用户原话：大厅里点成员预览，只显示很少的信息，要看全部。
+  真因：大厅预览走的是精简摘要（只给昵称 / 角色 / 准备态），没接完整角色卡视图；
+        卡片在权威端是有全量数据的，只是 UI 没给入口。
+  改动：lib/ui/room/room_lobby_page.dart（40,787 B）
+        · 成员行接「查看完整卡」入口 → showCharViewSheet（与游戏内同一弹层，
+          同一份数据，所以属性 / 技能 / 背景 / 装备 / 状态全部可见）；
+        · 只读：弹层内无任何写回按钮（P4 口径：预览不改权威态）。
+  证据：test/p10_t6_room_fixes_test.dart group 1（成员详情 → CharViewKeys.root，
+        「测试信念 / 测试经历（1925）/ 测试资产说明 / 教育进步检定」逐项可读；
+        未绑卡时给「未绑卡」且不弹只读卡）。
+  交叉验证：test/room_lobby_page 相关既有用例全绿（全量 2106 内）。
+
+■ 问题 2 · 潜在疯狂「后台判定」（详见第三节，结论：系统派生状态，不改 UI）
+  结论：**不是缺陷，不需要改 UI**。潜在疯狂是 domain 的派生精神态，由「不定疯狂
+        的症状随轮次消退」这条规则自动产生；UI 只负责显示与提供治愈入口。
+        链路已核实（见第三节）。
+
+■ 问题 3 · 战技按钮「点了没反应」
+  用户原话：点战技没有任何可见反馈。
+  真因：旧实现 `hostAction('combat.roll')` 发的是**空参数**：
+        · 非 KP 走 domain `diceDirect`（只有 expr/label/skill 三个 null）；
+        · KP 走 `diceRoll`（`p['result']` 为空 → 只落一条 total=null 的空 DICE 记录）。
+        两条路径都没有可看见的骰点/标签，用户感知就是「点了没反应」。
+  改动：lib/ui/room/widgets/gp_dice_bar.dart
+        `RoomKeys.action('combat.roll')` 的 onTap 改为
+        `sendIntent(INTENT.DICE {expr:'1D100', label:'战技', skill:'战技',
+         direct:true, bonus, penalty, secret?})` —— 权威端 `diceDirect` 用规则服务
+        复算并 PUBLIC 广播骰点，KP 与玩家两条路径都有可见反馈。
+        `enabled` 仍恒等 `gate.can('combat.roll')`（T-30 不漂移），key 不变。
+  证据：p10_t6_room_fixes_test 3A[host] / 3A[p1]：发出 intent 的 p 逐字段断言
+        （direct=true / expr=1D100 / label=战技 / skill=战技），且 host.state['dice']
+        真的多出一条 total 非 null、label=战技 的公共骰；3B 旁观者结构上没有该按钮。
+        反向证伪 F2（去掉 direct:true → 该用例红 → 恢复 → 绿）。
+
+■ 问题 4 · 对抗按钮「提示没有对象」
+  用户原话：点对抗弹「甲方无效：未指定对抗方类型」。
+  真因：旧实现 `hostAction('check.opposed')` 空参数，domain `checkOpposed` 第一步
+        `resolveActorSkill(p['aSeat'])` 拿不到座位，直接回「甲方无效」。
+        正确入口是已有的能选双方 / 通用 / 攻击 / 武器对抗的弹层。
+  改动：同文件，`RoomKeys.action('check.opposed')` 的 onTap 改为
+        `showOpposedSheet<void>(context)`；不再发空 action。key / enabled / hint 不变。
+  证据：p10_t6_room_fixes_test 4A：点对抗 → OpposedSheetKeys.root 出现，
+        `f.lastSent(action:'check.opposed')` 为 null（证明不再发空 action）；
+        4B 玩家/旁观结构上没有该按钮（POLICY = [kp]）。
+
+■ 问题 5 · 推送要求要「屏幕正中弹窗」且能直接操作
+  用户原话：KP 和所有玩家收到的推送要求，直接弹窗显示在屏幕中间，并能按内容操作
+              （比如点同意）。
+  真因：旧版只有状态条里的一张卡（底部），要自己去找、去点，容易漏。
+  改动：lib/ui/room/room_request_watcher.dart（15,075 B，新增）
+        + lib/ui/room/room_game_page.dart 挂载 `RoomRequestWatcher`（包住整页）
+        · 数据源与状态条同源：KP 读 `hostRead.pending` / `requestsBySeat`；
+          玩家读自己裁剪态的 `state['requests']` —— 别人的请求天然不在视图里；
+        · 去重：`Set<String> _seen` 按 id（pending 用 `pending:<op>:<by>`，
+          状态请求用其 id）；首次挂载把已有请求记为已读，只弹之后新到的；
+        · 居中：`showGeneralDialog` + `SafeArea > Center > Dialog`
+          （不是底部 sheet；门禁要求零裸 showDialog，showGeneralDialog 是正统底层）；
+        · 可直接操作：同意 / 拒绝 → `INTENT.CONFIRM{op,by,agree}`（KP 待确认）
+          或 `INTENT.CONSENT{id,agree}`（状态请求），发完即关，不弹假成功提示。
+  证据：p10_t6_room_fixes_test group 5（5A 居中 + 详情含说明/发起人 + 几何
+        `center.dx≈450 / center.dy≈800`（900×1600 屏）+ 宽度 ≤340 不溢出；
+        5B 同意 → CONSENT{agree:true}；5C 拒绝；5D 去重；5E 私密（第三人整份 state
+        搜不到密语）；5F KP/玩家两条数据源分别验 CONFIRM / CONSENT）。
+        反向证伪 F5（摘掉页面级 watcher → 5A 红 → 恢复 → 绿）。
+
+■ 追加项（本轮新增）· 推送弹窗后 KP 工具箱里不要再有「待处理」
+  用户原话：「推送消息弹窗后，kp工具箱里面的就不要有了」
+  真因：问题 5 把「处理入口」搬到了居中弹窗，但 KP 工具弹层里**还留着**一份
+        「待处理」SectionBox（待确认队列 + 待裁定对抗 + 待玩家同意 + 未读角标），
+        变成两个入口，用户以为要处理两次。
+  改动：lib/ui/room/sheets/sheet_kp_panel.dart（15,851 B）
+        · 整块撤掉「待处理」SectionBox（含 `trailing` 未读角标）与它的三个子区块
+          `_pendingSection` / `_opposedSection` / `_requestSection`（私有方法一并
+          删除，避免 unused_element）；
+        · 保留未动：「工具 · 回合与检定」「工具 · 战斗与场景」「工具 · 房间管理」
+          三块（标题 / 按钮 / 权限 / key 一字未改）；`grep title:` 核对只剩这三块
+          + 两个弹层壳标题（人物卡 / 未知分组兜底）；
+        · 代码注释写明理由：「推送已由页面级 RoomRequestWatcher 居中弹窗直接承载
+          并可操作，KP 工具弹层不再重复列一遍；弹窗全局、每个新请求都弹、按 id
+          去重，撤掉不会漏待办」；
+        · 死代码处理：`kpPanelKey` 入口按钮（room_game_page.dart:750）**本来就
+          没有角标**，撤块后 `kpUnreadCount*` 全族彻底无 UI 调用点 → **纯函数保留**
+          （room_ui_kp_test 有 11 处直接单测，验「计入口径」语义：哪些 need 算数、
+          requests 怎么累加），文件头 ①②与 KpPanelKeys 注释写明「UI 入口已撤销、
+          纯函数保留供既有单测与将来复用」；4 个 key 常量保留（unread / pendingList /
+          opposedCard / requestList），因为「不再渲染」的反向断言要用，注释已标明
+          「不代表还有 UI 在用」。**没有无说明的死代码。**
+        · 未动 gp_status.dart（状态条按红线不碰，见遗留 6）。
+
+
+================================================================================
+二、参考图对照表（KP 平板横屏，红块图 → 实现落位）
+================================================================================
+说明：红块图只是示意，实际以「同 gap 的声明式网格 + 四边对齐」落地；下表的
+「实现」列是 `roomDockPlanOf(isKp:true)` 的真实节点路径。
+
+| 红块图区域 | 实现（槽位 / 网格节点） | 备注 |
+|---|---|---|
+| 顶部通栏「房间/菜单信息」 | gpTopbar（页面钉住，不进网格） | 压成 1 行（≥900dp 可用宽） |
+| 左侧竖条：地图 / 怪物·npc / 素材 | gpKpLeft（flex 17，通高） | 原样保留，`p10_t3` 钉死 [17] |
+| 左侧第二竖条：画笔 / 橡皮擦 / 放置单位 / 画笔颜色 / 清除地图 | gpKpTools（上排 flex 30） | 22→30，修「放」只露一半 |
+| 中间大块：公开素材图片 + 战斗轮次信息 | gpMap（上排 flex 43） | 40→43，仍是全页最大面积块 |
+| 右上：场景检定 | gpScene（右列 flex 38） | 34→38 |
+| 右中：战斗列表·怪物信息 \| 玩家信息 | gpCombat 32 / gpPlayers 30（右列竖排） | 保持竖排：若并排每格 ~160dp < 240dp 下限，会制造新的裁切（见遗留 3） |
+| 右下：只给你看的信息 | gpPriv → 已并入「底部三块」 | 旧版独占整行 15% → 下方大空块 |
+| 底部三块：聊天框 \| 游戏公开信息记录 \| 只给你看的信息 | 中排 flex 34：[gpChat 1, gpLog 1, gpPriv 1] | 参考图最关键的一条，已落地 |
+| 最底通宽：KP 工具栏 | gpToolbar（页面钉住，不进网格） | 本批未动（见遗留 4） |
+| （红块图未画）连接 / 回合状态条 | gpStatus（flex 6） | 7→6，压薄贴底 |
+
+
+================================================================================
+三、问题 2「潜在疯狂后台判定」的明确结论
+================================================================================
+结论：**这是系统派生状态，不是缺陷，不改 UI。**
+
+1) 定义与产生条件（lib/domain/madness_state.dart 文件头 13–20 行，原文口径）：
+   · 精神状态的取值只有：正常 / 临时疯狂 / 不定疯狂 / 潜在疯狂 / 永久疯狂；
+   · 「不定疯狂」与「潜在疯狂」互斥，同时只能有一个；
+   · **不定疯狂 + 其疯狂症随轮次消失 → 潜在疯狂**；
+     临时疯狂 + 疯狂症随轮次消失 → 回正常（临时疯狂不产生潜在疯狂）；
+   · 潜在疯狂 + 损失任意 SAN(>0) → 立刻回到不定疯狂，并**新生成一条**疯狂症；
+   · 治愈按钮 / 成功的精神分析 → 取消 不定疯狂 与 潜在疯狂。
+
+2) 由谁算：`lib/domain/madness_state.dart` + `lib/domain/room_model_actions_sheet.dart`
+   （SAN 损失分支 ④「潜在疯狂 → 不定疯狂 + 新症状」，代码注释明确写了这条链
+   「不是这里另写一份 if」，即复发走同一条规则出口）。
+   老值兼容：`lib/domain/normalize.dart:150` 把老值「不定疯狂（症状消失）」翻译成
+   「潜在疯狂」；`room_model_actions_room.dart:41` 同样接受老值。
+
+3) UI 侧只做两件事（都是显示，不含判定）：
+   · `lib/ui/card_edit/status_editor.dart:297` 显示「（转入『潜在疯狂』：再损失任意
+     SAN 会立即复发）」提示条；
+   · `lib/ui/room/sheets/sheet_kp_directives.dart:45` 治愈文案同时覆盖「不定疯狂 /
+     潜在疯狂」，避免 KP 以为潜在疯狂治不了。
+   · `lib/ui/status_ops.dart:153` 注释记录「不定疯狂 / 潜在疯狂互斥」的 P8 口径。
+
+4) 链路核实结果（全量 2106 内实际跑到，非纸面）：
+   · test/p8_madness_state_test.dart（33 处引用，状态机逐分支）
+   · test/p10_t3_broadcast_potential_png_test.dart（14 处，含「潜在疯狂」广播口径）
+   · test/p10_t3b_rule_diff_test.dart（8 处）
+   · test/p10_t6_room_fixes_test.dart（9 处）
+   · test/p11_lifecycle_test.dart（13 处，续玩/重连后不残留幽灵态）
+   · test/p8_notice_slot_test.dart（3 处）/ test/qa_p10_4_verify_test.dart（9 处）
+   → 全部通过。即：**判定在后台（domain）完成，UI 只呈现**，与用户预期一致；
+     没有「UI 自己判一次」的第二套口径（那才会漂移）。
+
+
+================================================================================
+四、几何实测数字（test/p10_t6_layout_test.dart，全部 getRect 实测）
+================================================================================
+机型：荣耀 Magic9 竖屏 412×915 / 通用平板横屏 1280×800 / 荣耀平板 GT2 Pro 横屏
+      1524×1016；另测 600 / 899 / 912 / 1100 做分档反证。
+
+① 顶栏（用户：「可以摆在一行，但是占了 3 行」）
+   · 1524×1016 与 1280×800：**1 行**（按各 key 的 centerY 分组 = 1），高度 ≤64dp；
+   · 412×915：**2 行**（旧版 3 行），高度 ≤96dp；
+   · 分档阈值 `GpTopbar.oneLineMinWidth = 900`（LayoutBuilder 在 Padding(6) 之内，
+     所以可用宽 = w−12）：600/899 → 2 行，912/1100 → 1 行，实测与判据一致；
+   · 观众数入口热区实测 ≥ 56×32（既有口径不变）；
+   · 亮暗两套：整条底衬 alpha ≥0.7、头图 opacity 0.20(暗)/0.14(亮)（旧 0.34/0.18，
+     均 <0.34）、文字与底衬 luminance 差 >0.25、`shadows` 非空、
+     胶囊描边位于 `foregroundDecoration`（不占尺寸）。
+
+② 手机竖屏工具栏（用户：「堆成 4 行、战技单独一行」）
+   · 骰子条容器实测 `Rect.fromLTRB(6,696,406,871)`（宽 400dp），
+     单个按钮实测宽 48–98.3dp、可用约 392dp → 13 个按钮物理上**排不进 3 行**；
+   · 改为 `_balancedRows` 按可用宽均衡显式切行 → 实测 **4/3/3/3**，
+     **每行 ≥3 个**，战技所在行有同伴（旧版 4/4/4/1，最末仅「战技」）；
+   · 全部按钮 rect 完整落在骰子条外框内（左右上下四边）；
+   · 三档（412/1280/1524）工具栏均不遮挡内容区（viewport.bottom ≤ toolbar.top），
+     且工具栏 bottom ≤ 屏高。
+
+③ KP 平板横屏（用户：「很多栏位内容没显示完全」「下方两大块空块」）
+   · 1280×800 推导：内容宽 1264 − gap 8 → 1256 按 17:83 → 右侧 1042.5；
+     上排减 2 个 gap → 1026.5 按 30:43:27 →
+     **gpKpTools 307.9 / gpMap 441.4 / 右列 277.2dp**；
+     旧值（22:40:23，总 85）→ gpKpTools 265.6 / 右列 277.7dp；
+     旧 `roomDockMinWidthOf(gpKpTools)=300 / (gpScene)=288` 双双高于格宽
+     → `_slotView` 判 tooNarrow → 横向 SingleChildScrollView + ClipRect
+     → 这正是「放（置单位）只露一半」「成功(2)/失败(0) 被切」的机械原因；
+   · 新下限（只动 KP 三格）：gpKpTools 300→280、gpScene 288→260、
+     gpCombat/gpPlayers 240→220；玩家侧原值全保留；
+   · C3 在 1280 与 1524 两档逐格实测断言：
+     - 同排顶边对齐（tools/map/scene.top == kpLeft.top）；
+     - 列间距 = 行间距 = 8dp（左栏→工具栏、工具栏→素材图、素材图→右列、
+       素材图→底部三块、聊天→记录、记录→私密栏）；
+     - **底部三块**：priv.top == chat.top、priv.height == chat.height（旧版 priv
+       独占整行）；
+     - 状态条在最底且更矮（status.top > priv.bottom，status.height < priv.height）；
+     - 中间大块面积 > 其余 8 个槽位任一个；map.width > scene.width × 1.5（老基线）；
+     - 5 个窄栏（tools/scene/combat/players/priv）子树内**无横向滚动容器**；
+     - `GpSceneCheckKeys.level(5)`、`GpKpToolsKeys.placeActor` 完整落在各自格内；
+     - 10 个格子全部夹在「顶栏下沿 ~ 工具栏上沿」之间，右不越屏；
+   · C1 声明式树：DFS 顺序 10 槽位与 `p10_t3` 表一致；`gpKpLeft [17]`、
+     `gpKpTools.first == 83`、`gpMap.length == 3` 三条硬约束未回归。
+
+
+================================================================================
+五、口径更新表（撤「待处理」区块引起的断言更新；不删用例 / 不改永真 / 不 skip）
+================================================================================
+| # | 文件 / 旧断言 | 新断言 | 为什么不是放宽 |
+|---|---|---|---|
+| 1 | room_ui_kp_test「待确认队列逐条确认 / 取消走 confirm 意图」：`find.textContaining('待你确认（1）')` findsOneWidget；`KpPanelKeys.unread` 的 data=='1'；点 `kpPanel/confirm/madness.cure` 后断 CONFIRM 载荷 | ① `find.text('待处理')`→findsNothing；`unread`/`pendingList`/`requestList`/`opposedCard` 全 findsNothing；② 三组工具标题各 findsOneWidget（防连带删）；③ 真实请求 → 居中弹窗 → 点同意 → `INTENT.CONFIRM{op,by,agree}` **三字段逐字断言** | 入口从「弹层里的行」换成「弹窗里的同意」，**载荷契约一条没少**；并新增「旧入口必须消失」的正向断言（旧断言只证存在，新断言额外证「不该再存在」） |
+| 2 | room_ui_kp_test「showKpPanel 推出的弹层能取到同一份作用域」：`find.byKey(KpPanelKeys.unread)` findsOneWidget | `unread`→findsNothing、`待处理`→findsNothing、`工具 · 回合与检定`→findsOneWidget | 同上，且加「其余区块仍在」反向守卫 |
+| 3 | room_ui_confirm_flow_test 三条：KP 点面板「确认」→HP 真变 7；点「取消」→不变；旁观者看不到确认行 | 改为「先挂 `RoomRequestWatcher`+`KpPanel`，再提交 → 弹窗 → 点同意 / 拒绝」；**行为保证全保留**（未同意前不变、同意后真变 7、拒绝后不变、pending 被消费）；旁观者另加「整块都不许有」 | 核心不变量（confirm=kp 必须真的生效 / 不生效）**更强**：现在证明「弹窗」这条唯一路径也能真生效；旧断言只证面板路径 |
+| 4 | room_ui_player_test 完整链路第⑥步：`KpPanelKeys.pendingList` findsOneWidget + 点 `kpPanel/confirm/state.edit.self` | 先断言 `待处理`/`unread`/确认行全 findsNothing + 三块工具仍在；给控制器发同一条 confirm 清场后，**重新真实提交 SAN 请求 → 弹窗 → 点同意 → currentSAN 真变** | `currentSAN` 真生效的断言一字未动，只是入口换成弹窗；删掉了「依赖旧入口」的耦合 |
+
+纯函数保留说明：`kpUnreadCount` / `kpCountablePending` / `kpRequestCount` /
+`kpOpposedAwaitingKp` / `kpPendingCounts` / `kKpUnreadNeeds` / `kpUnreadCountOf`
+**全部保留**——room_ui_kp_test 有 11 处直接单测（验计入口径），且文件头与
+KpPanelKeys 注释已写明「UI 入口撤销、纯函数保留」。**无无说明的死代码。**
+
+
+================================================================================
+六、反向证伪表（逐字节改坏 → 用例红 → cp + sha256 + cmp -s 恢复 → 复跑绿）
+================================================================================
+方法：备份到临时目录并记 sha256 → Python 精确替换单点 → 跑 --plain-name 定向用例
+→ 判断 output 是否含 failed/[E] → `shutil.copyfile` 恢复 → `sha256` 比对 + `cmp -s`
+→ 再跑同一用例确认绿。全流程无人为跳过。
+
+| # | 改坏点 | 目标用例 | 改坏后 | 恢复校验 | 复跑 |
+|---|---|---|---|---|---|
+| F1 | 把「待处理」SectionBox 加回 sheet_kp_panel.dart | room_ui_kp_test「弹层不再有待处理区块」 | **RED** | sha=True cmp=True | **GREEN** |
+| F2 | gp_dice_bar 战技去掉 `'direct': true` | p10_t6_room_fixes_test 3A | **RED** | sha=True cmp=True | **GREEN** |
+| F3 | gp_topbar `oneLineMinWidth` 900 → 9999 | p10_t6_layout_test A1 | **RED** | sha=True cmp=True | **GREEN** |
+| F4b | room_layout `gpKpTools flex: 30` → `flex: 22` | p10_t6_layout_test C3[1280] | **RED** | sha=True cmp=True | **GREEN** |
+| F4c | room_layout 右列 `flex: 27` → `flex: 23` | p10_t6_layout_test C3[1280] | **RED** | sha=True cmp=True | **GREEN** |
+| F5 | room_game_page 摘掉 `RoomRequestWatcher`（改返回 SizedBox） | p10_t6_room_fixes_test 5A | **RED** | sha=True cmp=True | **GREEN** |
+
+补充记录（诚实披露）：另有两次「改坏点选错、没打红」，不作为通过项，仅记录方法学教训：
+· 只把 `roomDockMinWidthOf(gpKpTools)` 由 280 改回 300 **不红** —— 因为新 flex 已让
+  格宽 307.9 > 300，`tooNarrow` 不触发。这反证了**真根因是 flex 配比**（旧 flex 22 →
+  265.6dp），所以把证伪点改成 F4b/F4c（改 flex）才红。结论写进报告而不是掩盖。
+· 首次运行 F4/F5 时锚点字符串因缩进差 1 字符未命中（ANCHOR-MISS，未写入文件、无副作用），
+  改用唯一短锚点后重跑。
+
+
+================================================================================
+七、五项自检原始输出（摘要，均为本机实跑）
+================================================================================
+[1] dart analyze（全项目）
+    $ dart analyze
+    Analyzing dice-realm...
+    No issues found!
+
+[2] 全量 flutter test（并发，默认并发度）
+    $ NO_PROXY=127.0.0.1,localhost,::1 flutter test --reporter compact
+    01:23 +2106: All tests passed!               耗时 1m26s
+    → 2106 通过 / 0 失败；基线 2079 → 2106（+27，只增不减）
+
+[3] 全量 flutter test（串行）
+    $ NO_PROXY=127.0.0.1,localhost,::1 flutter test --concurrency=1
+    05:40 +2106: All tests passed!               耗时 5m43s
+    → 与并发一致，排除并发间歇性
+
+[4] P4 门禁
+    $ node tool/qa/qa_p4_gate.js
+    ==== 合计 13 条，失败 0 条 ====
+    P4_GATE IS_PASS: YES
+    （要点：room_sequences.json 121 例全实跑 hostScript 94/clientScript 27；
+      61 个 POLICY action 全分支零缺口；房间写回路径恰好 1 处；
+      Host.save() 恰好 20 个顶层键；Q6 休眠项三件保留）
+
+[5] P5 门禁
+    $ node tool/qa/qa_p5_ui.js
+    ==== 合计 14 条，失败 0 条 ====
+    P5_UI_GATE IS_PASS: YES
+    （要点：lib/domain 纯 Dart 扫描 58 个 .dart 零命中；
+      `jsStr(` 实际 **14** 处且只在白名单 6 文件；
+      PlaceholderBlock 只剩定义处；showModalBottomSheet 只在 room_sheet.dart；
+      弹层零裸 showDialog（扫 71 文件）；门禁字面量不入注释）
+
+[6] 出包
+    $ bash tool/build_apk.sh
+    √ Built build\app\outputs\flutter-apk\app-release.apk (67.1MB)
+    [2/3] 校验 AOT 产物
+      8913800  lib/arm64-v8a/libapp.so
+      9929288  lib/armeabi-v7a/libapp.so
+      9175944  lib/x86_64/libapp.so
+    ===== 出包成功 =====
+    70,397,488 bytes
+    sha256 = 9e72a887265e21c7b0e4b85b704b80cadf4e082d55e613b8f07f2c7204a43e21
+    签名：debug（可侧载安装、不可上架）
+
+[7] Gradle 代理端口处理记录
+    · 9194 已失效（`/dev/tcp` 探测 closed）；
+    · 当前系统代理端口为 2378（env http_proxy/https_proxy 同指向，curl 经它取
+      https://services.gradle.org 返回 200）；
+    · 按规程**临时**把 android/gradle.properties 的 http/https proxyPort 9194→2378，
+      出包后 `cp` 恢复：
+        cmp -s 原备份 现文件 → IDENTICAL
+        sha256 = 964d9ef7fcacf5d0a521c72e7f4bce456ff6e0917272f53ede7d3cf1847d84a1
+                  （与改前一致）
+        proxyPort 已回 9194；
+    · `tool/build_apk.sh` 未改（sha256 700bb88a…4bcb22）。
+
+[8] 关键用例在最终工作树状态复跑（证伪恢复 + 出包回滚之后）
+    $ flutter test room_ui_kp_test room_ui_confirm_flow_test room_ui_player_test
+                    p10_t6_layout_test p10_t6_room_fixes_test
+    00:07 +67: All tests passed!
+    → 证明最终磁盘状态 == 通过 2106 那个状态（证伪改动与 gradle 临时改动都已逐字节复原）
+
+
+================================================================================
+八、文件清单（本期，含前序 worker 与本轮）
+================================================================================
+【lib/ 本批新增 / 修改】
+  lib/ui/room/room_lobby_page.dart              40,787 B  问题 1（大厅预览全信息）
+  lib/ui/room/room_request_watcher.dart         15,075 B  问题 5（居中弹窗，新增）
+  lib/ui/room/room_game_page.dart               33,673 B  挂 RoomRequestWatcher（前序）
+  lib/ui/room/widgets/gp_topbar.dart            16,063 B  A：顶栏 1 行/2 行 + 与头图匹配
+  lib/ui/room/widgets/gp_toolbar.dart            8,740 B  B：工具栏间距/留白收紧
+  lib/ui/room/widgets/gp_dice_bar.dart          15,197 B  B：均衡切行 + 问题 3/4 回调
+  lib/ui/room/widgets/room_layout.dart          23,928 B  C：KP flex 重排 + minWidth 修正
+  lib/ui/room/sheets/sheet_kp_panel.dart        15,851 B  追加项：撤「待处理」区块
+  lib/app_version.dart                                    2.24.0 / 94（前序）
+  pubspec.yaml                                            2.24.0+94（前序）
+
+【test/】
+  test/p10_t6_layout_test.dart                  25,480 B  A/B/C 几何用例 11 条（新增）
+  test/p10_t6_room_fixes_test.dart                        五项修复用例（前序 worker，未改）
+  test/room_ui_kp_test.dart                     41,055 B  口径更新（2 处）
+  test/room_ui_confirm_flow_test.dart            9,570 B  口径更新（3 条，改走弹窗）
+  test/room_ui_player_test.dart                 17,925 B  口径更新（第⑥步，改走弹窗）
+
+【文档 / 工具】
+  _p10_transport8.txt                                     本报告（新增）
+  _manual_test_checklist.md                               P0 第 6 期待测章节（更新）
+  android/gradle.properties                               仅出包临时改端口，已逐字节恢复
+  tool/build_apk.sh                                       未改
+
+【本批完全未触碰（红线）】
+  lib/domain/**（零 flutter / dart:io / dart:ui，P5 扫描 58 文件零命中）
+  lib/domain/data/skills.dart、occupations.dart（GENERATED，一字未动）
+  lib/ui/room/widgets/gp_status.dart（状态条，按红线不碰）
+  tool/qa/*（只运行，未修改）
+  qa_*_report.md（未写）
+  另一工作区 C:\Users\60965\WorkBuddy\2026-11-08-13-25-14\overview.md（未改）
+  RoomEvt.values=27 / kRoomPolicy=61 / jsStr(=14（均未变，P4/P5 已复核）
+  RoomSlot / RoomKeys（未增删改 key）
+
+
+================================================================================
+九、遗留 / 需决策
+================================================================================
+1. 【需用户/主理人拍板】412dp 手机竖屏的骰子条仍是 **4 行**（旧版也是 4 行，但旧版最后
+   一行只有「战技」一个；现在 4/3/3/3、每行 ≥3、无孤行）。13 个按钮宽 48–98dp、可用
+   392dp，**物理上排不进 3 行**。要压到 3 行只能三选一：
+   (a) 缩按钮字号 / 热区（会突破 P12 的 48×48 硬口径）；
+   (b) 把部分骰式收进「更多」二级弹层（改变语义 / 多一次点击）；
+   (c) 保持现状（推荐：已无孤行，且每行更均匀）。
+   本批按 (c) 交付，未擅自改口径。
+
+2. 顶栏窄档仍是 2 行（412dp 放不下 10 项且保持可读）。阈值 900dp（可用宽）已写进
+   `GpTopbar.oneLineMinWidth` 的注释与报告，属明确口径而非模糊行为。
+
+3. 红块图「右中：战斗列表 | 玩家信息」是并排画法，本批**保持竖排**：1280 档若并排，
+   每格约 160dp < `roomDockMinWidthOf` 的 220/240 下限 → 会重新触发横向裁切，
+   与「内容显示完整」直接冲突。若确需并排，需同时下调这两格的最小宽并接受更窄
+   的行内文字，建议真机看过再定。
+
+4. 红块图「最底通宽：KP 工具栏」由页面钉住、在 `room_game_page.dart` 的 Column 里，
+   本批只改 dock 内容区网格，未动工具栏通宽结构（它本来就是通宽）。
+
+5. 红块图里「只给你看的信息」出现在两处（右下 + 底部三块）。本批按「底部三块」解读，
+   把 gpPriv 并入中排（聊天 | 记录 | 只给你看），与参考图底部三块一致；不再独占整行。
+   如需按「右下」字面理解改回，请明示。
+
+6. `gp_status.dart`（状态条「待办 / 需我同意」）**本批按要求未动**。既然 KP 工具弹层
+   的重复入口已撤，状态条是**唯一**的「已读后再看」入口，建议保留。若你认为也该撤，
+   请单独授权（会牵动 `p11_lifecycle` 的「幽灵卡片」守卫）。
+
+7. `room_ui_kp_test.dart:686` 有一条 `tap()` 的 hit-test **warning**（S4.1 左窄栏切到
+   「素材」tab 时，点击点落在兄弟节点上），**用例本身通过**、与本批改动无关，
+   属既有噪声。修它需要改那个用例的 `ensureVisible`/坐标策略，本批未动以免混入
+   无关变更。
+
+8. 真机未跑（红线：不跑 adb / 模拟器 / 真机）。真机待测项已登记进
+   `_manual_test_checklist.md` 的 P0 · 第 6 期章节。
+
+
+================================================================================
+十、判定
+================================================================================
+dart analyze            : No issues found（全项目）
+全量测试（并发）         : 2106 / 2106 通过
+全量测试（串行）         : 2106 / 2106 通过（与并发一致）
+基线                     : 2079 → 2106，只增不减（新增含本期 11 条几何用例）
+P4 门禁                  : 13 / 13，P4_GATE IS_PASS: YES
+P5 门禁                  : 14 / 14，P5_UI_GATE IS_PASS: YES
+反向证伪                 : 6 项全部「改坏→红→逐字节恢复→复绿」
+APK                      : 70,397,488 B (67.1MB)，三 ABI 均带 libapp.so
+                           sha256 = 9e72a887265e21c7b0e4b85b704b80cadf4e082d55e613b8f07f2c7204a43e21
+版本                     : 2.24.0+94（pubspec 与 app_version.dart 一致）
+
+IS_PASS: YES
+（真机验证按项目规则不在本批范围；待测项已登记清单。）
+================================================================================

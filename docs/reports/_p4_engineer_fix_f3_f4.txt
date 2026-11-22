@@ -1,0 +1,375 @@
+================================================================================
+P4 工程师返工报告 —— F3（P1 深回退崩溃）+ F4（P2 伪造掷骰）
+执行人：software-engineer-4（Alex）
+裁决依据：team-lead 派工「QA 独立复核出 2 个真缺陷，我裁决为本期修」
+基线：QA 独立复核 875 全绿 / dart analyze 干净 / qa_p4_gate.js 13 条 OK
+================================================================================
+
+【结论】IS_PASS: YES
+  全量 flutter test            → +894 All tests passed!（875 基线 +19 条新回归，0 红）
+  dart analyze                 → No issues found!（零 warning）
+  node tool/qa/qa_p4_gate.js   → 13 条判据，12 OK / 1 FAIL
+                                  FAIL 是「白名单恰好 1 条 S:q1 / 14 条 allowedPaths」
+                                  因白名单按裁决变为 2 条而红（详见第 6 节），
+                                  tool/qa/qa_p4_gate.js 属 QA 域，按派工要求**未改**
+  四 fixture                   → 455 / 517 / 121 / 256（三基线 1093，合计 1349），形状条数未动
+  reduceRoomState(             → 2 调用 + 1 声明（未变）
+  lib/domain 纯 Dart           → 零 package:flutter / dart:io / dart:ui（gate 第 1 条 OK）
+  白名单                       → 恰好 2 条（S:q1 14 paths 一字未动 + 新增 S:trim 1 path）
+
+================================================================================
+1. F3【P1，崩溃级】根因与改法
+================================================================================
+
+1.1 根因（忠实移植的旧版缺陷，不是移植回归）
+  · 旧版 room-model.js:845 构造时 snapshots=[{seq:0}]（建团空状态）；
+    :1021-1025 `_maybeSnapshot` 打满后用 `snapshots.shift()` **无脑裁掉首条**；
+    :3437-3439 `rollback()` 又以 `snapshots[0]` **无条件兜底**；
+    :3468 `snapshots.filter(s => s.seq <= target)` 再把表清空。
+  · Dart 早期实现 `room_model_host_core.dart:_maybeSnapshot` 用 `removeAt(0)`，
+    与同文件 :80 注释「第 0 条永远是建团时的空状态」自相矛盾。
+  · 复现链：`snapshotEvery=1, snapshotLimit=3`，10 条事件后只剩 [10,11,12]
+    → `rollback(3)`（target=2）拿 seq10 的「未来状态」当基准
+    → `log.seq=2` 但 `state.seq=8`、权威态仍留着被撤销事件
+    → `snapshots.removeWhere` 把表清空
+    → 再 `rollback(2)` 在 `snapshots.first` 上抛 `StateError: No element`。
+  · QA 用现造 oracle 的 F:4 例证明修复前 Dart 与旧版逐字段一致，故修它 =
+    新增**第 2 条有意偏离 oracle**（team-lead 裁决 A 已批准）。
+  · 附带根因：`reduceRoomState` 末尾无条件写 `evt.seq`，所以回退后必须显式
+    对齐 `state['seq']`；否则 logCap 裁掉早期事件时 `state.seq` 会偏小。
+
+1.2 改法（3 处源码改动，全部在 lib/domain，纯 Dart）
+  (1) lib/domain/room_model_host_core.dart:209-224 `_maybeSnapshot`
+      改为「保留 index0 基线 + 最近 snapshotLimit-1 条」：
+        while (snapshots.length > snapshotLimit && snapshots.length > 1) {
+          snapshots.removeAt(1);     // 只裁非基线；基线永不淘汰
+        }
+      构造时 `snapshots.add(RoomSnapshot(0, ...))` 保持不变。
+  (2) lib/domain/room_model_rollback.dart:53-115 `rollback()` 全量重写
+      · 只在 `s.seq <= target` 里挑最近快照；一条都没有就 `from = 0`，
+        用 `emptyRoomState(meta)` 从建团空状态重放 `(0, target]`；
+        绝不再拿 `snapshots.first` 兜底。
+      · 重放仍走 **`apply(r.evt, persist: false)`** 单口（Q1 的 vis/to 修正
+        数据基础不变），`reduceRoomState(` 调用点没有增加。
+      · 末尾显式 `state['seq'] = target < 0 ? 0 : target;` 对齐状态水位。
+      · `snapshots.removeWhere((s) => s.seq > target)` 后若为空，
+        重建一条 seq0 基线快照 → 二次深回退不再抛 StateError。
+      · 「裁日志 / 裁 snapshots / 重建 roundStarts / members 用当前花名册覆盖
+        / IN_GAME 只进不退」五项原有语义全部保留。
+  (3) lib/domain/room_model_rollback.dart:146-158 公开的 `maybeSnapshot()`
+      与 `_maybeSnapshot` 对齐（同样 `snapshots.length > 1` + `removeAt(1)`），
+      两份实现不许分叉。
+
+1.3 白名单第 2 条（test/support/room_oracle_whitelist.dart，174 行）
+  新增 `KnownDivergence`：
+    caseId            : 'S:trim'
+    legacyRef         : 'room-model.js:845（构造时 snapshots=[{seq:0}]）/ '
+                        ':1021-1025（_maybeSnapshot 用 shift() 无脑裁掉首条）/ '
+                        ':3437-3439（rollback 以 snapshots[0] 无条件兜底）/ '
+                        ':3468（filter 把快照表清空）；'
+                        'Dart 对应 room_model_host_core.dart:_maybeSnapshot 与 '
+                        'room_model_rollback.dart:rollback'
+    reproInput        : 'snapshotEvery=1, snapshotLimit=3；p1/p2 在线；'
+                        '连续 emit 10 条事件（快照表打满后只剩最近 3 条）；'
+                        'rollback(3)（target=2 早于所有留存快照）；再 rollback(2)'
+    legacyBehavior    : 'rollback(3) 后 log.seq=2 但 state.seq=8（用 seq8 的'
+                        '「未来快照」重建，权威态仍留着被撤销的事件）；'
+                        "snapshots 被清空；再 rollback(2) 时 snapshots.first 抛 "
+                        "'StateError: No element'（旧版是 TypeError）"
+    dartBehavior      : '_maybeSnapshot 保留 index0 基线 + 最近 N-1 条；'
+                        'rollback 只在 seq<=target 里选快照，一条都没有就从建团'
+                        '空状态重放 (0,target]；state.seq 与 log.seq 恒等；'
+                        '快照表永不清空，连续两次深回退都不崩溃；'
+                        'Q1 的 apply(persist:false) 单口与 vis/to 修正不受影响'
+    exactCaseNames    : {'F:4#900001'}
+    forbiddenKeys     : ['hp','hpMax','secret','kpOnly','attrs']（与 S:q1 相同）
+
+  ★ allowedPaths 新增项逐条列出（**恰好 1 条**，无通配、无 `.*`、无 `*`）：
+    [1] r'hostScript / F:4#900001.snapshotSeqs[0]'
+        （在白名单文件里以常量 `kTrimAllowedPath` 定义，:29；登记在 :161）
+        含义：只放行 QA 现造 oracle `qa_p4_fresh_oracle.json` 的 F:4#900001
+              一例里 `snapshotSeqs` 数组的**第 0 个下标**。
+        实测：该例 21 个 op、`snapshotEvery=1`、默认 `snapshotLimit=20`，
+              修复后 Dart 的 `snapshotSeqs=[0,3,4,...,21]`，
+              旧版 shift() 后是 `[2,3,4,...,21]` —— **只有 [0] 这一格不同**，
+              其余 19 个下标、数组长度、state / steps / logSeq / saveKeys /
+              save / roundStarts / warnings 一律仍逐字段严格比较。
+        为何不是 `r'$.snapshotSeqs[0]'`（重要实现说明，也请 QA 复核时注意）：
+              `test/support/room_oracle.dart:88-98` 的 `RoomOracleFixture.run`
+              调用 `expectJsonMatchExcept(..., '$fn / $name')`，把用例标签
+              **`'$fn / $name'` 当作比较根路径**（不是文档里的 `r'$'`），
+              所以运行期完整路径是
+                  `hostScript / F:4#900001.snapshotSeqs[0]`。
+              登记 `r'$.snapshotSeqs[0]'` 在运行期**永不命中**（已实测：
+              第一次跑 F3 时 `div` 非空、仍报
+              "hostScript / F:4#900001.snapshotSeqs[0]：实际 0 ≠ 期望 2"）。
+              为遵守派工硬约束「**不许放宽比较器**」，**没有**去改 `room_oracle.dart`
+              的根路径（那会让 S:q1 现有 14 条 `$.` 路径从「死登记」变成生效，
+              等于放宽比较），而是如实登记运行期的精确叶子路径。
+              这是相对设计文档的**唯一实现偏差**，已在白名单 :20-29 注释里写明。
+        影响面实测：四份 fixture 中「首条快照 != 0」的用例只有 1 例
+              （room_actions 0 / room_sequences 0 / room_model 0 /
+               qa_p4_fresh_oracle 1），故 S:trim 不波及 1349 例等价比较。
+    S:q1 的 14 条 allowedPaths **一条未动**（`qa_p4_whitelist_strength_test.dart`
+    用 `kFrozenAllowedPaths` 逐条冻结断言；gate 也实测 `allowedPaths=14`）。
+
+1.4 coversCase 匹配（遵守 QA 的 F1 修复，未放宽前缀）
+  QA 已把 `name.startsWith('S:q1')` 收紧为
+  `name == caseId || name.startsWith('$caseId#')`。
+  本次**没有**放宽该口径，而是给 `KnownDivergence` 增加可选字段
+  `exactCaseNames`（默认空集），在 `coversCase` 末尾追加一条
+  「逐个点名的精确匹配」：
+      if (name is String && exactCaseNames.contains(name)) return true;
+  S:trim 只点名 `F:4#900001`；`F:4#900002` / `F:0#11` / `S:trim0` 一律不命中，
+  `S:trim#1`（fixture 标准命名法）与 tag='S:trim' 仍按原规则命中。
+  在 `room_sequences.json` 里 S:trim **零命中**，故 121 例全部仍严格比较。
+
+1.5 F3 回归测试（新增 9 例 + 改 2 例）
+  新增 `test/room_snapshot_trim_test.dart`（297 行，9 例）：
+    ① 复现路径 limit=3 / 10 事件 / rollback(3)：snapshots=[0,11,12]、
+       from=0、state.seq=log.seq=2、chats 空、二次 rollback(2) 不抛
+    ② 更小窗口 limit=2：从基线重放 (0,3] 后 chats 恰为 [x0]（精确重建）
+    ③ 回退到 baseline 之前最早 seq rollback(1)，且幂等二次不崩
+    ④ 连续四次深回退，每次 chats 数 5→2→0→0，水位单调收敛
+    ⑤ adoptSave 只留一条存档点快照，深回退同样退到空状态且不崩
+    ⑥ 多 limit(1/2/3/5) × 多 target 扫描：state.seq / log.seq /
+       snapshotSeqs 三者自洽（基线永存、单调递增、无未来快照/未来事件）
+    ⑦ 深回退到建团点 members 仍为 ['p1','p2']（当前花名册覆盖）
+    ⑧ ★ Q1 不受影响：窗口打满后深回退，秘密 CHECK 仍是 redacted 脱敏行、
+       明文不上权威态、PRIVATE 的 SEAT 守卫仍生效
+    ⑨ 源码钉子：两处裁剪都 removeAt(1)、显式对齐 seq、
+       apply(r.evt,persist:false) 单口、rollback 无第二处归约口
+  改 `test/qa_p4_seq_rollback_edges_test.dart:379-417` 两条「缺陷现状记录」
+  → 修复后正确断言（这两条原本断言的正是修复前的错误行为，必须改）。
+  白名单条数断言 1→2 共 6 个文件同步（见第 5 节）。
+
+================================================================================
+2. F4【P2】根因与改法
+================================================================================
+
+2.1 根因
+  `lib/domain/room_model_actions_combat.dart:52` 的 `combat.roll` 与
+  `dice.roll` 共用一个分支 → `diceRoll(seat, p)`；而 `diceRoll`(:746) 直接吃
+  客户端 `p['result']`（`value` / `levelText` / `rolls` / `levelKey`），
+  权威端不做复算。`POLICY`(`room_types.dart:286`) 是 `['kp','player']`，
+  于是玩家一次 `intent` 就能把 `total:1 / 大成功` 写进权威 dice 记录并
+  `to:'*'` 广播。旧版 `applyAction`(:1702-1862) 对 `combat.roll` 无分支，
+  是别名补齐带来的新面，不在 fixture 等价比较范围内。
+
+2.2 改法（唯一源码改动：lib/domain/room_model_actions_combat.dart:50-74）
+  拆开 `dice.roll` 与 `combat.roll` 两个 case：
+    case 'dice.roll':  return diceRoll(seat, p);            // 原样
+    case 'combat.roll':
+      if (seat != kHostSeat) {
+        return diceDirect(seat, roster.get(seat), RoomRole.player,
+            <String, Object?>{
+              'expr': p['expr'], 'label': p['label'], 'skill': p['skill'],
+            });
+      }
+      return diceRoll(seat, p);                             // KP 原样
+  · 复用既有 `diceDirect` 的权威掷骰能力：`expr != '1D100'` 走
+    `rules.rollExpr(expr, rng)`，`'1D100'` 走 `rules.check(opts)`
+    （`skillBaseOf` 从权威花名册/角色卡取 base），结果由权威端 rng 算出。
+  · **只透传 expr / label / skill**：客户端的 `result` 被彻底丢弃；
+    `secret`（会把广播改成 SEAT 定向）、`reqId`（会附带 settleRequest）、
+    `base/bonus/penalty/difficulty`（会影响检定难度）、`damage/hp/slotId/target`
+    等夹带字段一并不透传。
+  · KP（`seat == kHostSeat`）保持 `diceRoll(seat, p)` 原样，权威端可自报。
+  · `POLICY` 仍 `['kp','player']` 一字未动；`state.dice` 记录结构（reduce
+    的 10 个键）与 `to:'*'` 广播对象不变；`reduceRoomState(` 调用点未增。
+  · randUsed：非 host 的 1D100 走 check 会多消耗 2 个随机数、非 1D100 走
+    rollExpr 按骰数消耗，符合派工「会多消耗随机数」的预期；`combat.roll`
+    结算不在 fixture 等价比较范围内（旧版无分支），1349 例不受影响。
+
+2.3 F4 回归测试
+  新增 `test/room_combat_roll_authority_test.dart`（251 行，8 例）：
+    ① 玩家自报大成功 → `total != 1`、`levelText != '大成功'`、
+       记录 10 个键集合完全不变、仍 `to:'*'`（固定 seed=1）
+    ② 非 1D100 骰式 '2D6'（rollExpr 路径）同样忽略 result、产出真实骰组
+    ③ 连续两次玩家 combat.roll 结果不同且都不是伪造值（证明真掷了）
+    ④ KP（host）行为不变：`total=1` / `levelText='大成功'` / `level='CRITICAL'`
+       / `seat='host'` / 仍 PUBLIC
+    ⑤ POLICY 仍 `[kp, player]`；`dice.roll` 仍 KP-only、spectator 仍被拒
+    ⑥ 夹带 `secret:true` / `reqId` → 仍 PUBLIC 广播，除 dice 与 seq 外
+       权威态零变化
+    ⑦ 夹带 `damage/hp/slotId/target` → 不改 HP / 战斗槽 / 别人的卡
+    ⑧ 源码钉子：`if (seat != kHostSeat)` / `return diceDirect(` /
+       POLICY 登记串一字未动
+  改 `test/qa_p4_alias_actions_test.dart:169-196`：把「客户端 result 成为权威
+  公开记录」的**缺陷现状断言**改为修复后断言（`total != 1`、
+  `levelText != '大成功'`、仍 `to:'*'`、`expr/label/seat` 不变）；
+  同文件 :198-226 的「不越权」测试（战斗槽 / 角色卡）保持并仍绿。
+  改该文件头注释 ② 的措辞为「裁决 ① 已修」。
+
+================================================================================
+3. 白名单条数断言同步（1 → 2，共 6 个文件）
+================================================================================
+  · test/room_visibility_test.dart:564      length==2；按 caseId 定位 q1/trim；
+                                            断言 trim 只 1 条精确路径且无 `*`
+  · test/room_coverage_test.dart:212        length==2；逐条校验字段齐全；
+                                            whitelistedTags == {'S:q1','S:trim'}；
+                                            room_sequences 实际命中仍 {'S:q1'}
+  · test/room_equivalence_test.dart:189     length==2；S:q1 仍 14 条且不重复；
+                                            trim 1 条精确路径；比较器强度断言不动
+  · test/room_purity_test.dart:149          length==2；14+1 路径；1093 例不变
+  · test/room_rollback_security_test.dart:287  正则数 `^  KnownDivergence\(`
+                                            == 2；两条 caseId 都在；无 M:logScript
+  · test/qa_p4_whitelist_strength_test.dart（QA 域，230 行）
+      全部 `.single` 改为 `byId(caseId)`；新增 2 例：
+        · S:trim 的 allowedPaths 恰好 1 条且冻结（kFrozenTrimAllowedPaths）
+        · S:trim 精确点名：只认 F:4#900001，不认 F:4#900002/F:0#11/S:trim0
+      kFrozenAllowedPaths（S:q1 的 14 条）**一条未动**；
+      「只覆盖 S:q1 家族 3 例」「前缀过宽回归」「比较器强度 4 例」全部保持。
+  · test/support/room_oracle_whitelist.dart 文件头改为「恰好 2 条」并补
+    ② S:trim 的根因说明；新增 `exactCaseNames` 字段与 `kTrimAllowedPath`。
+  · 三个测试文件的模块头注释同步为「2 条 / 14+1 路径」。
+  ⚠️ `test/support/room_oracle.dart` **一行未动**（不许放宽比较器）。
+  ⚠️ `tool/qa/qa_p4_gate.js` **一行未动**（QA 域）。
+
+================================================================================
+4. 改动文件清单（共 14 个；行数取自查时实测）
+================================================================================
+  源码（3 个，均 lib/domain 纯 Dart）
+    lib/domain/room_model_host_core.dart                    606 行  F3 裁剪策略
+    lib/domain/room_model_rollback.dart                     531 行  F3 rollback + maybeSnapshot
+    lib/domain/room_model_actions_combat.dart              2573 行  F4 分流
+  测试基础设施（1 个）
+    test/support/room_oracle_whitelist.dart                 174 行  第 2 条登记 + exactCaseNames
+  新增回归测试（2 个）
+    test/room_snapshot_trim_test.dart                       297 行  F3 9 例
+    test/room_combat_roll_authority_test.dart               251 行  F4 8 例
+  同步既有测试（8 个）
+    test/qa_p4_seq_rollback_edges_test.dart                 428 行  2 条现状记录 → 修复后断言
+    test/qa_p4_whitelist_strength_test.dart                 230 行  1→2 条 + 新增 2 例
+    test/qa_p4_alias_actions_test.dart                      319 行  F4 结算面断言 + 头注释
+    test/room_visibility_test.dart                          583 行  白名单断言 + 头注释
+    test/room_coverage_test.dart                            249 行  白名单断言 + whitelistedTags
+    test/room_equivalence_test.dart                         233 行  白名单断言 + 头注释
+    test/room_purity_test.dart                              177 行  白名单断言 + 头注释
+    test/room_rollback_security_test.dart                   300 行  白名单断言
+  禁改文件：pubspec.yaml / lib/domain/dice.dart / lib/domain/rules_coc7.dart 全未动
+  fixture 四份（room_rules/room_model/room_sequences/room_actions/
+  qa_p4_fresh_oracle.json）全未动；F03 的 steps[8]/steps[9]、emit 步
+  {seq,plan}、save 步 null 占位、ops 词表全部未动。
+  「不许删改既有测试」：本轮**没有删除任何测试、没有放宽任何比较器**；
+  只把「断言修复前错误行为」的 3 条测试（2 条 F3 现状记录 + 1 条 F4 结算面）
+  改成裁决后的正确行为，并同步 6 处白名单条数 1→2。875 → 894 净增 19 例
+  （F3 9 + F4 8 + 白名单强度 2）。
+
+================================================================================
+5. 每项判据的实测原始输出尾巴
+================================================================================
+
+(1) dart analyze（最终一次）
+    Analyzing dice-realm...
+    No issues found!
+
+(2) 全量 flutter test（最终一次）
+    00:33 +892: ... 硬约束 5：9 步全流程 + 落盘读回一致 走完 9 步：三类数据都在 ...
+    00:34 +893: ... 疯狂表第 9 条（恐惧症）点开 100 条子表
+    00:35 +894: All tests passed!
+
+(3) F3 定向复跑（9 个文件，含新增回归 + 白名单 + fresh oracle）
+    00:01 +89: ... qa_p4_fresh_oracle_test.dart: fixture 覆盖完整性（6 例）
+    00:01 +90: All tests passed!
+
+(4) 四份 fixture 的宿主测试复跑（确认 F3 不影响 1349 例）
+    00:00 +184: ... 回合引擎 · nextTurn ... dyingRoundCheck：返回体 4 键、stable 与 dead 严格互斥
+    00:00 +185: All tests passed!
+
+(5) F4 定向复跑（新增 8 例 + QA 别名 12 例）
+    00:00 +19: ... qa_p4_alias_actions_test.dart: 实证：旧存档只回放日志事件 → 完全没有 applyAction 参与的空间
+    00:00 +20: All tests passed!
+
+(6) reduceRoomState( 调用点（grep -rn ... | grep -v "//"）
+    lib/domain/room_model_client.dart:123:    reduceRoomState(
+    lib/domain/room_model_host_core.dart:157:    reduceRoomState(state, rec.evt);
+    lib/domain/room_model_reduce.dart:34:Map<String, Object?> reduceRoomState(
+    → 2 调用 + 1 声明
+
+(7) 白名单 / allowedPaths 静态实测
+    grep -n "caseId:|allowedPaths:|exactCaseNames" 结果：
+      :90   caseId: 'S:q1'          :106 allowedPaths: <String>[  （14 条，逐条冻结）
+      :137  caseId: 'S:trim'        :156 allowedPaths: <String>[  （1 条）
+      :172  exactCaseNames: <String>{'F:4#900001'}
+      :29   const String kTrimAllowedPath = r'hostScript / F:4#900001.snapshotSeqs[0]';
+    `^  KnownDivergence\(` 计数 = 2
+
+(8) node tool/qa/qa_p4_gate.js（完整 13 条，最终一次）
+    ==== QA P4 GATE · 静态探针 ====
+    [OK]   lib/domain 纯 Dart（零 Flutter/IO/UI）                 扫描 38 个 .dart，零命中
+    [OK]   reduceRoomState( == 2 调用 + 1 声明                  调用 2（room_model_client.dart:123, room_model_host_core.dart:157），声明 1
+    [FAIL] 白名单恰好 1 条 S:q1 / 14 条 allowedPaths             KnownDivergence=2，allowedPaths=14
+    [OK]   四 fixture 精确 455/517/121/256（三基线 1093）        455+517+121=1093，动作分发 256
+    [OK]   room_sequences.json 121 例全实跑                      total=121 host=94 client=27 noOnly=true handlers=true
+    [OK]   每个 fn 有 handler；only 只在 2 个已知 runner          handlers=95 missing=无 runners=5 ...
+    [OK]   房间写回路径恰好 1 处 await repo.save(                 lib/repo/room_state_writer.dart:1058
+    [OK]   Host.save() 恰好 20 个顶层键                          解析到 20 个键
+    [OK]   61 个 POLICY action 全部分支零缺口                     POLICY=61，分支=67，缺失=无
+    [OK]   Q6 休眠项三件保留                                      reduce=true state=true action=true
+    [OK]   Client.receive() 返回体没有 gapFrom 键                 扫描所有 map 字面量键
+    [OK]   三个禁改文件存在，且 dice/rules_coc7 未被反向依赖      pubspec=true dice.room_=false rules.room_=false
+    [OK]   T05 门禁文件齐全（8 个）                               8 个齐全
+    ==== 合计 13 条，失败 1 条 ====
+    P4_GATE IS_PASS: NO
+
+================================================================================
+6. qa_p4_gate.js 哪条判据因白名单变 2 条而红（按派工要求：不改它，只记录）
+================================================================================
+  红的是第 ③ 条：
+    check('白名单恰好 1 条 S:q1 / 14 条 allowedPaths',
+      entries === 1 && /caseId:\s*'S:q1'/.test(src) && paths === 14,
+      `KnownDivergence=${entries}，allowedPaths=${paths}`);
+  实测输出：
+    [FAIL] 白名单恰好 1 条 S:q1 / 14 条 allowedPaths
+           KnownDivergence=2，allowedPaths=14
+  说明：
+    · `entries` 因 F3 裁决 A 新增第 2 条 `S:trim` 从 1 变 2 → 判据 `=== 1` 红。
+    · `paths` 仍为 14：gate 的正则只匹配**第一处** `allowedPaths: <String>[...]`
+      （即 S:q1 的 14 条 `r'$...'`），S:trim 的 1 条精确路径不影响该计数。
+      也就是说 **S:q1 的 14 条 allowedPaths 一条未加、一条未改**。
+    · 其余 12 条判据全 OK；`P4_GATE IS_PASS: NO` 完全由这一条引起。
+  建议 QA 把该判据更新为「恰好 2 条（S:q1 + S:trim）/ 14+1 条 allowedPaths」
+  后复验；本报告不改 QA 域文件。
+  ★ 另请 QA 复核时注意第 1.3 节的 `kTrimAllowedPath` 运行期根路径口径：
+    若 QA 后续把 `room_oracle.dart` 的比较根路径统一为 `r'$'`（修那个
+    latent bug），需要同步把 `kTrimAllowedPath` 换成
+    `r'$.snapshotSeqs[0]'`；本轮为遵守「不许放宽比较器」而未做该改动。
+
+================================================================================
+7. 相对设计 / 派工的偏差与说明（全部列明，无隐瞒）
+================================================================================
+  (1) `allowedPaths` 用运行期完整路径 `hostScript / F:4#900001.snapshotSeqs[0]`
+      而非文档语法 `r'$.snapshotSeqs[0]'`。原因见 1.3：`RoomOracleFixture.run`
+      把用例标签当比较根路径。若登记 `$.` 形式，运行期不命中、测试会红；
+      若改 `room_oracle.dart` 根路径，则会让 S:q1 的 14 条 `$.` 路径从
+      「死登记」变成生效 = 放宽比较器，违反硬约束。故选精确的运行期路径，
+      仍满足「精确、禁通配、只放行这一场景差异的路径」。
+  (2) `S:trim` 在 `room_sequences.json` 零命中（只靠 `exactCaseNames` 精确
+      点名 `qa_p4_fresh_oracle.json` 的 F:4#900001）。派工提到的
+      `whitelistedTags == {'S:q1','S:trim'}` 已按「登记在册的 caseId 集合」
+      落实在 `room_coverage_test.dart`；fixture 里实际命中集合仍是
+      `{'S:q1'}`（因为不能改 fixture 加 S:trim tag）。
+  (3) F4 非 host 只透传 expr/label/skill，不透传 base/bonus/penalty/difficulty。
+      这是为避免玩家借 `combat.roll` 影响权威检定难度（比派工要求更严），
+      不改变 dice 记录结构、广播对象与 POLICY。
+  (4) QA 域的 3 个测试文件（`qa_p4_seq_rollback_edges_test.dart` /
+      `qa_p4_whitelist_strength_test.dart` / `qa_p4_alias_actions_test.dart`）
+      有改动，原因是它们断言的正是「修复前缺陷现状」或「白名单恰好 1 条」，
+      裁决变更后必须同步；未删除任何用例，且额外补了 2 例强度断言。
+  (5) `tool/qa/qa_p4_gate.js` 未改（按派工要求），故其 IS_PASS 为 NO；
+      这不代表本轮代码验收失败，本报告的 IS_PASS 以 flutter test / analyze /
+      各项硬不变式实测为准。
+
+================================================================================
+8. 遗留问题
+================================================================================
+  · qa_p4_gate.js 第 ③ 条判据待 QA 更新后复验（唯一红灯，已在上文说明）。
+  · `room_oracle.dart` 的比较根路径用 `'$fn / $name'` 而非 `r'$'` 是一个
+    latent 测试基础设施问题（导致 S:q1 的 14 条 `$.` 路径实际是死登记）。
+    本轮**未动**（不许放宽比较器）；建议单独排期，修的时候要同步评估
+    S:q1 路径生效后对等价性的影响，并同步更新 `kTrimAllowedPath`。
+  · 无其他未解决缺陷；F3 / F4 均已按裁决修完并全绿。
+
+IS_PASS: YES
+================================================================================

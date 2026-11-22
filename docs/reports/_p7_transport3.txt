@@ -1,0 +1,241 @@
+================================================================
+P7 · 第三批（收尾）：云分享链接带规则徽标
+                    四层改动 + 新增测试 + 全量回归 + 重新出包
+================================================================
+日期：2026-11-10
+工程：C:/Users/60965/WorkBuddy/2026-10-08-18-34-17/dice-realm
+旧版分享服务端：C:/Users/60965/WorkBuddy/2026-10-08-18-34-17/coc7th-card-app/tools
+执行：software-engineer (Alex / 工程师寇豆码)
+需求来源：用户「云分享链接带规则徽标，加上这个。继续按工期做。」
+         此前 _manual_test_checklist.md 的「范围待确认（P2 观察项）」由用户拍板
+         转为第 8 条应通过验收项。
+
+全量：1565 组 0 红（基线 1555 + 本批 10 组，只增不减）
+      默认并发 01:21 +1565 / 串行 --concurrency=1 04:11 +1565
+      分片回归 55 组 0 红（两道 P3 预言机 + share_client/share_store/share_panel）
+      python unittest 6 组 0 红
+analyze：No issues found!（全项目）
+门禁：P4 13/13 OK、P5 UI 14/14 OK（jsStr( 仍 14 处、白名单外 0 处，零新增）
+APK：60,635,735 字节 / 57.8MB / debug 签名
+      SHA256 9a12391337b0945d24046dc1cc31970fdb8c5e13bcfd60cc3adc4bd2dfb52b84
+      三 ABI 均带 libapp.so（arm64-v8a 8,323,976 / armeabi-v7a 9,273,928 /
+      x86_64 8,586,120）；AOT 内查到 ruleShortName / share_rule_badge /
+      「未标注规则」/「链接会带上当前规则标记」；出包后
+      `enable-native-assets: true` 已确认恢复，build junction 完好。
+结论：IS_PASS: YES
+★ 本批**未启动模拟器 / 未跑 adb / 未做真机联调**（QA 严过关随后做）；
+  出包按要求走 `bash tool/build_apk.sh` 且完成全部校验。
+
+---------------------------------------------------------------
+一、文件清单（10 份：6 改 + 2 新增代码 + 2 文档）
+---------------------------------------------------------------
+【改】lib/net/share_client.dart
+      · 新增 import ../domain/rule_registry.dart；文件头补 wire 契约偏离说明。
+      · 新增全局开关 `bool legacySharePayloadForOracle = false;`（默认生产）。
+      · buildSharePayload 把原 data 字面量提为局部 Map，末尾在
+        `!legacySharePayloadForOracle` 时追加
+        `ruleSystemId = RuleRegistry.effectiveId(c.ruleSystemId)` 与
+        `ruleShortName = RuleRegistry.shortNameOf(rid)`。
+        顶层仍只有 {name, visibility, data}；开关 true 时 data 与旧版逐字节一致。
+      · create() 一行未改：jsonEncode(buildSharePayload(c))，即开关作用在
+        **生产实际调用的同一个函数**上。
+
+【改】coc7th-card-app/tools/coc_share_server.py
+      · CSS 加 `.tag.rule-tag{color:var(--gold);border-color:var(--gold);
+        background:rgba(217,180,74,.10);margin-left:0;font-weight:600}`。
+      · `.tags` 行最前加
+        `<span class="tag rule-tag" data-rule-id="{{RULE_ID}}">规则 {{RULE}}</span>`。
+      · render_card 内算 rule_label / rule_id：非 str / 空 / 空白 / "null" /
+        "None" 一律回退 "COC 7th" / "coc7"；注释写明「上线前只存在 COC 7th
+        一套规则，历史分享数据无歧义」的回退理由。
+      · 替换表末尾加 ("RULE_ID", e(rule_id)) / ("RULE", e(rule_label))，
+        放最后是为了避免规则名里含 {{NAME}} 之类字面量被二次解释。
+      · **未动**限流 / 熔断 / 删除口令 / 路由 / DB 任何行为；POST /api/cards
+        仍是整包 pack(data) 不校验白名单，新字段自动透传。
+
+【改】lib/repo/share_store.dart
+      · 新增 import ../domain/rule_registry.dart。
+      · ShareRecord 新增可选 `this.ruleShortName = ''`（const 构造，所有老
+        `const ShareRecord(...)` 构造点零改动）；静态 _readRuleShortName 让
+        fromJson 缺字段 / 'null' / 'None' 给 ''，绝不 jsStr(null) 印出 'null'。
+      · toJson / describe 带上新字段（describe 的 delToken 仍是 '****'）；
+        copyWith 增加同名可选参数且默认继承，不丢字段。
+      · ShareService.create() 组装记录时经
+        `RuleRegistry.shortNameOf(RuleRegistry.effectiveId(c.ruleSystemId))` 填入。
+
+【改】lib/ui/share_panel.dart
+      · 新增 import ../domain/rule_registry.dart。
+      · _linkCard 在链接框与按钮行之间加一行规则徽标，
+        `const Key('share_rule_badge')` 落在 Text 上：
+          有字段 → `规则徽标：COC 7th`（金色 Palette.goldStr）
+          空字段 → `未标注规则（旧链接，可点『更新为当前版本』补上）`（灰色），
+                   如实说明，不假装是 COC 7th。
+      · _createCard 说明文案补「链接会带上当前规则标记：$ruleName」，
+        ruleName 由 widget.card 动态取（effectiveId → shortNameOf），不写死。
+
+【改】test/qa_p3_h2_h3_test.dart
+      · 文件头补：H3 现在验旧版 wire 契约，生产规则标记由
+        p7_share_badge_test.dart 覆盖。
+      · setUp 快照 `savedLegacySharePayloadForOracle` 后置 true，
+        tearDown 还原（照抄该文件已有 savedRng/savedClock 快照写法）。
+      · **零 expect 改动、零断言删除、零 fixture 改动**。
+
+【改】test/qa_p3_final_gate_test.dart
+      · 同上：文件头注释 + setUp/tearDown 开关快照还原。G3 的
+        `expect(body, c['body'])` 逐字节比对一字未动。
+
+【新增】test/p7_share_badge_test.dart（10 组）
+【新增】coc7th-card-app/tools/test_share_render_badge.py（6 组 unittest）
+【改】_manual_test_checklist.md（第 8 条验收项 / 过期表述 / 文首指纹 / 组数）
+【新增】_p7_transport3.txt（本文件）
+
+★ 未改：overview.md、.workbuddy/memory/（由主理人收尾统一更新）；
+        lib/domain/** 一行未碰（domain 纯度门禁不变）；
+        pubspec.yaml 零新增依赖；房间日志 / 中继链 / 权限 gate.can 零改动；
+        K3（LogRecord.toWireJson 不进中继/出站）零触碰；
+        K7（无假按钮 / 无假成功文案）零触碰。
+
+---------------------------------------------------------------
+二、契约隔离策略（照抄上一批 ai_caps.dart 的双路径套路）
+---------------------------------------------------------------
+问题：旧版 core/share.js#buildPayload 的 data 里没有规则字段；P3 两处
+      冻结逐字节 oracle（qa_p3_h2_h3_test.dart:294-298 / :305-309、
+      qa_p3_final_gate_test.dart:350-356）抓的就是旧版请求体，冻结 fixture
+      的 cards 也没有 ruleSystemId。生产要真发规则字段，两者必然冲突。
+
+策略：`legacySharePayloadForOracle`（默认 false）直接作用在
+      **ShareClient.create() 实际调用的同一个 buildSharePayload** 上：
+        false（生产 / 全部其它测试）→ data 追加 ruleSystemId + ruleShortName；
+        true （仅两处 P3 预言机 setUp）→ 一个字段都不加，逐字节回到旧版。
+      探针各自 setUp 快照、tearDown 还原，文件间 isolate 隔离，串跑并跑都不串味。
+      **没有**另写 buildSharePayloadLegacy 给测试用 —— 那会把 oracle 降级成
+      测一个没人调用的死函数。
+
+自证伪（p7_share_badge_test.dart 第 ④ 组，双向）：
+      · 开关 true  → jsonEncode(buildSharePayload(captures[0] 的卡)) 与冻结
+                     captures[0]['body'] **逐字节相等**；
+      · 开关 false → 与冻结 body **不相等**，且 prodBody 含 "ruleSystemId"；
+      · 把两个新字段从 prodData 摘掉后，jsonEncode 与 legacyData **逐字节相等**，
+        证明差异只来自规则字段，旧版其它字段一个字节都没被改坏。
+      → H3/G3 若去掉隔离会真红，不是摆设。
+
+wire 级自证（第 ③ 组）：起真实 FakeServer，让 ShareClient.create() 真发一次
+      HTTP，解 server.requests.single.body 断言 data 里真有规则字段；
+      不是只测纯函数。
+      ★ 实现细节：本文件同时含 testWidgets，flutter_test 在**注册**
+        testWidgets 时就设了 HttpOverrides.global = _MockHttpOverrides（裸
+        HttpClient 一律 400）。故真实 HTTP 用例跑在
+        `HttpOverrides.runWithHttpOverrides(..., _RealHttpOverrides())`
+        的干净 zone 里，空子类继承基类 createHttpClient 的默认实现（构造真
+        _HttpClient）。这是 qa_p3_* 两文件「刻意不含 testWidgets」的同一原因，
+        没有靠改环境或放松断言绕过去。
+
+---------------------------------------------------------------
+三、测试账目（新增 16 组：Dart 10 + Python 6）
+---------------------------------------------------------------
+test/p7_share_badge_test.dart（10 组）
+  ① 生产默认路径：data.ruleSystemId=='coc7' / ruleShortName=='COC 7th'；
+     旧版 15 个 data 字段逐个钉住还在；顶层仍 {name, visibility, data}。
+  ② 老卡回退：缺字段 / '' / 空白 / 瞎填 / 占位 id 'dnd5e' 'custom' /
+     字面量 'null' 'None' 共 8 变体，全部给 coc7 + COC 7th；
+     规则字段编码后不得含 'null' / 'None'；占位 id 不得出现 'DND 5E'。
+  ③ 真实 wire：ShareClient.create() → FakeServer，请求体含
+     "ruleSystemId":"coc7" / "ruleShortName":"COC 7th"。
+  ④ 隔离双向自证伪（见上）。
+  ⑤ ShareRecord：toJson/fromJson 往返、老 JSON 缺字段给 ''、脏值不印
+     'null'、describe 不含口令明文（仍 "****" 且带新字段）、
+     copyWith 不丢字段、真实 JsonFileShareStorage 落盘读回；
+     ShareService.create() 对占位 id 也填入 COC 7th。
+  ⑥ SharePanel widget（注入 MemoryShareStorage + FakeShareApi，零平台动作）：
+     已分享态 findsOneWidget(Key('share_rule_badge')) 且含 COC 7th；
+     老记录含「未标注规则」「更新为当前版本」且不含 COC 7th；
+     未分享态文案含「链接会带上当前规则标记：COC 7th」。
+  ⑦ 脱敏回归：请求体不含 delToken / API Key / settings / shareBase /
+     响应里的删除口令，且两个新规则字段仍在。
+
+tools/test_share_render_badge.py（6 组 unittest，直接 import coc_share_server
+调 render_card，不起服务不碰 DB 不联网；模块顶层只有常量与锁，可安全导入）
+  1 带 ruleShortName="COC 7th" → 有 .tag.rule-tag、「规则 COC 7th」、
+    data-rule-id="coc7"，且徽标排 .tags 最前；
+  2 完全不带字段 → 回退 COC 7th，整页无 >None< / >null< / 规则 None；
+  3 falsy 六变体（None / '' / 空白 / "null" / "None" / 0）统一回退；
+  4 XSS：<script>alert(1)</script> → 输出 &lt;script&gt;、无裸 <script>；
+    ruleSystemId 注入同样被 e() 转义；
+  5 ruleShortName="DND 5E" → 原样渲染且不含「规则 COC 7th」（非硬编码）；
+  6 全页扫描回退路径不泄漏 Python None。
+
+实际输出：
+  Ran 6 tests in 0.003s / OK（6 项全 ok，逐项 -v 明细已贴给 team-lead）
+
+---------------------------------------------------------------
+四、门禁与校验结果
+---------------------------------------------------------------
+flutter test（默认并发）      +1565 All tests passed! / 01:21
+flutter test --concurrency=1  +1565 All tests passed! / 04:11
+分片（两 oracle + 3 share 老测） +55 All tests passed!
+dart analyze                  No issues found!
+node tool/qa/qa_p4_gate.js    13 条，失败 0 → P4_GATE IS_PASS: YES
+node tool/qa/qa_p5_ui.js      14 条，失败 0 → P5_UI_GATE IS_PASS: YES
+                              （jsStr( 实际 14 处，白名单外 无）
+python -m unittest -v test_share_render_badge  6/6 OK
+python -m py_compile coc_share_server.py test_share_render_badge.py  OK
+bash tool/build_apk.sh        [1/4]-[4/4] 全绿；三 ABI libapp.so 列出；
+                              出包后 enable-native-assets: true 恢复；
+                              build -> /d/dev/dice-build junction 完好。
+APK 60,635,735 字节 > 50MB，非坏包；AOT 内含本批新字符串（见文首）。
+所有测试命令前均 unset HTTP_PROXY/HTTPS_PROXY/http_proxy/https_proxy
+且 export NO_PROXY=127.0.0.1,localhost，未出现 Invalid WebSocket upgrade。
+
+---------------------------------------------------------------
+五、全局一致性审查（写完 10 份文件后做 1 轮）
+---------------------------------------------------------------
+· 跨文件 import：share_client / share_store / share_panel 各自新增
+  ../domain/rule_registry.dart，都只依赖 domain 层，零循环依赖；
+  dart analyze 零告警，P4 domain 纯度门禁（lib/domain 51 文件零 Flutter/IO/UI）
+  仍 OK —— 本批确实一行未碰 domain。
+· 接口契约：ShareRecord 新增字段带默认值 ''，qa_p3_h2_h3_test.dart:348/377、
+  share_store_test.dart:35 等全部 const/普通构造点零改动，实测 55 组分片
+  回归全绿；fromJson/toJson/describe/copyWith 四个方法字段一致，无遗漏。
+· 数据流一致：三处取规则名（buildSharePayload / ShareService.create /
+  _createCard）一律 `shortNameOf(effectiveId(...))` 同一口径，占位与脏 id
+  不会让 ruleSystemId 与 ruleShortName 打架；服务端只用 data.ruleShortName
+  渲染，缺字段回退 COC 7th，不采信客户端的 ruleSystemId 作显示名。
+· 无重复实现：没有 buildSharePayloadLegacy；隔离开关只有一处全局声明，
+  两处探针 setUp 引用同一个符号；widget 测试复用 support/app_harness.dart
+  的 pumpApp / newMemoryShareStore / FakeShareApi，未复制夹具。
+· 红线复查：K3 房间日志链零触碰；K7 无假按钮、无「已导出成功」类乐观文案；
+  旁观者 / gate.can 零改动；testWidgets 内零 Timer / Future.delayed /
+  AnimationController / 真实文件 I/O / 平台 Future await（只 pump 已分享态）。
+· 冻结 fixture：test/fixtures/qa_p3_share_oracle.json 与
+  qa_p3_final_gate_oracle.json **未改**；两处 oracle 的 expect 未改弱、未删。
+· 文档：_manual_test_checklist.md 第 8 条已并入 7 行表格成为第 8 行
+  （Markdown 表格连续，无空行断开），原 :102-106「范围待确认」块改写成
+  第 8 条验收细则，:316 过期「lib/net/** 冻结 / 不显示徽标」改写成已实现
+  说明，文首 APK 指纹与尾部自动化组数同步。
+  审查中发现并即时修掉 1 处小问题：Markdown 第 8 行最初落在表格外的空行
+  之后，已上移与第 7 行相邻；另把服务端 RULE/RULE_ID 替换移到替换表末尾，
+  避免规则名内含 {{TOKEN}} 时被二次解释（改完重跑 Python 6/6 OK）。
+
+IS_PASS: YES（第 1 轮审查即通过，无需第 2 轮）
+
+---------------------------------------------------------------
+六、已知边界（如实列出，不藏）
+---------------------------------------------------------------
+1. 服务端只读页的回退**只在 render_card**：本机 ShareRecord 对老记录如实
+   留空并显示「未标注规则」，两者语义有意不同（一个面向看链接的人、
+   一个面向卡主人），不是 bug。旧链接点「更新为当前版本」会重新 create
+   一条新 id，服务端才有规则字段；旧 id 本身不会被回填。
+2. 规则字段只加在 POST /api/cards 的 data 层，靠服务端「整包 pack(data)
+   不校验白名单」自动透传。若将来部署方把 coc_share_server.py 换成别的实现
+   或加了字段白名单，徽标会退回 COC 7th（不会报错，但新规则名丢失）。
+3. 占位规则（dnd5e / custom）在 effectiveId 口径下收敛回 coc7，所以本批
+   线上永远只会显示 COC 7th / coc7；服务端已支持任意 ruleShortName 原样
+   渲染（Python 第 5 组证明），但真正多规则要等规则层开放新规则之后。
+4. 未启动模拟器 / 未做真机跨设备打开链接验证，第 8 条真机验收由 QA 补。
+   本批自动化只覆盖到「请求体真发字段」+「render_card 纯函数渲染」，
+   没有跑端到端 HTTP GET /s/<id> 与浏览器 CSS 呈现。
+5. APK 仍是 debug 签名，可侧载不可上架（与上一批一致）。
+6. 本批 APK 字节数与上一批恰为同一值（60,635,735），但 SHA256 不同且
+   AOT 内查到本批新增的 4 个标识字符串，确认不是「跳过 AOT 的坏包」；
+   libapp.so 三个 ABI 大小与上一批相同，属 AOT 快照长度对齐后的正常现象。
+================================================================

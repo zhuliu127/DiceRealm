@@ -357,7 +357,7 @@ void main() {
       final String wire = req.body['payload']! as String;
       for (final String banned in <String>[
         'hostToken', 'mtoken', 'deviceId', kHostToken, kDeviceId,
-        '203.0.113.10', 'id_ed25519',
+        '203.0.113.10', 'deploy_key',
       ]) {
         expect(wire.contains(banned), isFalse,
             reason: '备份 payload 不得含 $banned');

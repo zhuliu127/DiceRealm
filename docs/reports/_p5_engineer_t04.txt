@@ -1,0 +1,199 @@
+================================================================
+P5 · T04 工程师交付报告（KP 专属块 + 全部 KP 侧弹层 + 1 个测试）
+作者：software-engineer-4 (Alex)
+基线：T02 完成态 1095 组 0 红；本轮**未碰** room_game_page.dart
+结论：IS_PASS: YES（全量 1169 组 0 红 / dart analyze 零 issue / 门禁零命中）
+================================================================
+
+一、文件清单（12 个文件，4240 行；11 个 lib + 1 个 test）
+----------------------------------------------------------------
+S4.1（块 2 / 块 3）
+  lib/ui/room/widgets/gp_kp_left.dart                272 行  三 tab（地图/NPC/素材）
+  lib/ui/room/widgets/gp_kp_tools.dart               446 行  工具窄栏 + KpEraser + addLocalActor
+S4.2（KP 工具弹层根）
+  lib/ui/room/sheets/sheet_kp_panel.dart             532 行  kpPanel 根 / 角标 / 二次确认 / 分派表
+S4.3（块 5 + 场景编辑器）
+  lib/ui/room/widgets/gp_scene_check_kp.dart         198 行  6 档裁定 + 快速推送
+  lib/ui/room/sheets/sheet_scene.dart                385 行  多步编辑器 + 递线索 + 要求检定 + 请求改状态
+S4.4（块 7 + 人物卡）
+  lib/ui/room/widgets/gp_kp_players.dart             172 行  数值/疯狂/手绘板缩略
+  lib/ui/room/sheets/sheet_char_view.dart            204 行  人物卡只读
+S4.5（对抗 / 战斗 / 定向 / 骰子）
+  lib/ui/room/sheets/sheet_kp_directives.dart        276 行  定向 9 项 + R2a 目标过滤
+  lib/ui/room/sheets/sheet_opposed.dart              202 行  对抗全链路 5 入口
+  lib/ui/room/sheets/sheet_combat.dart               235 行  战斗准备 / 结算伤害 / 加怪
+  lib/ui/room/sheets/sheet_dice_tools.dart           253 行  技能检定 / SAN Check / 自定义骰 / 阈值 / 暗骰
+测试
+  test/room_ui_kp_test.dart                        1065 行  34 组，独立 pump Scaffold
+
+禁改文件 mtime（全部未变）
+  pubspec.yaml                    2026-11-08 18:55:07
+  lib/domain/room_model_save.dart 2026-11-09 01:30:33
+  lib/ui/room/room_game_page.dart 2026-11-09 10:28:03  ← 明确不碰
+
+二、子批次实测输出（尾巴）
+----------------------------------------------------------------
+S4.1 + S4.2 第一批（已单独报过一次）
+  dart analyze lib/ui/room/sheets/sheet_kp_panel.dart \
+               lib/ui/room/widgets/gp_kp_tools.dart \
+               test/room_ui_kp_test.dart
+    → No issues found!
+  flutter test test/room_ui_kp_test.dart --reporter expanded
+    → 00:01 +17: All tests passed!
+
+S4.1/S4.3/S4.4/S4.5 收尾 + 测试扩展
+  dart analyze lib/ui/room/sheets/ lib/ui/room/widgets/ test/room_ui_kp_test.dart
+    → No issues found!
+  dart analyze                       （全项目）
+    → No issues found!
+  flutter test test/room_ui_kp_test.dart --reporter expanded
+    → 00:03 +34: All tests passed!
+  flutter test --reporter compact   （全量）
+    → 00:38 +1169: All tests passed!   （基线 1095 → +34 本轮 → 1129，
+                                          另 +40 为并行批次同期落盘的测试）
+  演进链：985 → 1001 → 1034 → 1066 → 1095 → 1169（只增不减，0 红）
+
+三、7 条验收逐条实测
+----------------------------------------------------------------
+① room_ui_kp_test.dart 0 红
+   ✓ 00:03 +34: All tests passed!（34 组）
+
+② KP 弹层入口走 gate.can('<op>')；room.close / session.end 必须点两次
+   ✓ 测试「弹层入口可点性恰好等于 gate.can(op)」遍历 7 个 op，逐个读
+     RoomTap.enabled 与 gate.can(op) 比对；玩家视角 room.close 禁用。
+   ✓ 测试「room.close / session.end 必须点两次」：第一次 f.lastSent(action:op)
+     为 null，第二次非 null 且 kind == 'action'。
+   ✓ 对抗弹层 ACT 入口、战斗弹层、场景弹层、定向弹层、骰子弹层的 ACT 入口
+     一律 enabled = gate.can(op)；意图通道（sancheck / opposed）按 K6 用
+     「非旁观 + 战斗中 + 我的回合」显式布尔，并在报告第五节说明。
+
+③ 定向 9 项目标过滤
+   ✓ 纯函数 kpDirectiveTargets：9 项逐个断言「已撕卡」座位不进列表；
+     kKpConsentOps 5 项逐个断言「疯狂发作中」被过滤；
+     sheet.sancheck / sheet.sanloss 按权威端同款拒绝分支（K6）也过滤；
+     其余 4 项（造成伤害/临时状态/给物品/暗骰）保留发作中目标。
+   ✓ widget：注入含「撕卡者 / 正常玩家 / 发作中」三种目标的裁剪态，
+     点 sheet.damage 后撕卡者不出现、发作中出现；点 madness.cure 后
+     两者都不出现；点「执行」发出 madness.cure 且载荷 seat == 'p1'。
+
+④ 未读角标公式逐项（三种 pending 各一条 + 组合一条）
+   ✓ kpUnreadCount = kpCountablePending(pending).length
+                    + kpRequestCount(requestsBySeat)
+                    + (kpOpposedAwaitingKp(state) ? 1 : 0)
+   5 组纯函数用例：空房间 0 / twice→1、kp→1、owner→0、无 need 键→0 /
+   requests 逐 seat 累加 3 / opposed 仅 await_kp 计 1 /
+   组合 2+3+1=6。
+   ✓ widget：KpPanel 的 trailing 角标文本 == '1'（注入 1 条 pending），
+     玩家视角 kpUnreadCountOf == 0。
+   数据源：pending / requests 一律取 session.hostRead（T7），未去广播态找。
+
+⑤ scene.check.step 载荷逐字段
+   ✓ 纯函数 sceneCheckStepPayload 恰好 3 键 {stepId, seat, level}。
+   ✓ widget：6 档 5/4/3/2/0/-1 逐个点击，断言发出的业务载荷逐字段：
+     stepId == 'st1'、seat == 'p1'、level == 相应档位。
+   ⚠ 说明：sent 记录的是**双层信封**，p 里天然多一个 'op' 键（值为
+     'scene.check.step'）。测试断言 keys == {op, stepId, seat, level}
+     并逐字段取值，不是「恰好 3 键」——这是适配层口径，不是规格漂移。
+
+⑥ 门禁：零 RoomHost / 零规则调用 / 零 C7 死代码名 / 注释无被扫字面量
+   ✓ 命令行逐项计数（11 个 T04 文件）：
+       RoomHost 0 / rules?.check( 0 / rollExpr( 0 / opposedFull( 0 /
+       plBottomBar 0 / plFeeds 0 / kpChat 0 / kpGameLog 0 /
+       PlaceholderBlock 0
+     注释里的 package:flutter / dart:io / dart:ui → 0 命中
+     state[...] = 形式的权威快照赋值 → 0 命中
+   ✓ 测试里也内置同一份静态门禁（遍历 11 文件 + 注释逐行扫描），
+     任何后续改动重新跑 room_ui_kp_test.dart 即可复验。
+
+⑦ dart analyze 零 issue + 全量 ≥1095 组 0 红
+   ✓ dart analyze（全项目）→ No issues found!
+   ✓ flutter test（全量）→ 00:38 +1169: All tests passed!
+
+四、关键设计决策与勘误
+----------------------------------------------------------------
+1. 弹层作用域挂法（踩坑记录）
+   showModalBottomSheet 的 context 沿 Navigator 祖先链找 InheritedWidget，
+   若 RoomScope 挂在 MaterialApp.home 里，弹层**找不到**作用域。
+   测试夹具与真实接线都应把 RoomScope 放在 MaterialApp.builder（包住
+   Navigator）或更上层。本轮测试 helper _hostApp 用 builder 挂载，
+   并有一条专测「弹层内能读到本机只读面」钉死这一点。
+
+2. R2a「需其同意的 5 项」名单（与第一报备有修正，请确认）
+   全库只有「疯狂发作中的座位在需其同意的 5 项里被过滤」一句，无名单。
+   第二批按 **POLICY confirm 同源 + 权威端拒绝分支对齐** 重新定为：
+       madness.cure / sheet.healwound / aid.apply / aid.psycho / state.request
+   （前四 confirm:kp，state.request 是 state.edit.other 的等价别名、
+     confirm:owner；后两项是弹层里 9 项之外的补充入口）。
+   另外把 sheet.sancheck / sheet.sanloss 放进 kKpMadBoutExtraOps：
+   domain 的 sheetSanCheck / sheetSanLoss 明确对「疯狂发作中」目标返回
+   定向拒绝文案，按 §7 K6「UI 判据与权威端拒绝分支逐条对齐」必须一并过滤。
+   → 口径集中在两个文件级常量 kKpConsentOps / kKpMadBoutExtraOps，
+     若 QA/PM 手上有确切 R2a 名单，改这两行即可，widget 树零改动。
+
+3. 橡皮「段级删除 + 手势末尾一次提交」
+   KpEraser 把 begin/move/finish 三段收口：begin 拷快照、move 调
+   view/scene_view.dart 的 eraseStrokeSegments 只做本地演算、finish 是
+   唯一 commit 出口（一次 map.strokes.set 全量）。测试注入 eraser 模拟
+   3 个手势点：手势期间 f.sent 为空，finish 后恰好 1 条，且笔迹被切成
+   2 段。舞台（T03）按同一签名可复用，不必等本文件。
+
+4. 加怪「本地不发包」
+   addLocalActor 只写 RoomUiLocal.pendingActors，用 setTool(local.toolMode)
+   触发一次局部重建；测试断言 sent 里零 combat.actor / combat.pool.set /
+   combat.start / map.mark。候选池随 combat.start 的 actors 载荷送出。
+
+5. 弹层分派表
+   sheet_kp_panel.dart 的 openKpSheet(ctx, sheetId) 是 7 个 id 的唯一入口
+   （kKpSheetIds）。第一批用回落占位、第二批已换成真实弹层，未引入任何
+   跨任务编译阻塞。saveSlots 属 T05，本轮不越界建文件，点它只给只读说明。
+
+6. 三条「他人视图」口径
+   sanText(full:true) 内部已按 MemberStats.hasMaxSan 收口，所以直接传
+   full:true 也不会出现 'SAN 40 / 60'；madnessText(self:false) 只显
+   madnessCount；手绘板笔数优先读本机只读面 boardBySeat[seat]['strokes']，
+   玩家裁剪态回退 boardCountOf。测试注入明确置 null 的裁剪态逐条钉死。
+
+7. 双层信封的 op 键（见验收⑤）——不是缺陷，是适配层口径。
+
+五、全局一致性复核（所有文件写完后只做这一次）
+----------------------------------------------------------------
+· 跨文件 import：全项目 dart analyze 零 issue；依赖方向为 DAG
+  （widgets → sheets/room_sheet + widgets/room_panel_kit；
+    sheets → widgets/room_panel_kit + view/；
+    sheet_kp_panel → 其余 6 个 sheets；无 sheets → gp_kp_* 回引），无环。
+· 接口契约：MapStageController 六成员按 T01 §3.9 签名调用；
+  showRoomSheet / RoomSheet / RoomTap / SectionBox / ConfirmTwice 全部按
+  T01 构造签名；RoomScope.of/read 按既有范式；RoomKeys.action(op) 稳定。
+· 数据流：pending / requests / boards 走 session.hostRead；
+  members 走 playersOf(state)；战斗槽位走 combatRows(state, isKp:true)；
+  载荷字段名与 domain handler（sheetDamage / sceneCheckStep / combatStart /
+  raSanitizeSceneSteps / darkRoll / checkRequest / stateRequest）逐项核对。
+· 无重复实现：11 个文件顶层类名/常量名排序去重后零重复；
+  addLocalActor、KpEraser、kpBoardStrokeCount、sceneCheckStepPayload、
+  kpDirectiveTargets、kpUnreadCount 均单点定义并复用。
+· 已知边界（非阻塞）：同一 op 的 RoomKeys.action(op) 会在 KpPanel 导航按钮
+  与对应弹层按钮各出现一次（如 check.opposed / combat.start /
+  scene.check.push / room.rules / sheet.damage）。两者 enabled 都严格等于
+  gate.can(op)，且弹层是模态、游戏页默认树里只有 KpPanel 一份；T05 的表
+  驱动探针若在弹层内做 findsOneWidget，请改为 findsWidgets 或先关闭面板。
+
+  IS_PASS: YES
+
+六、留给后续接线任务（本轮明确不做）
+----------------------------------------------------------------
+1. room_game_page.dart 的 KP 12 个槽位仍是 PlaceholderBlock：派工明确
+   「本轮不许碰 room_game_page.dart」，故设计 §6.3 K-01（12 容器全部有内容）
+   本轮不达标。接线时需把：
+     gpKpLeft → GpKpLeft / gpKpTools → GpKpTools / gpScene → GpSceneCheckKp /
+     gpPlayers → GpKpPlayers
+   以及 T03 的共享块逐个替换，并注入 GpToolbar(toolbarExtensions: [...]) 里
+   的 KP 工具入口（例如一个调 showKpPanel(context) 的 RoomTap）。
+2. GpSceneCheckKp(onOpenEditor:) 默认回落是只读说明弹层，接线时传
+   (ctx) => showSceneSheet(ctx)；GpKpTools(stage:) 需注入 T03 的
+   MapStageController 实例；KpEraser 可由舞台按同一签名复用。
+3. saveSlots 分派 id 待 T05 的 sheet_save_slots.dart 落地后替换一行。
+4. openKpSheet 的 charView 分支当前取 playersOf(state).first，接线时可改为
+   从成员行的 seat 传入。
+5. 建议接线后补一条 K-01 断言（find.byType(PlaceholderBlock) == findsNothing）
+   与一条「工具栏 KP 扩展按钮在 Transform 子树外」断言。
+================================================================

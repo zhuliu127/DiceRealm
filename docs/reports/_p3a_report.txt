@@ -1,0 +1,275 @@
+================================================================================
+骰境 TRPG · 原生重写 P3-A 交付报告
+（preset 规则引擎移植 + 设置存储 + 设置页）
+================================================================================
+日期        2026-11-08
+工程        dice-realm（Flutter 3.47.9 / Dart 3.13.7），版本 2.14.0+80
+源码（只读） coc7th-card-app/web/js（**一个字符都没改**）
+本期范围    ① core/preset.js → lib/domain/preset_gen.dart（纯 Dart + JS 预言机等价性）
+             ② lib/repo/settings_repo.dart（文件后端 + 内存后端，aiKey 脱敏）
+             ③ lib/ui/settings_page.dart + 首页「数据」菜单入口
+验收口径    dart analyze 无 issue；flutter test 全绿（413 组）；lib/domain 无 package:flutter
+
+
+一、交付清单（路径 + 行数）
+--------------------------------------------------------------------------------
+新增 · 规则层（纯 Dart，零 Flutter 依赖）
+  lib/domain/preset_gen.dart        1713   preset.js 的逐行移植（build / generateOne /
+                                           generate / summaryOf / redistributePoints /
+                                           buildFrom / pickOccupation / 点数分配 / 装备 /
+                                          资产 / 背景 / 头像）
+  lib/domain/personas.dart           233   personas.js 的逻辑层（加权抽设定 / 姓名池 /
+                                          背景文本池 / 同批去重游标 PickCtx）
+  lib/domain/avatar.dart             176   avatar.js（FNV-1a 散列 + SVG 徽章 + dataURI）
+  lib/domain/easter_egg.dart         120   easter-egg.js（批级 25%+25% 抽签 / toProfile）
+  lib/domain/ai_caps.dart            207   ai.js 的 caps() + applyAttrCap()（房规数值上限）
+  lib/domain/ai_probe.dart           266   「测试连接」的语义层（端点 / 人话报错 / 三分类）
+新增 · 数据表（由工具生成，键名逐字保留）
+  lib/domain/data/personas.dart     2330   12 个世界设定 + 6 套姓名池 + 15 个文本池
+  lib/domain/data/easter_egg.dart    734   22 位名人 + 8 位跑团成员
+新增 · 仓库层
+  lib/repo/settings_repo.dart        401   SettingsStorage（文件/内存）+ SettingsRepo +
+                                          maskApiKey / maskSecrets
+  lib/repo/ai_probe_io.dart          190   HttpAiProbe（仅连通性自检；dart:io，无新依赖）
+新增 · UI
+  lib/ui/settings_page.dart          582   四块：AI 接入 / 数值上限 / 服务地址 / 其它
+                                          + 「怎么用（三步）」「去哪儿申请 Key」
+新增 · oracle 工具
+  tool/oracle/gen_preset_data.js     223   personas.js / easter-egg.js → Dart const
+  tool/oracle/dump_preset_fixtures.js 232  123 例期望值（整卡 JSON + randUsed）
+新增 · 测试
+  test/oracle_preset_test.dart       265   等价性 + 合规性 + 可复现 + 边界 + 上限落地
+  test/settings_repo_test.dart       248   真文件 I/O：默认值/损坏/未知键/脱敏/写失败
+  test/settings_page_test.dart       221   widget：入口 / 保存 / 测试连接三分法 / 上限 / 开关
+  test/ai_probe_test.dart            161   纯函数：端点拼接 / 报错文案 / 三分类 / 解析
+  test/fixtures/preset.json       4.5 MB   123 例（110 张卡 + 13 批）
+
+修改（都是「必须改，否则新功能挂不上」的最小改动）
+  tool/oracle/load.js            95→133   加 PRESET_FILES + createSandbox({withPreset})
+  lib/domain/occupation.dart    1112→1119 duplicatePicks 去重键按 JS `(v||'')` 归一（见 §五 A）
+  lib/repo/repo_scope.dart        39→64   加 SettingsScope + AppRoutes.settings
+  lib/app.dart                    62→68   SettingsScope 包裹 + /settings 路由
+  lib/main.dart                   16→24   读设置（房规上限早一步生效）+ 注入 HttpAiProbe
+  lib/ui/home_page.dart          346→355  「数据」菜单加「⚙ 设置」（导出/导入原样保留）
+  test/support/app_harness.dart  137→175  newMemorySettings / FakeAiProbe / pumpApp 带设置
+
+
+二、⭐ 等价性测试：「JS 当预言机」（沿用 P0 那一套）
+--------------------------------------------------------------------------------
+做法：
+  1. 扩展 load.js：`createSandbox({withPreset: true})` 时额外按顺序加载
+     personas.js → avatar.js → easter-egg.js → **ai.js** → preset.js。
+     为什么不默认加载：P0 的 1621 例是「这批文件不存在时」dump 的，
+     加载顺序一变就会动到既有期望值。P0 路径保持原样（`createSandbox()` 不变）。
+     ai.js 只为拿到 `AIGen.applyAttrCap` / `AIGen.caps` —— preset.js 通过它复用
+     房规压缩算法，用真实现才谈得上「两边一致」；ai.js 是纯定义，加载时不发请求。
+  2. 固定 seed 集：seed = (++seq) * 2654435761 % 2^32（与 P0 同一公式）。
+  3. 每个 case dump **整张卡的 JSON** + 该 case 消耗的随机数个数（randUsed）。
+  4. Dart 侧用逐位相同的 LCG 复现，`_expectJsonMatch` 逐字段深比较（键集合必须完全一致），
+     再断言 `randUsed` 相等。
+
+覆盖（123 例，0 例抛异常）
+  · generateOne 默认分支                     60 个 seed
+  · 指定世界设定                             12 例（12 个世界全覆盖：现代/1920s/古代
+                                             三种装备口径、货币表、姓名池）
+  · profile 分支（AI / 彩蛋注入）            19 例
+      性别 男/女、年龄 15/35/50/80/200、姓名+籍贯+时代、
+      eraCustom、profile.setting 用中文标签（「民国」）与 id（cn-ancient）、
+      职业名 医生/记者/军官、自定义职业（occ1）+ 建议技能（合法 3 项 / 全不合法）、
+      不存在的职业名、不存在的 occupationId、AI 宽松口径属性（合法/不合法）、
+      彩蛋 profile 9 例（cha 名人 + 跑团成员，含固定属性 + 固定籍贯）
+  · caps 房规上限                            7 例（属性总和 420/380/500/360、含/不含幸运、
+                                             本职 70/80/55、兴趣 60/70/45 的组合）
+  · 旧 ptsCap 写法                           2 例
+  · opts 完全缺省（generateOne() 不带参数）   1 例
+  · generate(n) 批量                         13 例：n=5×6、n=1×2、n=3×2、n=6×1、
+                                             n=0（旧码 `parseInt(n)||5` → 退化成 5 张）、
+                                             指定 setting（此路径**不抽彩蛋**）
+
+结果
+  · 110 例 generateOne + 13 例 generate = 123 例，**整卡 JSON 逐字段全等**
+  · **randUsed 全等**（123/123）。这一点比卡面更严：卡面一致但消耗数不同说明随机
+    调用顺序已经分叉，换个 seed 就会出现两张不同的卡。本次正是靠它抓出了 §五 A 那个缺陷。
+  · 每次比对覆盖的字段量：单张卡约 200 个标量（含 ~130 项技能 × 9 字段），
+    123 例合计约 25 万个标量断言（不含数组长度/键集合断言），全部相等。
+
+另有三道「不是等价性、但同样重要」的断言（oracle_preset_test.dart）
+  1. 合规性：110 张 generateOne 卡 + 54 张 generate 卡，**全部** validate() 无 error、
+     checkList() 10 项全过，且姓名/职业/居住地/头像/技能/武器/背景/入行/关系人都非空；
+     职业点与兴趣点未超额；技能未超上限。
+     → 这就是「AI 车卡出来的卡一定能用」的保证。
+  2. 可复现：同一 seed 两次 generateOne / generate(5) 结果 `jsonEncode` **逐字节相同**
+     （各 12 / 4 组）；生产随机源（不注入 seed）也能出合法卡。
+  3. 边界：generate(0)→5 张、generate(-1)→0 张、职业名找不到回落加权随机、
+     指定设定时不抽彩蛋、同批世界设定不重复、同批姓名不重复、彩蛋不被改名。
+
+
+三、键名对照表（旧版 settings → Dart）
+--------------------------------------------------------------------------------
+| 旧版 `Store.settings` | Dart `SettingsKeys`        | 默认值                      | 说明 |
+|-----------------------|----------------------------|-----------------------------|------|
+| skillCap              | skillCap                   | 99                          | 单项技能通用上限，夹在 1-99 |
+| theme                 | theme                      | 'light'                     | 预留（P1 起主题固定深色，键不删） |
+| autoSave              | autoSave                   | true                        | 设置页开关 |
+| lastRuleSystem        | lastRuleSystem             | null                        | 上次用的规则系统（目前只有 coc7） |
+| shareBase             | shareBase                  | ''                          | 留空 = 未配置 → 仍可用本机导出 JSON / 长图 |
+| roomBase              | roomBase                   | ''                          | 本期**只存不连**，界面标注「P4 才启用」 |
+| aiBase                | aiBase                     | https://api.deepseek.com/v1 | 保存时 trim |
+| aiModel               | aiModel                    | deepseek-flash              | 保存时 trim |
+| aiKey                 | aiKey                      | ''                          | **敏感**：只在本机私有目录；对外只给 maskedAiKey |
+| aiAttrCap             | aiAttrCap                  | 0（=不限）                  | 属性总和上限 |
+| aiAttrCapWithLuck     | aiAttrCapWithLuck          | true                        | 含幸运（9 项）/ 不含（8 项） |
+| aiOccPtsCap           | aiOccPtsCap                | 0（=不限）                  | **每项**本职技能最终值上限 |
+| aiIntPtsCap           | aiIntPtsCap                | 0（=不限）                  | **每项**兴趣技能最终值上限 |
+
+键名与 `character.dart#defaultSettings()` **一字不差**（那张表本期没动），
+所以以后做设置导入导出不需要任何字段映射。
+
+落盘
+  · 位置：`<应用文档目录>/dice_realm/settings.json`（与 characters.json 同级、独立文件）
+  · 形状：`{ "format":"dice-realm.settings", "version":1, "settings": { ... } }`
+  · 兼容：如果没有 `settings` 包一层（手写文件），按「平铺在顶层」读
+  · 写盘：先写 `.tmp` 再 rename（中途被杀不会留半截 JSON）
+  · 容错：文件不存在 / 空 / 坏 JSON / 类型写坏 / 目录不可写 → **一律干净默认值，
+    绝不抛**；未知键**原样保留**（以后加字段不会互删）
+  · aiKey 只在本机：不进导出捆绑包（`exportBundleJson` 只吃角色卡）、不进任何 fixture、
+    不进日志（`describe()` 是唯一允许打日志的形状）、异常文本经 `maskSecrets()` 打码
+    （`Bearer xxx` / `sk-xxx` 两类都盖）
+  · 规则层联动：`SettingsRepo.applyToDomain()` 把设置写进 `preset_gen.presetSettings`，
+    而 preset 的 `activeCaps()` 是**每次生成现读** —— 改完上限再点「换一批」立刻生效
+
+
+四、自检结果（原始输出，2026-11-08 实跑）
+--------------------------------------------------------------------------------
+$ source /d/dev/env.sh
+$ cd /c/Users/60965/WorkBuddy/2026-10-08-18-34-17/dice-realm
+$ export NO_PROXY=127.0.0.1,localhost
+$ dart analyze
+Analyzing dice-realm...
+No issues found!
+
+$ grep -rn "package:flutter" lib/domain
+（无匹配 —— 零命中）
+
+$ node tool/oracle/dump_preset_fixtures.js
+cases: 123 / generateOne: 110 / generate: 13 / errors: 0
+preset.json 4434.9 KB
+
+$ flutter test
+00:30 +413: All tests passed!
+
+  → 测试总数 **413 组**（本期新增 58 组：preset oracle 16 + settings repo 15
+    + settings page 10 + ai_probe 17；原有 355 组**一组没坏**）
+
+
+五、preset.js 里值得记录的坑（格式沿用 P0 报告第四节）
+--------------------------------------------------------------------------------
+A. 【本次实际踩到并修了】occupation.js#duplicatePicks 的去重键不归一空 sub
+   JS 的键是 `(p.skill || '') + '|' + (p.sub || '')`，而 `fixed` 类型要求的 `r.sub`
+   通常是 **undefined** → 键是 `'汽车驾驶|'`。
+   P0 的 Dart 版直接 `jsStr(v)`，undefined → 字符串 `'null'` → 键是 `'汽车驾驶|null'`。
+   于是「fixed 直接给定的本职技能」与「任选块里选了同一个技能」永远对不上，
+   这一类重复**查不出来**。
+   后果在 preset 上立刻放大：本应判为不合格的第 1 次尝试被判合格 → 少重试一次 →
+   整张卡跑到另一个 seed 上（oracle 的 randUsed 从 593 变成 318，一眼就抓到了）。
+   已修为 `_keyPart(v) = jsTruthy(v) ? jsStr(v) : ''`，两处（去重循环 + `_markOnce`）。
+   **这是 P0 遗留缺陷，此前 355 组没覆盖到，已由本期修好。**
+
+B. 【顺序敏感 · 最容易踩】随机调用顺序就是协议
+   preset.js 里「取谁 / 取几次」全部有意义，逐条记下来免得以后有人"优化"：
+   · `activeCaps` → `PER.pick()` → `Store.newCharacter()`：**先定设定、后建卡**，
+     所以 uid 消耗的 8 个随机数排在设定之后；
+   · `randomAge()` 先掷一次决定区间，再按区间掷一次具体值（两次，不是一次）；
+   · `attrsUsable` 失败重掷最多 60 次 —— 掷到第 60 次就用第 60 次的结果；
+   · `buildLook` 只在 `setting.looks.length > 0` 时才消耗那 0.32 的闸门随机数；
+     没有专属描述的世界（如 cn-80s）会少消耗一个；
+   · `distributePoints` 里 `7 + rnd(4)` 在 `shuffle(restInt)` **之前**求值；
+   · `spendPoints` 每轮消耗两个随机数（选技能 + 选步长），`pick([5,5,5,10,10,15,20])`
+     里那三个 5 是**故意的权重**，去重成 `[5,10,15,20]` 会直接改变分布；
+   · `spendOccFocused` 里 `pick([0,0,5])`、`pick([4,5,5,6,8])` 同理（重复项=权重）；
+   · `_fillEquipment` 的 `Math.random() < gunChance` 只在 `pools.gun.length > 0`
+     时才消耗（短路求值）；
+   · `generate()` 的批级彩蛋 `rollBatch` 无论 n 多少都**只掷一次**，抽中后固定落在
+     `floor(n/2)` 那张，且「用掉即弃」（eggAt 只匹配一次）。
+   本期的做法是：Dart 侧连**求值顺序**都照抄（例如 `final given = pick(...)` 写在
+   `final surname = pick(...)` 之前，因为 JS 里 `var given` 也在三元之前求值）。
+
+C. 【Date.now】只有两处，都已接管
+   · `build()` 的 `attributeHistory[0].at = Date.now()` → Dart `nowMillis()`；
+   · `Store.newCharacter()` 的 `createdAt/updatedAt/changeLog[0].at` → 同一个 `nowMillis()`。
+   `Date.now` 由 `load.js` monkey-patch 成固定 1700000000000，Dart 侧 `setClock()` 同值，
+   所以时间戳也逐字节相等（等于是把它也纳入了等价性比对）。
+
+D. 【浏览器 API】preset.js 本身**没有** fetch/XHR/localStorage/DOM 依赖；
+   但它通过 `global.CocAvatar`（SVG 字符串 + `encodeURIComponent`）和
+   `global.CocEasterEgg` 间接沾浏览器：
+   · `encodeURIComponent`：**没用** Dart 的 `Uri.encodeComponent`，而是自己按
+     ECMAScript 的保留集（`A-Za-z0-9 - _ . ! ~ * ' ( )`）逐字节实现 ——
+     `avatar` 字符串会写进角色卡并参与导出比对，SDK 的 unreserved 表一变就整体不等。
+   · `Number#toFixed(1)`（外圈小点坐标）→ Dart `toStringAsFixed(1)`，已由 123 例
+     逐字节验证（含 `Math.cos/sin` 的末位）。
+   · `Math.random().toString(36)` 这类只在 skillmodel 的兜底分支出现，preset 不走。
+
+E. 【隐式 JS 行为】`strHash` 的 32 位环绕必须用 double 复刻
+   `hv = (hv * 16777619) >>> 0` 里的乘积最大约 3.6e16，**超过 2^53**，
+   JS 会先舍入到最近的可 double 再 ToUint32。用整数乘法会得到不同的低 32 位，
+   于是同一个名字散列出不同配色（头像整串不同）。Dart 侧走
+   `a.toDouble() * b.toDouble()` → `truncate` → 欧几里得取模，逐位一致。
+
+F. 【隐式 JS 行为】`Math.min(8, undefined)` = NaN
+   `fillOccupationPicks` 的 `free` 分支：`want = Math.min(8, r.count)`。
+   若某个职业的 free 块**没有 count**，want 就是 NaN，于是
+   `arr2.length >= NaN` / `arr2.length < NaN` 恒 false ——
+   AI 给的技能会被**全部**收下，随机池补齐一个都不加。
+   Dart 侧用 `double.nan` 复刻了这个行为（`rawCount == null` 时），没有"顺手修正"。
+
+G. 【值域/边界】
+   · `age = clamp(parseInt(pf.age,10) || randomAge(), 15, 80)`：`age: 0` 与 `age: ''`
+     都会走随机（0 是 falsy）；200 会被夹到 80。
+   · `pickCreditRating`：`hi = min(creditMax===null ? lo : creditMax, lo + 60)`；
+     之后还有三道夹取（`totalPoints-60`、`max(0,·)`、`min(lo,totalPoints)`）。
+     池子极小时信用评级会被压到 0，规则书允许（"尚未分配"）。
+   · `caps.attrCap` 存在时 `minPts` 从 120 放宽到 `max(60, round(120*attrCap/480))` ——
+     不放宽的话「属性被压小」会让所有职业都被筛掉，`pickOccupation` 返回 null，
+     `generateOne` 连试 8 次都拿不到卡。
+
+H. 【有意的取舍，别当 bug 修】
+   · `generate(0)` 会出 **5 张**（`parseInt(0) || 5`）。已在测试里钉住 ——
+     这不是"合理"，是既有行为，改了会让「0 张」的语义悄悄变化。
+   · `BG_MADNESS_RATE = 0.2` 只影响**出现概率**，疯狂表内部（8/10 总结症状 +
+     各 1/10 恐惧/狂躁）没动 —— 那是规则书口径，规则测试钉着。
+   · `eggKind === 'friend'` 与 `fromAI` 两条路径都**跳过**那 1/5 闸门，
+     直接写「暂无。」；「先判 AI 有没有、系统再掷一条」是明确禁止的双重决定。
+   · `spendOccFocused` 允许「有不加点的职业技能、或总值低于 50」，
+     宁可让一部分技能停在基础值，也要保住那几项拔尖的（新旧两版最大的差别）。
+
+I. 【规则系统】preset.js 里没有「规则系统」这个 opts
+   `build()` 固定 `Store.newCharacter('coc7')`，且 `PresetGen` 全程不读 `ruleSystemId`
+   （只有 `summaryOf` 之外的校验函数会读）。Dart 侧照抄：`newCharacter('coc7')`，
+   opts 里没有 ruleSystem 字段。**不是漏做** —— 旧版就是单规则系统。
+   若 P3-B 要支持多规则系统，需要先改 preset.js 的接口，届时再谈。
+
+
+六、遗留问题 / 给下游的提醒
+--------------------------------------------------------------------------------
+1. 【本期未接】AI 车卡主流程与云分享（P3-B）：`personas`/`easter_egg`/`preset_gen`
+   都已就位，`ai_probe.dart` 只做了连通性自检；真正的 chat 客户端、提示词、
+   截断重试、结果落地都还没写。`preset_gen.buildFrom(profile)` 就是那时要调的入口。
+2. 【本期刻意做了】`HttpAiProbe`（lib/repo/ai_probe_io.dart）：任务书写的是
+   「networking 层先留接口」，但设置页的「测试连接」如果没有实现就是一个死按钮 ——
+   而这个按钮的两步策略 + 三分类报错恰恰是本期验收项。所以**只实现了这一个探测**，
+   没有实现 chat。若认为越界，删掉该文件 + main.dart 里一行注入即可，
+   设置页会自动退化为「本版本还没有接入网络层」的提示（已有测试覆盖）。
+3. 【测试资产体积】`test/fixtures/preset.json` 4.5 MB（123 张整卡）。
+   整卡逐字段比对是这层唯一靠得住的做法，若嫌大可以砍到 60 例（约 2.2 MB），
+   但会损失「12 个世界 × 三种装备口径」的覆盖。
+4. 【体积/性能】`data/personas.dart` 50 KB、`data/easter_egg.dart` 16 KB 是 const 数据，
+   编译期摊平，不占运行时内存；`preset_gen.generate(5)` 在桌面测试机上约 30–60 ms/张。
+5. 【已知未覆盖】`preset.js` 的 `summaryOf()` 已移植（第 0 步列表要用），
+   但没有 oracle 用例 —— 它不消耗随机数、也不参与写卡，本期先用「形状 + 非空」冒烟。
+   等 P3-B 做「快速开始」页时再补逐字段等价。
+6. 【P4 提醒】`roomBase` 只存不连；`shareBase` 留空时分享入口必须隐藏
+   （旧版行为：`CocShare.base()` 为空就不提供上传入口）。
+7. 【规则层联动】`preset_gen.presetSettings` 是**可变全局**，由 `SettingsRepo` 写入。
+   若以后有多实例 / 多用户，这里要换成显式传参 —— 现在单机单用户够用，且
+   「每次生成现读」这个语义必须保留（写成构造期常量就会"改完设置要重开才生效"）。

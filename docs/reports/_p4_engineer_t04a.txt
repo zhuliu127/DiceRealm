@@ -1,0 +1,341 @@
+================================================================
+P4 工程师交付报告 · T04 第一批（S4.1 + S4.2 + Q1 安全回归）
+生成时间：2026-11-08
+工程根：C:\Users\60965\WorkBuddy\2026-10-08-18-34-17\dice-realm
+接手状态：T03 已由 team-lead 独立复核通过（682 组 0 红）
+本批范围：D15 / D20 / D16 + 两个新测试 + 两处静态断言收紧
+================================================================
+
+0. 结论
+----------------------------------------------------------------
+IS_PASS: YES
+
+· flutter test test/room_sequences_test.dart         → +9: All tests passed!
+  （含 `clientScript（27 例）` F03 fixture 严格逐字段比较 + randUsed 全等）
+· flutter test test/room_rollback_security_test.dart → +7: All tests passed!
+· flutter test（全量，不带参数）                      → +698: All tests passed! 0 红
+· dart analyze                                       → No issues found!
+· grep reduceRoomState(                              → **2 个真实调用 + 1 处函数声明**
+· 白名单恰好 1 条 S:q1；fixture 455/517/121 = 1093 例；domain 纯度 0 命中
+· 682 → 698（+16 组：sequences 9 + rollback_security 7），基线只增不减
+
+⚠️ 分批边界（不是降级，team-lead 给架构师的 U4 全量实现裁决不变）：
+   S4.3 动作分发（D17/D18/D19 约 2570 行）、S4.4 存档写回（D21/R01/R02）
+   留下一批。本批 `applyAction` 只落「纯事件转发」的基础动作，详见 §7。
+
+
+1. 硬约束遵守情况
+----------------------------------------------------------------
+[Q1 机械设计] `RoomEvent` 仍带 t/seq/p/vis/to；`RoomHost.apply` 与
+  `RoomClient.receive` 是仅有的 2 个 `reduceRoomState(` 调用点；重放路径
+  `apply(r.evt, persist:false)` 无任何补丁分支（静态断言钉死）；
+  白名单 1 条、`allowedPaths` 14 条一条未加。
+[白名单下标] 本批未改任何 fixture / hostScript op 顺序；三个 JSON 的
+  mtime 仍是 21:04:17（T03 批次），case 结构、ops 词表、`emit` 步 `{seq,plan}`、
+  `save` 步 null 占位全部未动。`coversCase` 按 tag/name 前缀匹配，全量实证绿。
+[§0.3] `ReceiveResult` 的 6 种返回体键集合由 T01 的结果类收口，本批
+  `RoomClient.receive` 直接用工厂；拒绝分支用 `from`，**无 gapFrom 键**
+  （F03 clientScript 27 例逐字段比较全绿即证据）。
+[fixture] 三个 JSON 一行未写；合计 1093 例、覆盖矩阵零缺口。
+[范围外文件] D17/D18/D19、D21、`lib/repo/*`（两个文件本就未创建）、
+  `room_card_writeback_test.dart`、`room_save_test.dart` 全部未碰，mtime 已核。
+[既有测试] 682 组基线一个不动（只新增 16 组）；三个禁改文件
+  pubspec.yaml / dice.dart / rules_coc7.dart mtime 未变；domain 纯 Dart。
+
+
+2. 改动文件清单（含行数）
+----------------------------------------------------------------
+【domain · lib/domain（纯 Dart）】
+  228  lib/domain/room_model_rollback.dart        D15 **从 10 行空壳写满**：
+        rollback / rollbackPlan / rebuildRoundStarts / maybeSnapshot /
+        setStatus / closeRoom / endSession / kick / _nick +
+        Q6 休眠项 rollbackPropose/Vote/Commit/AbortIfVoting
+  207  lib/domain/room_model_client.dart         D20 **从 11 行空壳写满**：
+        RoomClient 全量（receive / gate / filledMark / resyncIntent /
+        resyncDiag / applySheetState / intent / member / isReady）
+  429  lib/domain/room_model_host_intent.dart    D16 **从 10 行空壳写满**：
+        intent（13 INTENT 分支）/ act（权限闸门+pending 去重）/ consent /
+        confirmPending / stateSyncAck / applyAction（基础分发入口）+
+        locked 白名单 / _nickOf / _memberLocked / _passSelf
+  （T03 的 room_types 511 / log 162 / envelope 105 / state 305 /
+    reduce 363 / host_core 591：一行未动）
+
+【测试】
+  304  test/room_sequences_test.dart             **新增**：F03 clientScript
+        27 例严格等价 + 7 组 Dart-only（P0-M05/M06/M02/M03 + canFill）
+  295  test/room_rollback_security_test.dart    **新增**：Q1 安全回归 7 组
+   97  test/room_purity_test.dart               收紧 `≤2` → `==2`，
+        并修正计数逻辑（排除函数声明行，否则 3 > 2 会误红）
+  574  test/room_visibility_test.dart           P0-M01 断言 `==1` → `==2`，
+        并追加「两个调用点分别在 host_core / client」的文件级断言
+  （room_oracle.dart 198 / room_oracle_whitelist.dart 104 /
+    room_coverage_test.dart 233 / room_model_core_test.dart 439：一行未动）
+
+【未改动 / 未创建（实测 mtime）】
+  pubspec.yaml(18:55) / dice.dart(11:58) / rules_coc7.dart(15:15)
+  room_model_actions_room|combat|sheet.dart(20:17，10 行空壳)
+  room_model_save.dart(20:23，15 行空壳)
+  test/fixtures/room_rules|room_model|room_sequences.json(21:04:17)
+  lib/repo/room_state_writer.dart / room_save_store.dart（不存在，留 S4.4）
+
+
+3. 每条判据实测原始输出尾巴
+----------------------------------------------------------------
+[判据 1] flutter test test/room_sequences_test.dart
+  ```
+  00:00 +0: clientScript（27 例）
+  00:00 +1: fixture 覆盖完整性（room_sequences.json 121 例，本批 1 类 fn）
+  00:00 +2: P0-M05：receive 1→1→3→2 返回体与内部快照（§0.3 无 gapFrom 键）
+  00:00 +3: P0-M05：skip 与 evt 共用同一套 gate（重复/跳号/补齐 filled）
+  00:00 +4: P0-M05：sync 重置 lastSeq / gapFrom；intent 与未知 k 一律 ignore
+  00:00 +5: P0-M06：applySheetState 幂等（同 seq 只生效一次，seq<=0 不生效）
+  00:00 +6: P0-M05 / S4.2：canFill 增量补齐不叠全量；超窗口才发全量 sync
+  00:00 +7: P0-M02 真实断言：intent("host", CHAT) 产出 1 条广播（按 seat 认 KP）
+  00:00 +8: P0-M03：CLOSED 只置 status 不写 ended；ENDED 才写 ended；SUSPENDED 独立
+  00:00 +9: All tests passed!
+  ```
+  · `clientScript（27 例）` 走的是 T01 的 `RoomOracleFixture.run`：
+    `expectJsonMatch` 严格深比较（键集合双向差集）+ `randUsed` 断言，
+    比较 steps / lastSeq / gapFrom / rejected / lastStateSeq / state / sheetState。
+    这是 P0-M05 最硬的证据（返回体 6 种键集合一个不多一个不少）。
+  · P0-M02 真实断言已补上（T03 当时用 `plan(emit(...))` 等价替代）：
+    `h.intent('host', {op:'chat',p:{text:'KP 说话'}})` → 恰好 1 条、
+    `to == '*'`、msg 为 `{k:'evt',seq,t:'chat',p:{seat:'host',nickname:'KP',
+    text:'KP 说话',at:1700000000000,kind:'user'}}`；同时断言
+    `roster.get('host') == null` 且没被当旁观者拒绝。
+  · P0-M03：CLOSED 只置 status、无 ended 键；ENDED 置 ended=true；
+    SUSPENDED 独立；KICK 置 CLOSED 且不写 ended。
+  · canFill：`lastSeq=1` + 3 条日志 → 2 条增量 evt、**0 条全量 sync**；
+    logCap=2 超窗口 → canFill=false → 恰好 1 条全量 sync。
+
+[判据 2] flutter test test/room_rollback_security_test.dart
+  ```
+  00:00 +0: Q1 复现前置：快照 @seq2，秘密事件落在重放区间 (2,4]
+  00:00 +1: ★ Q1：rollback 后权威态仍只有脱敏行，定向私密不进 state.privates
+  00:00 +2: ★ Q1：对每个在线 seat 的 syncFor 载荷字节级无明文 / 隐藏字段
+  00:00 +3: ★ Q1：rollbackPlan 全量重发（无反向事件），且顺序为 sync 在前
+  00:00 +4: ★ Q1 机制证明：apply(persist:false) 把 vis/to 一起交给了 reduce
+  00:00 +5: ★ Q1 静态：重放走 apply 单口、无补丁分支、全库 reduce 调用点 == 2
+  00:00 +6: Q1 回归钉子：白名单仍恰好 1 条，且本文件不参与 oracle 比较
+  00:00 +7: All tests passed!
+  ```
+
+[判据 3] flutter test（全量，不带参数）
+  ```
+  EXIT=0
+  00:43 +697: ... 疯狂表：点「随机」→ 写入「疯狂症状」文本 + 结构化症状
+  00:44 +698: All tests passed!
+  === 红行 ===            ← grep " -[0-9]+:|Some tests failed|Failing tests|[E]" 结果为空
+  === All tests passed 行 === 1
+  ```
+
+[判据 4] dart analyze
+  ```
+  Analyzing dice-realm...
+  No issues found!
+  ```
+
+[判据 5] grep -rn "reduceRoomState(" lib/domain/ | grep -v "//"
+  ```
+  lib/domain/room_model_client.dart:123:    reduceRoomState(
+  lib/domain/room_model_host_core.dart:157:    reduceRoomState(state, rec.evt);
+  lib/domain/room_model_reduce.dart:34:Map<String, Object?> reduceRoomState(
+  -- 真实调用（排除函数声明）--
+  lib/domain\room_model_client.dart:123: reduceRoomState(
+  lib/domain\room_model_host_core.dart:157: reduceRoomState(state, rec.evt);
+  ```
+  ⇒ **恰好 2 个真实调用 + 1 处函数声明**（RoomHost.apply / RoomClient.receive）。
+
+[判据 6] 白名单 / fixture / 纯度
+  ```
+  ===== [2] 白名单 =====
+  1
+  61:    caseId: 'S:q1',
+  ===== [3] fixture 规模 =====
+  room_rules.json 455 例 56 tag
+  room_model.json 517 例 359 tag
+  room_sequences.json 121 例 35 tag
+  合计 1093
+  ===== [4] domain 纯度 =====
+  命中数=0
+  ```
+  · `kRoomOracleWhitelist.length == 1` / `whitelistedTags == {'S:q1'}` 随
+    room_coverage_test.dart 在全量里跑过，绿。
+  · `dart:convert` 只出现在 D16（jsonEncode 做 pending 签名）与测试
+    （jsonEncode 做字节级安全断言），domain 零 Flutter/IO/UI 命中。
+
+[环境] 首跑 `flutter test` 遇到
+  `Unable to connect to flutter_tester process: WebSocketException:
+   Invalid WebSocket upgrade request`（环境问题，非用例红）。按 team-lead
+  给的处置 `mv -f /d/dev/flutter/bin/cache/engine.stamp /d/dev/wb-tmp/`
+  后重跑即恢复；同一时刻只跑一个 flutter 命令，未抢编译锁。
+
+
+4. D15 实现要点（Q1 落点）
+----------------------------------------------------------------
+· `rollback(beforeSeq)`：target=beforeSeq-1；记录 prevStatus；取 seq<=target
+  的最近快照；`emptyRoomState(snap.state.meta)` 后逐键 roomClone 覆盖、
+  `state.seq = snap.seq`；
+  ★ 重放 `(snap.seq, target]` 用 **`apply(r.evt, persist:false)`** —— 日志里的
+    RoomEvent 本来就持久化了 t/seq/p/vis/to，与初始 emit 完全同构；
+    persist:false 不写日志/不拍快照/不重复累计私有栏与回合边界。
+· IN_GAME 只进不退；`state.members = members()`（用当前花名册覆盖，不让
+  在线玩家变没）；`log.rollbackBefore`；snapshots 裁到 target；
+  `rebuildRoundStarts()`；返回 `{dropped, seq, from}`。
+· `rollbackPlan`：给每个在线者发 `syncFor(seat)` 全量（**不发反向事件**），
+  最后补一条 sys 日志；顺序与旧版 :3483-3492 一致。
+· 生命周期：`setStatus` / `closeRoom` / `endSession` / `kick` 全部事件驱动
+  （reduce 的 CLOSED/ENDED/STATUS 分支负责 meta）；Q6 休眠项保留。
+· `maybeSnapshot` 不能直接转发 `_maybeSnapshot`（Dart 私有性按库），
+  在 extension 里复刻同一段簿记；这在报告里显式交代。
+
+
+5. D20 实现要点（第 2 个归约口）
+----------------------------------------------------------------
+· `receive(raw)`：`parseRoomRaw` → intent/非法一律 ignore；sync 整体替换
+  state（`emptyRoomState(st.meta)` + 逐键 clone，严格区分 meta 缺失与 `{}`
+  以保证 allowSpectate 默认值一致）、lastSeq/seq 复位、gapFrom=0；
+  skip 与 evt **共用 `gate()`**；通过闸门后
+  `reduceRoomState(state, RoomEvent(t,seq,p,vis:null))` —— 客户端传
+  `vis:null` 复刻旧版「undefined → PUBLIC」（§1.4）。
+· 6 种返回体全部用 T01 的 `ReceiveResult.*` 工厂，拒绝分支用 `from`、
+  **不加 gapFrom 键**；`filledMark(prev)` 提供补齐标记。
+· `gate` / `resyncIntent` / `resyncDiag` / `applySheetState`（幂等）/
+  `intent` / `member` / `isReady` 按旧版 :7008-7130 逐条实现。
+· F03 `clientScript` 27 例（75 次 receive / 15 次 resyncDiag / 5 次
+  applySheetState / 2 次 resyncIntent / 2 次 member / 1 次 isReady）
+  全部严格等价 —— 这是本批最直接的语义对齐证据。
+
+
+6. D16 实现要点（S4.2）
+----------------------------------------------------------------
+· ★ 按 `seat == kHostSeat` 认 KP；`roster.get('host')` 恒 null，
+  只有「非 host 且查不到成员」才是旁观者。P0-M02 真实断言已补（§3 判据 1）。
+· `intent` 13 分支：SYNC（canFill 增量补齐、不叠全量）/ READY / CHAT /
+  CHAR / DICE / ACT / VOTE / CONSENT / CONFIRM / STATE_SYNC /
+  SAN_CHECK / OPPOSED / BOARD / default。
+· `act`：权限表 `needs()` 统一判定；越权回定向 sysTo 不静默吞；
+  confirm 动作按 `by + op + jsonEncode(p)` 去重（K2 键序稳定）、
+  `confirm=='kp' && seat=='host'` 直接执行；否则入 pending 并回执。
+· `locked` 全局操作锁（撕卡/疯狂发作/昏迷/濒死）+ passSelf 白名单；
+  `consent` / `confirmPending` / `stateSyncAck` 基于已有容器真实实现。
+· ⚠️ 分批边界：61 action 的**完整状态结算**属 S4.3。本批 `applyAction`
+  只落不依赖规则结算的基础动作（room.start / room.close / room.end /
+  room.suspend / room.resume / room.kick / scene.set / combat.set /
+  scene.mode / round.next，均为纯事件转发），其余动作**不产生任何状态
+  变更**——不写半成品进权威状态，比留空占位安全。SAN_CHECK / OPPOSED /
+  BOARD / DICE(direct) 的规则结算同留 S4.3；CHAR 的完整
+  `sanitizeSheet` 白名单属 D21（S4.4），本批只记展示用标识、绝不把客户端
+  上报的 status/mental 写进权威状态。下一批在 `applyAction` 方法体内补齐
+  分支即可，`intent` / `act` 调用方零改动。
+
+
+7. Q1 安全回归：复现输入与断言内容
+----------------------------------------------------------------
+7.1 复现输入（`_q1Host()`，设计 §0.1b / 白名单 reproInput 同形状）
+  · `RoomHost(roomHostOpts(meta:{code:'abcd'}, snapshotEvery:2))`
+  · `roster.open(p1)` / `roster.open(p2)` —— 直接建花名册，避免 attach 的
+    MEMBERS 事件占用 seq，保证 seq 与旧版复现步骤一一对应
+  · seq1 CHAT PUBLIC `{seat:'host',nickname:'KP',text:'开始',at:1}`
+  · seq2 LOG PUBLIC `{text:'场景一',at:2}` → 触发快照 @seq2
+  · seq3 **CHECK VIS.SEAT to='p1'**，
+    `p={summary:'秘密检定：骰出 07，极难成功',seat:'p1',at:3,kind:'check'}`
+  · seq4 **PRIVATE VIS.SEAT to='p1'** `p={text:'线索A：只给 p1 看的密信',...}`
+  · seq5 CHAT PUBLIC
+  · `rollback(4)` → target=3 → 最近快照 seq<=3 是 **@2** →
+    重放区间 **(2,3] 正好含秘密 CHECK**（`from:2, dropped:2, seq:3`）。
+    ⚠️ 刻意不用 rollback(5)：那会命中 @4 快照、重放区间为空，
+       断言会「平凡通过」而测不到 Q1。测试里专门写了这条注释。
+
+7.2 断言内容
+  ① 前置：`snapshots == [0,2,4]`；`log.items[2].evt` 完整持久化
+     `vis='seat' / to='p1' / seq=3`（Q1 修正的数据基础）。
+  ② `RollbackResult == {dropped:2, seq:3, from:2}`；
+     `state.logs` 恰好 2 条，CHECK 行逐字段等于
+     `{seq:3, seat:'', text:'KP 秘密进行了一次检定', at:3,
+       kind:'check', opp:null, redacted:true}`；
+     `state.privates` 为空；`jsonEncode(state)` 不含明文；warnings 为空。
+  ③ 对**每个在线 seat**（p1 / p2）调 `syncFor`：
+     递归扫描载荷，断言无 `hp/hpMax/secret/kpOnly/attrs`，
+     `jsonEncode` 不含明文检定结果、不含 `summary`/`detail` 明细字段；
+     p2 额外不含定向私密；`state.logs[1].redacted == true`；
+     `combatFor(seat)` 同样干净。
+     p1 是收件人，其 `privates` 允许有密信（`privateBySeat` 按 §1.4-4
+     原样保留），p2 的 `privates` 必须为空。
+  ④ `rollbackPlan(4)`：2 条全量 sync（p1/p2）+ 1 条 sys 日志广播，
+     顺序 sync 在前、**无反向事件**，每条载荷同样干净。
+  ⑤ 机制证明（对照实验）：`apply(RoomEvent(vis:'seat',to:'p1'),
+     persist:false)` → 脱敏行 + privates 空 + 不写日志；
+     同一事件但 `vis/to` 缺失（旧版 :3450 形状）→ 明文行 + privates 混入。
+     A/B 唯一差别就是 vis/to，直接证明 reduce 真的读到了这两个字段。
+  ⑥ 静态：D15 源码（去注释后）含 `apply(r.evt, persist: false)`、
+     **不含** `reduceRoomState(`、**不含** `{ t: ` 补丁事件构造；
+     全库 `reduceRoomState(` 真实调用点 == 2 且分别落在
+     host_core / client。
+  ⑦ 白名单恰好 1 条 `S:q1`、无 `M:logScript`；本文件是 Dart-only 断言，
+     不参与 oracle 比较、不登记白名单（§6.4-3）。
+
+
+8. 两处静态断言收紧
+----------------------------------------------------------------
+· `test/room_purity_test.dart`：`lessThanOrEqualTo(2)` → `2`；
+  同时**修正计数逻辑**——排除 `Map<String, Object?> reduceRoomState(`
+  函数声明行，否则 2 个调用 + 1 个声明 = 3 会误红。
+  测试名改为「调用点 == 2（RoomHost.apply / RoomClient.receive）」。
+· `test/room_visibility_test.dart`：P0-M01 由 `==1` → `==2`，
+  并追加「两个调用点分别在 room_model_host_core.dart /
+  room_model_client.dart」的文件级断言。
+· `test/room_rollback_security_test.dart` 另有一条独立的 `==2` 静态钉子。
+
+
+9. 全局跨文件一致性复查
+----------------------------------------------------------------
+· import 无环：D15/D16 → host_core + rollback + state/ports/types/js_compat；
+  D20 → envelope/reduce/state/ports/types/js_compat。没有任何 domain 文件
+  反向 import D15/D16/D20；analyze 无 cycle / unused_import 告警。
+· 接口契约：`apply(RoomEvent,{persist})` 签名未改，`LogRecord` 的
+  `wireEvt` 可选第三参数与 `RoomLog.push` 的可选 `wire` 保持向后兼容；
+  D15 重放构造的 `LogRecord(s, evt)` 不带 wire（重放不对外序列化），
+  与 T03 的形状收口不冲突。
+· 数据流：Q1 重放 `apply(r.evt, persist:false)` → `reduceRoomState(state,
+  rec.evt)` 带 vis/to；初始 emit 与重放喂给 reduce 完全同构；
+  `privateBySeat`/`requestsBySeat`/`boardBySeat` 按 §1.4-4 原样保留。
+· 无重复实现：`reduceRoomState` 只在 reduce.dart 定义 1 次；
+  `intent` 只在 D16；`rollback` 只在 D15；`receive` 只在 D20。
+· 白名单/比较器/fixture 三个文件一行未动；`kRoomOracleWhitelist.length==1`
+  与 `whitelistedTags == {'S:q1'}` 全量绿。
+
+结论：**IS_PASS: YES**
+
+
+10. 留给 S4.3 / S4.4 的断点（按依赖顺序）
+----------------------------------------------------------------
+  1. ★★ `applyAction` 目前只落 10 个基础动作（§6）。S4.3 在
+     D17/D18/D19 补齐 61 个 action 的完整结算时，**直接改
+     `room_model_host_intent.dart` 的 `applyAction` 方法体**（或在其中
+     转调新 extension 的 `dispatchRoomAction`），`intent`/`act` 调用方
+     零改动。注意旧版 `applyAction` 从 :1702 起、`_act` 的权限闸门
+     已在 D16 完整实现，不要重复写一遍。
+  2. `nextTurn()` / `advanceRound()` 设计 §3.1 挂在 D15，但本批未实现
+     （依赖 `diceRoll` / `stateApply` / `dyingRoundCheck` 等 S4.3 结算）。
+     下一批补上后，`hostScript` 里的 `nextTurn` op 才能跑。
+  3. `INTENT.SAN_CHECK` / `OPPOSED` / `BOARD` / `DICE(direct)` 分支
+     本批不产生状态变更，S4.3 接入规则结算后补齐；
+     `INTENT.CHAR` 的完整 `sanitizeSheet` 白名单属 D21（S4.4）。
+  4. ★ 本批 `room_sequences_test.dart` **只跑 `clientScript` 27 例**
+     （`only: {'clientScript'}`）。`hostScript` 94 例含 `save` /
+     `applyAction` / `nextTurn` / `kick` 等 S4.3/S4.4 操作，留到 T09
+     全量等价性门禁再放开；放开时把 `only` 去掉并补 `hostScript` handler
+     （`runHostScript` 的返回体形状见 dump_p4_room.js:943-992）。
+  5. ★ 白名单 `S:q1` 的 `allowedPaths` 仍依赖 hostScript 脚本下标
+     `steps[8]=syncFor(p2)` / `steps[9]=syncFor(p1)`；S4.3 若改 op
+     顺序必须同步改（T03 报告 §7 第 4 条，本批未动任何 fixture）。
+  6. D21（save/adoptSave/parseSave/restoreHost/playerViewFromSave/
+     sanitizeSheet/sanitizeSceneSteps）、R01 `lib/repo/room_state_writer.dart`、
+     R02 `lib/repo/room_save_store.dart`（两文件目前**不存在**）、
+     T07/T08 写回与存档测试，全部留 S4.4。
+  7. T06 安全回归本批已落（`room_rollback_security_test.dart`）；
+     T09 全量门禁、Q01 静态探针、CUT-1 旧存档回放留 T05。
+  8. `roomHostOpts()`（T03 的 room_fakes.dart）本批直接复用；
+     `now` 固定 1700000000000、独立 LCG，可继续用于 S4.3/S4.4。
+================================================================

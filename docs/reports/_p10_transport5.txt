@@ -1,0 +1,332 @@
+============================================================
+P10 第 3 期 B —— 交付报告（工程师 寇豆码 / software-engineer-5）
+「跑团房间有差异的地方，按照老 app 修改吧」· 实施批（不是盘点批）
+工程：C:/Users/60965/WorkBuddy/2026-10-08-18-34-17/dice-realm
+基线：2.17.0+83 / 全量 1879 组 0 红 / APK 70,001,068 B · 531e80ac…b07a59
+============================================================
+
+【0】一句话结论（如实说清「哪些本来就等价、哪些真改了」）
+
+14 条差异清单逐行对拍后：**D01/D02/D03/D04/D05/D06/D10/D11/D12/D13 共 10 条本来就等价**
+（两边原文行号已订正，见 §2），D09 上批已修，D14 判定核心 QA 已判等价。
+对这些条目的正确处置 = 补「等价回归靶子」测试，**没有动生产规则代码**。
+本批**真改**的是：
+
+  ★ 3 条对拍中查出的真不等价（这才是「按老 APP 改」的实货）：
+    (1) consent 的 `check.request` 同意路径 —— 老 APP `:1546-1569` 有
+        `_rollCheckRequest`（v2.1.0 专修「点了同意没反应」），新工程整条分支缺失，
+        `rollCheckRequest` 因此成了死代码。已接线（§3.1）。
+    (2) 潜在疯狂 + 单次掉 ≥5 SAN —— 老 APP 2.13.13 `:5198` 是
+        `if (loss >= 5 && !isFaded)`，新工程漏了 `!isFaded` → 双路径叠加
+        （临时疯狂 INT 检定 + 复发）一次拿 2 个症状。已按老 APP 补判据（§3.2）。
+    (3) D14 两处载荷形状：`targets` 的 `.filter(Boolean)` 口径、
+        秘密对抗 `summary || … / at || now()` 的 JS falsy 口径（§3.3）。
+
+  ★ 5 条 QA §10 路由给「下一批 Engineer」的技术债（真改代码）：
+    reduce DICE 机械闸门 / `card_sheet_payload` 的 data: URI 边界 /
+    `room_ui_entry_test:589` 陈旧前提 / `roomOrderedContentSlots` 接线 /
+    视口最小高度断言。
+
+  ★ 2 条非规则发现给了明确结论：
+    `check.push` 在老 APP **只在权限表登记、无 applyAction 处理器**（既非别名
+    也无独立语义，是历史遗留占位）→ 保留新工程的别名增强 + 补注释/用例；
+    `rollCheckRequest` 选择**接线**（不是删），因为老 APP 有 `consent →
+    _rollCheckRequest` 的真实调用链，删掉会制造新的差异。
+
+一句话：**12 条经对拍确认本来就是等价的（不许假装改了），4 类东西是真改了。**
+用户最在意「按老 app 改了」，如实说清比谎报工作量重要。
+
+
+【1】施工依据（都完整读过）
+- 本工程师上批 `_p10_transport4.txt` §6（14 条清单）/ §7（坑）
+- QA `qa_p10_4_report.md` §7（抽查 3 条、D14 降级）/ §10（技术债路由）/ §12（遗留）
+- 老 APP 2.13.13 `core/room-model.js`(408KB)、`core/room-rules.js`、`ui/room-panels.js`
+- 新工程 `lib/domain/room_model_*.dart` / `room_rules_*.dart`
+
+
+【2】★ 14 条订正后完整行号表（下批施工图，行号为本批改后实测）
+
+| # | 规则点 | 老 APP 行为（订正后行号） | 新 APP 现状（订正后行号） | 等价? | 本批处置 |
+|---|--------|--------------------------|--------------------------|-------|----------|
+| D01 | 先攻顺序 / 行动次数 | `room-model.js:2423-2450 _initiativeFallback`（manualOrder → effDex(备枪+50) → dex；actionsPerRound 展开 slot/totalSlots） | `room_model_actions_combat.dart:116-155 initiativeFallback` | ✅ | 补靶子 T4-1，未改代码 |
+| D02 | 先攻走规则服务 + 回落 | `:2505-2515 combatStart`（`rules.initiativeOrder()` 失败回落 `_initiativeFallback`） | `combat.dart:165-235 combatStart`（`:229` 回落） | ✅ | 补靶子 T4-1，未改代码 |
+| D03 | 伤害 → 身体状态 | **真身 `:4275-4327 deriveBodyFromHp`**（`:2208-2290 applyStatusJudgment` 只是调用点；上批表里写的 `:2216-2270` 是调用点的一部分） | **真身 `room_model_actions_room.dart:246-296 raDeriveBodyFromHp`**（`sheet.dart:817-880 settleWounds` / `:742` 是调用点） | ✅ 7 分支逐条同构 | 补靶子 T2-1（7 组断言），未改代码 |
+| D04 | 重伤瞬间 CON 失败 → 昏迷 | `:2250-2260`（`jd.needCon` → `dyingRoundCheck` → `jChk.dead ⇒ unconsciousJ=true`）；`deriveBodyFromHp` 的 needCon 见 `:4260` | `sheet.dart:849-863`（`verdict['needCon']`/`chk['dead']`）+ `room.dart:270-274` | ✅ | 补靶子 T4-2 / T2-1 |
+| D05 | 天/周恢复（1 回合=1 天，3 回合=1 周） | `:3666-3688 advanceRound` 调用、**`:3705-3770 _onDayWeekTick`**；`meta.hpWeek[seat]` 基准、回退后重计时 | `room_model_rollback.dart:384-392 advanceRoundInto`、**`:436-530 onDayWeekTick`** | ✅ | 补靶子 T4-3 |
+| D06 | `madness.advance` 不触发天/周恢复 | `:3705-3712` 注释 + 恢复只挂 `:3677` 的统一回合出口 | 恢复挂 `RoomEvt.round` 的 `advanceRoundInto`；`madness.advance` 走 `stateApply`，不 emit round | ✅ 结构性保证 | 补靶子 T4-3 |
+| D07 | 单次 SAN 损失 ≥5 → INT 检定 | **`:5160-5271 _afterSanLoss`**，③ 在 `:5198-5215`；v2.13.13 起 `if (loss >= 5 && !isFaded)` | `sheet.dart:1200-1270 afterSanLoss`，③ 在 `:1231-1267` | ❌ **改前不等价**（漏 `!isFaded`） | **本批真改**：补 `&& !isPotential`（§3.2），靶子 T3-3/T4-4 |
+| D08 | 不定疯狂：本回合累计 ≥ ceil(maxSAN/5) | **公式 `:5242-5245`**（`oneFifth=Math.ceil(maxSanForIndef/5)`、`fadedArmed = _fadedArm[seat] !== false`） | `sheet.dart:1274-1279` 三行逐字对应 | ✅ | 补靶子 T3-2 |
+| D09 | 潜在疯狂复发武装 / disarm | 文档 `:881-887`、回合边界 **`:991-1001`**（`:1000` 置 false）、`:5169-5172 isFaded` | `host_core.dart:121-124 / 204-222`、`sheet.dart:1912`、`madness_state.dart:214` | ✅ 上批已修 | 补靶子 T3-1/T3-2 |
+| D10 | 临时/不定疯狂期间不掉 SAN、不获新症 | `:2079-2110`（state.self 守卫，玩家不得自行降级）+ `:5172 isFaded` + `:2282` | `sheet.dart:557-590`（降级守卫）+ `:1207-1232`（`blockedByMadness` 再守一道）+ `:1744`（精神分析目标） | ✅ 新工程多一道旁路守卫 | 补靶子 T4-5 |
+| D11 | 治愈 / 精神分析 | **`:4961-5111 psychoAnalyze`**（含 `hadIndef`、清不定+潜在、回 SAN）；治愈伤势 `:4782` | `sheet.dart:1673-1845 psychoAnalyze`（`curedParts` 在 `:1792-1795`）；`healWound :1486` | ✅ | 未改代码（由 D07/D10 靶子间接覆盖） |
+| D12 | SAN 归零 → 永久疯狂（撕卡） | `:2282-2288` + `_afterSanLoss` ① `:5175-5185` | `sheet.dart:1215-1225` | ✅ | 补靶子 T4-5 |
+| D13 | 技能表上限 200（信用评级不截断） | `:7280-7298 sanitizeSkills`（`:7288 out.length < 200`，注释说明 120 会截掉排最后的「信用评级」） | `sheet.dart:62-90 raSanitizeSheet`（`:85 skills.length >= 200 break`） | ✅ | 补靶子 T4-6 |
+| D14 | 对抗检定：判定核心 / 载荷 / 秘密口径 | 判定核心 **`room-rules.js:489-539`**（`opposedAttack :489` / `opposedFull :534`）；`_emitOpposedCheck :5811-5824`；通用载荷 `:5887-5895`；攻击载荷 `:6346-6361`；伤害卡 `:6638-6650` | 判定核心 `room_rules_opposed.dart:101-215`；`emitOpposedCheck combat.dart:1099-1120`；通用载荷 `:1295-1325`；攻击载荷 `:1636-1720`；伤害卡 `:2348-2375`；reduce 落 opp 九键 `room_model_reduce.dart:196-240` | 判定核心 ✅（QA 逐分支已判）；载荷**改前 2 处形状不等价** | **本批真改** 2 处形状（§3.3）+ 补靶子 T1-1…T1-5 |
+
+订正要点：上批表里 D03 / D08 / D14 的 3 处定位指向**调用点或文档头**，QA 已订正，
+本批把**剩余 11 条的行号也逐条核过**，全表已改为「规则真身」定位。
+
+
+【3】第 1 / 2 / 3 梯队改动（两边原文对比）
+
+【3.1】★ 真差异 #1：consent 的 `check.request` 同意路径（第 2 梯队技术债 8，一并解决）
+
+老 APP `room-model.js:1546-1569`：
+  if (req.op === 'check.request') {
+    if (p.agree) {
+      out = out.concat(this._rollCheckRequest(seat, req));
+      var sk = cleanText((req.payload||{}).skill, 20) || '检定';
+      return out.concat(this._settleRequest(seat, req.id, true, '同意并完成了「'+sk+'」检定'));
+    }
+    return out.concat(this._settleRequest(seat, req.id, false, '忽略了检定请求'));
+  }
+老 APP `:3106-3131 _rollCheckRequest`：目标值优先级 ① 角色卡权威技能值
+（`_skillBaseOf`）→ ② 请求载荷 base → ③ 100；难度取请求载荷；结果
+`diceRoll` → PUBLIC 广播全员。注释明写这是 v2.1.0 修的用户报障
+「要求检定点了同意没反应」。
+
+改前新工程 `room_model_host_intent.dart:325-363 consent` **整条分支缺失**：
+所有请求都当成状态变更，`list.removeAt(idx)` 后发一句
+「KP 调整了 X 的状态」，**没有任何检定结果**；`rollCheckRequest`
+（combat.dart 定义）全库零调用点。
+
+修法（`host_intent.dart:340-365`）：照抄老 APP 三段式，
+同意 → `rollCheckRequest(seat, req)` + `settleRequest(..., true, '同意并完成了「$sk」检定')`；
+拒绝 → `settleRequest(..., false, '忽略了检定请求')`；
+**不在分支前先 removeAt**（老 APP 的 `_settleRequest` 负责摘卡并发
+REQUEST-done 定向事件，重复删会找不到卡）。难度/base 全取权威请求载荷，
+不采信客户端回传。
+⇒ 结论：`rollCheckRequest` 选择**接线**而非删除。理由：老 APP 有真实调用链，
+删掉是把「死代码」换成「功能缺失」，与「按老 APP 抹平差异」相反。
+
+【3.2】★ 真差异 #2：潜在疯狂 + 单次 ≥5 SAN 双路径叠加（第 1 梯队 D07 对拍发现）
+
+老 APP 2.13.13 `room-model.js:5198`：
+  if (loss >= 5 && !isFaded) { …临时疯狂 INT 检定 / 可能新增症… }
+注释（`room-model.js:5195-5198`）：「FADED 态角色损失 SAN **只走 ④ 复发**
+（不定疯狂 + 1 症），不再额外触发 ② 的『临时疯狂』路径，避免一次性获得
+2 个症并叠加临时疯狂标签」。
+
+改前新工程 `sheet.dart:1231` 是 `if (loss >= 5)` —— `isPotential`
+虽已算出（`:1211`）却没用在这一条判据上。因为 `blockedByMadness`
+只覆盖临时/不定（不含潜在），潜在疯狂角色单次掉 ≥5 SAN 会
+**同时**触发 ②（INT 检定 + 可能新症）与 ④（复发 + 新症）。
+
+修法：`if (loss >= 5 && !isPotential)`。复发分支 ④ 不受影响，仍新生一条症状。
+靶子 T3-3 直接调 `afterSanLoss` 断「没有临时疯狂 INT 骰 / 没有临时疯狂标签 /
+madness 恰好 1 条 / 仍有复发公共日志」。
+
+【3.3】★ 真差异 #3：D14 载荷形状（只改形状，判定核心未动 —— QA 已判等价）
+
+| 字段 | 老 APP | 改前新工程 | 本批 |
+|---|---|---|---|
+| `targets` | `:5888 [p.aSeat,p.bSeat].filter(Boolean)` —— 空串/0/false 一并滤掉 | `.where((x) => x != null)` —— 只滤 null，空串会留下 | 改 `.where(jsTruthy)`（另两处载荷 `:1693`/`:2348` 本来就是 `!= null && != ''`，无需动） |
+| 秘密卡 `text` | `:5814 payload.summary \|\| '（秘密对抗）'`（JS falsy） | `payload['summary'] ?? '（秘密对抗）'`（Dart 只接 null，空串会发空白卡） | 改 `jsTruthy(...) ? jsStr(...) : '（秘密对抗）'` |
+| 秘密卡 / 公共 LOG 的 `at` | `:5814/:5818 payload.at \|\| now()` | `payload['at'] ?? now()`（0 会留下） | 改 `jsTruthy(payload['at']) ? ... : now()` |
+
+逐字段核过并判等价的部分（**未改**）：`damage`（纯技能对抗为 null、
+攻击对抗为 `{raw,expr,db,armor,applied,impale…}`）、`rounds`（数组）、
+`decidedBy`（字符串）、`reaction`、`fallback`（布尔）、`winner`/`tie`、
+`a/b` 各自的 `{ref,name,value,level,levelText}` 五键、秘密口径
+（非秘密 `EVT.CHECK PUBLIC` / 秘密 `PRIVATE SEAT→host + 公共脱敏 LOG`）。
+靶子 T1-1 断言完整键集合 + 全员广播；T1-2 断言秘密侧零 CHECK PUBLIC；
+T1-3 把 `SendPlan` 分发进 p1/p2 两个真实 `RoomClient`，断言两侧 reduce
+落出的 `opp` 恰好九键且 `redacted=false`；T1-4/T1-5 钉住上面两处对齐。
+
+【3.4】第 2 梯队技术债 5：reduce 侧 DICE 机械闸门（K3 安全项，最高优先）
+
+QA `qa_p10_4_report.md §3b` 的缺口：`apply()` 对所有事件无条件 reduce，
+而 reduce 的 DICE 分支完全不看 `evt.vis`；`emit()` 的 scrub 只认
+`kSecretKeys`（`label` 不在其中）⇒ 一条 `vis:kp` 的 DICE 就能把技能名
+写进公共 `state.dice`（记录栏 + 历史导出可见）。
+
+修法（`room_model_reduce.dart:30-38 / :98-112`，`host_core.dart:159-167`）：
+  · 新增模块级 `reduceGateWarnings`（**不写进 state**，避免 sync/存档/oracle
+    深比多一个键；`apply()` 归约后把它汇入既有 `host.warnings`，
+    重放 persist:false 只清空不重复记）；
+  · DICE 分支开头：`if (evt.vis != null && evt.vis != RoomVis.public)`
+    → 记 warning + `break`（不写 `state.dice`）。
+  · `vis == null`（客户端回放 / 旧调用）按 PUBLIC 处理 —— 旧口径不变。
+  · **不误伤秘密骰点分发**：暗骰 / KP 暗骰走 `RoomEvt.private_`（SEAT），
+    根本不是 DICE。T5-2/T5-3 是双向反证（本人 + KP 收得到 / 第三人零命中）。
+
+冲突处理（如实报）：`test/room_intent_dark_dice_privacy_test.dart:314` 改前
+有一条静态守卫「reduce 的 DICE 分支仍不看 vis（方案 ① 未被采用）」。
+这条守卫的**原意**（SEAT 骰点绝不进公共 state.dice）不但没放宽，
+反而从「靠约定」升级成「机械保证」。已把该用例改名为
+「⑧ 静态：reduce 的 DICE 分支有『非 PUBLIC 即丢弃』机械闸门」并改判据，
+行为级反证由 T5-1/T5-2/T5-3 承担。**没有删除任何既有用例**。
+
+【3.5】第 2 梯队技术债 6：`card_sheet_payload` 的 data: URI 边界（一行）
+`card_sheet_payload.dart:139` 改前把 `localAvatarRel(card.raw['avatar'])`
+交给 `avatarThumbEncoder`；而 `avatarThumbOf`（`repo/avatar_thumb.dart:94-95`）
+本身能解 `data:` URI ⇒ 卡 avatar 已是 PNG dataURI 时 → rel 为 null →
+thumb 空 → `autoAvatarSpecOf` 因 `startsWith('data:image/')` 返 null →
+**删键**，把本来能广播的 PNG 丢了。改为传**原始值**。T6-1 钉住。
+
+【3.6】第 2 梯队技术债 7：`room_ui_entry_test:589` 陈旧前提
+改前断言 `containsKey('avatar') isFalse`，注释写「没有头像 → 不带该键」，
+只靠 `setUp(_stubAutoAvatarPng)` 返回空串才绿 = 假绿。
+现改为**正向口径**：给确定 PNG 替身，断言载荷真的带 `sheet.avatar == autoPng`
+且其余字段仍与 `cardToRoomSheet(card)` 逐字段相等。
+**不许削弱覆盖**：新增 T6-2 专钉「两条生成器都拿不到东西 → 删 avatar 键」
+降级路径；`p10_t2_avatar_test` E1/E3、C4/C5/C6、QA R4 正向覆盖一字未动。
+
+【3.7】第 2 梯队技术债 8b：两条非规则发现的明确结论
+- `check.push`：老 APP 全库 grep 只有 **`:222` POLICY 登记**
+  （`'check.push': {roles:['kp'], confirm:null}`），`applyAction` 的整条
+  if/else 链（`:1795-1830`）**没有处理器**；UI 侧也只有
+  `scene.check.push`（另一条场景检定引擎分支）。
+  ⇒ **结论：既不是别名，也没有独立语义，是一条「允许但无行为」的历史占位。**
+  新工程 `combat.dart:82-93` 把它接到 `checkRequest` 属无调用方的行为增强，
+  **保留**（比空操作有用、零风险、不改权限面），补注释写明老 APP 无处理器，
+  并加用例 T7-4 钉住「check.push 与 check.request 同行为」。
+- `rollCheckRequest`：**接线**（见 §3.1），不删。理由同前。
+
+【3.8】第 3 梯队：死代码接线 + 视口高度
+- `room_game_page.dart:69 roomOrderedContentSlots` 改前 `lib` 内零调用，
+  只有 `room_ui_layout_test.dart:195/204/209` 断言它 —— 单列档「私密栏第一」
+  这条语义**根本没在真实界面生效**。现接进 `_foldedContent`：
+  `final squares = roomOrderedContentSlots(roomFoldedSlots(slotList, role), spec);`
+  （多列网格档仍走 `roomDockPlanOf`，本函数不参与）。选「接线」不选「删」：
+  删了会让那 3 条断言失去被保护对象，且老 APP 的 CSS `order:-1` 语义
+  本来就该生效。T8-1 同时断言源码接线 + 折叠/网格两档顺序。
+- `room_ui_layout_test.dart:544` 视口判据补
+  `expect(viewport.height, greaterThan(120))`：改前只有单向
+  「底边 ≤ 栏顶」，内容区被压到 25dp 也全绿。T8-2 钉住该判据存在。
+
+
+【4】反向证伪表（每条生产代码改动逐一，全部逐字节恢复）
+
+方式：临时改坏 → 跑对应测试 → 记录哪些用例变红 → `cp` 回备份 →
+`sha256` + `cmp -s` 一致 → 复跑全绿。脚本临时文件 `.rv5_tmp.py` 已删。
+
+| # | 生产改动 | 注入的反向变更 | 变红的用例 | 恢复校验 |
+|---|----------|----------------|------------|----------|
+| RV1 | reduce DICE 机械闸门 | 整段 `if (evt.vis != null && …) {…break;}` 摘掉 | **T5-1 + `room_intent_dark_dice_privacy_test` ⑧ 静态守卫（2 红）** | `533d7166…` `cmp -s` 一致 |
+| RV2 | `apply()` 汇入 host.warnings | `if (persist) warnings.addAll(…)` → `if (false && persist) …` | **T5-1（1 红）** | `6469d004…` |
+| RV3 | `card_sheet_payload` 传原始 avatar | 改回 `localAvatarRel(card.raw['avatar'])` | **T6-1** | `ebb9fcfe…` |
+| RV4 | consent 的 check.request 分支 | `if (req['op'] == 'check.request')` → `… '__never__'` | **T7-1**（T7-2「拒绝」本来就不掷骰，不受影响，合理） | `bb1109a5…` |
+| RV5 | D14 `targets` 的 filter(Boolean) | `.where(jsTruthy)` → `.where((x) => x != null)` | **T1-4** | `fedef125…` |
+| RV6 | D14 秘密卡 falsy 兜底 | `jsTruthy(payload['summary'])` → `payload['summary'] != null` | **T1-5** | `fedef125…` |
+| RV7 | 折叠档顺序接线 | `final squares = roomOrderedContentSlots(…)` → `roomFoldedSlots(slotList, role)` | **T8-1** | `bbd911a7…` |
+| RV8 | 潜在疯狂 `&& !isPotential` | 改回 `if (loss >= 5)` | **T3-3** | `323ab8b9…` |
+
+恢复后：6 个生产文件全部与备份 `cmp -s` 一致（哈希见上表左列），
+`flutter test test/p10_t3b_rule_diff_test.dart` 26/26 全绿；
+再跑全量 1905 全绿（见 §5）。
+
+★ 跨视角与探针前置：T1-3 / T5-2 / T5-3 / T7-1 都把 `SendPlan` 按 `to`
+分发进两个真实 `RoomClient`（`'*'` 两个都喂），断的是「另一个会话收到的东西」；
+T5-2 哨兵串 `'SECRET_LBL'`（12 字符，短于 `cleanText(label,20)` 上限，
+不会被截断成假绿）**先断言本人 + KP 收得到**，再断言第三人整份 state 零命中。
+秘密对抗另有一条 T1-2/T5-3 断言零 `CHECK PUBLIC`、私密载荷 `to` 恒为 host。
+
+
+【5】验收原始输出
+
+-- 全量测试 --
+  基线 1879 组 0 红 → **`01:10 +1905: All tests passed!`**
+  差额 +26 = 新增 `test/p10_t3b_rule_diff_test.dart` 26 条
+  （T1×5 / T2×1 / T3×3 / T4×6 / T5×3 / T6×2 / T7×4 / T8×2）
+  账目算平：**1879 + 26 = 1905**，无既有用例被删（4 个既有测试文件只是改
+  断言/补 setUp/升级静态守卫，注册数量不变）。
+
+-- dart analyze --
+  `Analyzing dice-realm... No issues found!`
+
+-- P4 门禁 --
+  `==== 合计 13 条，失败 0 条 ====` / `P4_GATE IS_PASS: YES`
+
+-- P5 UI 门禁 --
+  `==== 合计 14 条，失败 0 条 ====` / `P5_UI_GATE IS_PASS: YES`
+  `jsStr(` 实测 14 处、白名单外 0；`lib/domain` 纯 Dart 检查通过
+  （本批新注释**没有**出现 `dart:ui` 字面量 —— 上批在这里被打过两次）。
+
+-- 常量 / 红线自查 --
+  `RoomEvt.values = 27`、`kRoomPolicy = 61`、`jsStr( = 14`；
+  `lib/domain/*.dart` 中 `dart:ui` 字面量 = 0；
+  `build -> /d/dev/dice-build` junction 完好，全程未 `flutter clean`；
+  `pubspec.yaml` / `tool/qa/qa_p4_gate.js` / `qa_p5_ui.js` /
+  `qa_p10_4_report.md` / `test/qa_p10_4_verify_test.dart` mtime 全部未变；
+  未跑 adb / 模拟器 / 真机。
+
+-- 出包（只走 `bash tool/build_apk.sh`）--
+  `√ Built build\app\outputs\flutter-apk\app-release.apk (66.8MB)`
+  三 ABI `libapp.so`：arm64-v8a **8,782,728** / armeabi-v7a **9,749,064**
+  / x86_64 **9,044,872**
+  产物：**70,001,068 字节**
+  SHA256：**`8e2bf6e4c78aabf94d531c7a5d5adaf6eded85bd05688e2532ca039784536d0c`**
+  签名：debug（可侧载、不可上架）
+  `flutter config --list` → `enable-native-assets: true` ✅（出包后复查）
+
+
+【6】文件清单
+
+新增：
+  test/p10_t3b_rule_diff_test.dart        （26 条：等价靶子 + 反证 + 真差异回归）
+  _p10_transport5.txt                     （本报告）
+
+生产代码（改动）：
+  lib/domain/room_model_reduce.dart       （reduceGateWarnings + DICE 非 PUBLIC 丢弃）
+  lib/domain/room_model_host_core.dart    （apply 归约后汇入 host.warnings）
+  lib/domain/room_model_host_intent.dart  （consent 的 check.request 三段式接线）
+  lib/domain/room_model_actions_sheet.dart（D07 `&& !isPotential` 真差异）
+  lib/domain/room_model_actions_combat.dart（D14 两处载荷形状 + check.push /
+                                           rollCheckRequest 结论注释）
+  lib/ui/room/sheets/card_sheet_payload.dart（avatar 传原始值）
+  lib/ui/room/room_game_page.dart        （roomOrderedContentSlots 接线 + 注释）
+
+测试代码（改动，均为口径更新/守卫升级，未删用例）：
+  test/room_intent_dark_dice_privacy_test.dart（⑧ 静态守卫升级为机械闸门）
+  test/room_ui_entry_test.dart           （绑卡断言改正向口径）
+  test/room_ui_layout_test.dart          （补视口最小高度 > 120）
+  _manual_test_checklist.md              （头部指纹 + P0·P10-3B 章节 M1-M6
+                                          + 自动化 1905 行 + 死代码标注改为已处理）
+
+未改动（红线）：`pubspec.yaml` / `tool/qa/*` / `qa_*_report.md` /
+  `test/qa_p10_4_verify_test.dart` 的 8 条 / 另一工作区 overview.md /
+  `RoomEvt.values` / `kRoomPolicy` / `RoomSlot` / `RoomKeys` / jsStr 白名单。
+
+
+【7】遗留（如实报）
+
+1. **D14 的 `targets` 空串对齐在现有意图入口不可达**：`resolveActorSkill`
+   会先判「甲方无效」提前返回，所以 T1-4 只能是**静态形状靶子 + 正常入参正例**，
+   不是行为级差异验证。已如实写进用例注释。
+2. **consent 的「非 check.request 状态变更请求」仍与老 APP 有一处差异**：
+   老 APP `:1569` 走 `_settleRequest`（会发 `EVT.REQUEST done` SEAT 给玩家，
+   让待办卡消失），新工程 `consent` 对普通状态请求只 `list.removeAt(idx)`
+   + `syncMembers()` + 公共日志，**不 emit REQUEST-done**。本批按施工清单
+   只处理了 `check.request` 分支，没顺手改这条（改了会动既有计划数，风险外溢）。
+   已登记为下一批候选；真机若发现「同意状态变更请求后卡片不消失」，根因在此。
+3. `roomOrderedContentSlots` 接线后，手机竖屏折叠档**方块顺序会有一格变化**
+   （私密栏提到第一位）—— 这是有意的对齐老 APP CSS `order:-1`，已写进
+   `_manual_test_checklist.md` M3 待测，但不能靠单测代替真机观感。
+4. 自动头像 PNG 的精确字符数仍只在测试里断言区间（>500 且 ≤20000），
+   没打印实测值（上批 QA §12 也登记了这一条）。
+5. D11（精神分析）/ D04 的部分分支只有间接靶子，没做「全参数笛卡尔积」
+   逐分支对拍；判等价的依据是两边原文逐行读 + 主路径行为用例。
+6. 未跑 adb / 模拟器 / 真机（按约定由用户统一测）。
+
+
+【8】全局一致性审查
+
+- 跨文件导入：`reduceGateWarnings` 定义在 `room_model_reduce.dart`，
+  被 `room_model_host_core.dart`（已 import 该文件）消费；无新增环。
+  `consent` 调 `rollCheckRequest` / `settleRequest` 依赖
+  `room_model_actions_combat.dart` —— `host_intent.dart` 改前就 import 了它，
+  零新增依赖。
+- 接口契约：`consent` 的 `req` 形状来自 `checkRequest` 的
+  `requestsBySeat[seat]`（`op/payload/id`），与 `rollCheckRequest(seat, req)`
+  的入参逐字段吻合；`settleRequest(id)` 用 `jsStr(req['id'])`，与老 APP
+  `req.id` 同口径。T7-3 额外钉住「角色卡权威技能值压过请求手填 base」。
+- 数据流：`emit(RoomEvt.dice, vis:public)` 仍是**唯一** DICE emit 点（P4 静态
+  守卫 ⑨ 仍断言全库 1 处）；`private_`（暗骰）不经过 DICE 分支，闸门不误伤。
+  `RoomEvt.values` 仍 27 项、无新事件名。
+- 无重复实现：`AvatarSpec` 仍是头像视觉唯一真相（本批没碰）；
+  `raDeriveBodyFromHp` 仍是伤害判定唯一真相（本批只补靶子）；
+  疯狂状态迁移仍走 `madness_state.nextMentalState`（本批只补判据，不另写 if）。
+- 出站只用 `SendPlan.toJson()`；全库无 `LogRecord.toWireJson()` 新增调用。
+
+**IS_PASS: YES**
