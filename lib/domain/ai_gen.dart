@@ -114,7 +114,10 @@ String buildPrompt(String desc, {AiCaps? caps}) {
     '【第三步】按下面的结构输出 JSON：',
     '{',
     '  "setting": "上面清单里的某一个，原样照抄",',
-    '  "name": "符合该设定文化的完整人名。每次都必须生成与示例不同的人名，不得重复使用同一姓名；'
+    '  "name": "★（最高优先）如果玩家的描述里明确指定了角色姓名（例如「车一个刘华强」「名字叫张三」），必须原样使用玩家指定的姓名，'
+        '不得改写、不得谐音、不得另起新名字；'
+        '仅当玩家没有指定姓名时，才自行起一个符合该设定文化的完整人名，每次都必须生成与示例不同的人名，'
+        '不得重复使用同一姓名；'
         '下面只是格式示范，禁止照抄：林砚秋 / 陆知微 / 顾长庚 / 温静姝 / 裴允行",',
     '  "gender": "男 或 女",',
     '  "age": 15 到 75 之间的整数,',
@@ -160,15 +163,20 @@ String buildPrompt(String desc, {AiCaps? caps}) {
 }
 
 /* ============================================================
- * 姓名随机化
+ * 姓名兜底（v2.46.0 起：只兜空名，不再纠偏）
  *
- * 模型对姓名有顽固偏好：同一段描述反复生成，十有八九还是同一个名字
- * （「沈砚清」就是这么来的 —— 全工程 grep 不到，完全是模型自己产的）。
- * 提示词要求「每次换一个」能缓解，但不能依赖；真正的兜底在这里：
- *   · [randomInvestigatorName] 本地池随机组合，按打散后的次序取，
- *     一轮之内绝不重复；
- *   · [ensureFreshInvestigatorName] 在 AI 结果落地前纠偏：
- *     空名字 / 常见重复值 / 与上一次相同 → 一律换成池子里的新名字。
+ * 历史教训（保留记录）：模型对姓名曾有顽固偏好 —— 同一段描述反复生成，
+ * 十有八九还是同一个名字（「沈砚清」就是这么来的 —— 全工程 grep 不到，
+ * 完全是模型自己产的）。v2.39.0 为此做过「本地姓名池纠偏」：
+ * AI 结果落地前，空名 / 常见重复值 / 与上一次相同 → 一律换成本地随机名。
+ *
+ * 但纠偏有反向代价：玩家在描述里明确指定的姓名（「车一个华强买瓜里面的
+ * 刘华强」→ 应叫「刘华强」）也会被池子覆盖，QA 2025 反馈确认这是真问题。
+ * v2.46.0 起改为：
+ *   · 姓名完全采信模型 —— 玩家指定的姓名由提示词约束「必须原样使用」
+ *     （写为最高优先级条款），多样性也由提示词约束（每次不同）；
+ *   · 本地只在**名字为空**时用 [randomInvestigatorName] 兜底，
+ *     不再做任何其它纠偏（`ensureFreshInvestigatorName` 已删除）。
  * ============================================================ */
 
 /// 姓氏池（单字姓，35 个；含沈但远不止沈，刻意铺开冷门姓）
@@ -189,14 +197,8 @@ const List<String> _givenNamePool = <String>[
   '樵', '樾', '彧', '昭', '湛', '沅', '漪', '珂',
 ];
 
-/// 已知的「模型口头禅」名字：命中就换掉。
-const Set<String> _staleInvestigatorNames = <String>{'沈砚清'};
-
 /// 打散后的全量名字袋（姓氏 × 名字），取完一轮再重新打散
 List<String>? _nameBag;
-
-/// 上一次产出的名字（跨调用去重）
-String? _lastInvestigatorName;
 
 List<String> _buildNameBag(JsRng rng) {
   final all = <String>[];
@@ -218,41 +220,18 @@ List<String> _buildNameBag(JsRng rng) {
   return all;
 }
 
-/// 本地随机中文名（2-4 个汉字）。
+/// 本地随机中文名（2-4 个汉字）—— **只**用于 AI 落地时的空名兜底。
 ///
 /// 连续调用会把一整袋（35 × 48 = 1680 个）名字打散后逐个取用，
 /// 因此**一轮之内不会重复**；袋空后重新打散。
+/// v2.46.0 起：模型给的非空姓名一律原样保留，不再走这里。
 String randomInvestigatorName([JsRng? rng]) {
   final r = rng ?? nowRng;
-  for (var i = 0; i < 8; i++) {
-    final bag = _nameBag ??= _buildNameBag(r);
-    if (bag.isEmpty) {
-      _nameBag = _buildNameBag(r);
-      continue;
-    }
-    final name = bag.removeLast();
-    if (name != _lastInvestigatorName) {
-      _lastInvestigatorName = name;
-      return name;
-    }
+  var bag = _nameBag;
+  if (bag == null || bag.isEmpty) {
+    bag = _nameBag = _buildNameBag(r);
   }
-  // 极端情况（rng 恒定导致同一名字反复出现）：按池子顺序补一个
-  final fallback = '${_surnamePool[0]}${_givenNamePool[0]}';
-  _lastInvestigatorName = fallback;
-  return fallback;
-}
-
-/// AI 给的姓名纠偏：空 / 常见重复值 / 与上一次相同 → 换成本地随机名。
-///
-/// 其它情况原样保留（模型偶尔真能起出好名字，不该被一律覆盖）。
-String ensureFreshInvestigatorName(String name, [JsRng? rng]) {
-  final n = name.trim();
-  final stale = n.isEmpty ||
-      _staleInvestigatorNames.contains(n) ||
-      n == _lastInvestigatorName;
-  if (stale) return randomInvestigatorName(rng);
-  _lastInvestigatorName = n;
-  return n;
+  return bag.removeLast();
 }
 
 /* ============================================================

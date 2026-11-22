@@ -272,13 +272,26 @@ void main() {
       File('test/fixtures/qa_p3_ai_oracle.json').readAsStringSync(),
     ) as Map<String, Object?>;
 
-    test('buildPrompt：4 组自选描述 × 上限 → 逐字节一致', () {
+    // v2.46.0 有意偏离旧版 ai.js：name 字段说明重写为「玩家指定优先」。
+    // 逐字比对把新行换回旧行后照常运行 —— 除姓名策略这一行外，仍要求与旧版
+    // 逐字节一致；新口径的语义由 ai_gen_test.dart 的 ★ 姓名约束测试钉住。
+    String patchedExpect(String legacy) {
+      final String newNameLine = buildPrompt('x')
+          .split('\n')
+          .firstWhere((l) => l.startsWith('  "name": '));
+      return legacy
+          .split('\n')
+          .map((l) => l.startsWith('  "name": ') ? newNameLine : l)
+          .join('\n');
+    }
+
+    test('buildPrompt：4 组自选描述 × 上限 → 除姓名策略行外逐字节一致', () {
       for (final c in (oracle['buildPrompt'] as List).cast<Map<String, Object?>>()) {
         final caps = AiCaps.fromMap(c['caps'] as Map);
         expect(
           buildPrompt(jsStr(c['desc']), caps: caps),
-          c['expect'],
-          reason: 'desc=${c['desc']} 提示词与旧版漂移',
+          patchedExpect(c['expect'] as String),
+          reason: 'desc=${c['desc']} 提示词与旧版漂移（姓名策略行除外）',
         );
       }
     });

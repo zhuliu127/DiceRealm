@@ -151,10 +151,12 @@ class AiCreateService {
   ) {
     final profile = toProfile(raw);
 
-    /* 姓名纠偏：模型对姓名有顽固偏好（反复产出同一个名字），
-       空 / 命中常见重复值 / 与上一次相同 → 换成本地随机名。
-       其余创意字段仍完全采信模型。 */
-    profile['name'] = ensureFreshInvestigatorName(jsStr(profile['name']));
+    /* 姓名：完全采信模型（v2.46.0 起不再纠偏）——
+       玩家在描述里指定的姓名（如「车一个刘华强」→ 刘华强）必须原样落地；
+       模型自拟姓名同样原样保留（多样性由提示词约束：每次生成不同的人名）。
+       本地只在名字为空时用随机池兜底，保证落地卡永远有姓名。 */
+    final n = jsStr(profile['name']).trim();
+    if (n.isEmpty) profile['name'] = randomInvestigatorName();
 
     /* 属性上限：本地二次校准。
        提示词里已经要求过一次，但模型不照做是常态 ——

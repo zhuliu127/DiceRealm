@@ -16,6 +16,19 @@ import 'package:flutter_test/flutter_test.dart';
 
 import 'support/oracle.dart';
 
+/// v2.45.0（含）及之前 buildPrompt 里 name 字段的旧说明（旧版 ai.js 口径）。
+/// v2.46.0 起改为「玩家指定姓名优先 + 模型自拟多样」的新口径（见下方 ★ 测试）；
+/// fixture（逐字节 oracle）的 buildPrompt 比对会把新行换回这行旧值后照常进行 ——
+/// 除姓名策略行外，提示词其余部分仍必须与旧版逐字节一致。
+const String kLegacyAiNameLine =
+    '  "name": "符合该设定文化的完整人名。每次都必须生成与示例不同的人名，不得重复使用同一姓名；'
+    '下面只是格式示范，禁止照抄：林砚秋 / 陆知微 / 顾长庚 / 温静姝 / 裴允行",';
+
+/// 从提示词里抠出 name 字段那一行（用于新旧口径拼接比对）
+String nameLineOf(String prompt) => prompt
+    .split('\n')
+    .firstWhere((l) => l.startsWith('  "name": '));
+
 void main() {
   final fixture = OracleFixture.load('ai_gen.json');
 
@@ -24,7 +37,13 @@ void main() {
       'buildPrompt': (args) {
         final a = (args as Map).cast<String, Object?>();
         final caps = a['caps'] is Map ? AiCaps.fromMap(a['caps'] as Map) : null;
-        return buildPrompt(jsStr(a['desc']), caps: caps);
+        final p = buildPrompt(jsStr(a['desc']), caps: caps);
+        // v2.46.0 有意偏离旧版 ai.js：name 字段说明重写为「玩家指定优先」。
+        // 比对前把新行换回旧行 —— 除姓名策略这一行外，仍要求与旧版逐字节一致。
+        return p
+            .split('\n')
+            .map((l) => l.startsWith('  "name": ') ? kLegacyAiNameLine : l)
+            .join('\n');
       },
       'toProfile': (args) {
         final a = (args as Map).cast<String, Object?>();
@@ -128,17 +147,36 @@ void main() {
       expect(buildPrompt('x'), contains('不要人人都写一条'));
     });
 
-    // ★ v2.39.0 产品行为真变：姓名去重是硬约束，必须写进提示词，
-    //   且必须给出 5 个「格式示范（禁止照抄）」样例。上面 fixture 的逐字节
-    //   比对仍是第一道网；这里补的是「语义必须还在」—— 以后若只改措辞不改
-    //   语义，这条仍会盯着三件不可退让的事：不许重复、样例必须够 5 个、
-    //   必须显式禁止照抄。
-    test('★ 姓名约束必须显式写在提示词里（每次不同 / 不得重复 / 禁抄样例）', () {
+    // ★ v2.46.0 产品行为真变：姓名策略从「本地池纠偏」改回「由模型生成」，
+    //   并把「玩家指定优先」写成最高优先级条款。fixture 的逐字节比对（上面
+    //   第一道网）把 name 行换回旧值后照常运行，保证除该行外零漂移；这里钉
+    //   住的是新口径的三层语义：指定优先（显式最高优先级 + 原样使用）、
+    //   多样性（每次不同）、样例禁抄。旧口径里的「不得重复」并入第 2 层，
+    //   必须排在「玩家指定优先」之后 —— 顺序颠倒说明优先级又压错了。
+    test('★ 姓名约束（玩家指定优先 > 模型自拟多样 / 样例禁抄）', () {
       final String p = buildPrompt('x');
+      // 第一层：玩家指定姓名 → 显式最高优先级 + 原样使用
+      expect(p, contains('★（最高优先）'),
+          reason: '★ 「玩家指定优先」必须带显式优先级标记');
+      expect(p, contains('如果玩家的描述里明确指定了角色姓名'),
+          reason: '★ 必须显式说明「玩家描述里指定了姓名」的情形');
+      expect(p, contains('必须原样使用玩家指定的姓名'),
+          reason: '★ 玩家指定的姓名必须原样使用（不得被本地改掉）');
+      expect(p, contains('不得改写、不得谐音、不得另起新名字'),
+          reason: '★ 必须禁止改写 / 谐音 / 另起名');
+      // 第二层：未指定时自行起名 → 多样性约束（保留旧口径的用词，但已并入
+      // 「仅当玩家没有指定姓名时」的从句，不再压过指定优先）
+      expect(p, contains('仅当玩家没有指定姓名时，才自行起一个符合该设定文化的完整人名'),
+          reason: '★ 多样性约束必须明确限定在「未指定姓名」的情形');
       expect(p, contains('每次都必须生成与示例不同的人名'),
           reason: '★ 「每次不同」必须是对模型的显式要求');
       expect(p, contains('不得重复使用同一姓名'),
           reason: '★ 「不得重复」必须逐字出现');
+      // 优先级顺序：指定优先必须出现在多样性约束之前
+      expect(p.indexOf('★（最高优先）'),
+          lessThan(p.indexOf('不得重复使用同一姓名')),
+          reason: '★ 「玩家指定优先」必须排在「不得重复」之前，否则会被它压过');
+      // 样例：5 个格式示范 + 禁止照抄
       expect(p, contains('下面只是格式示范，禁止照抄'),
           reason: '★ 样例必须标明禁抄，否则模型会直接抄样例名');
       for (final String sample in <String>[
@@ -150,6 +188,15 @@ void main() {
       ]) {
         expect(p, contains(sample), reason: '★ 名字池样例「$sample」缺失');
       }
+    });
+
+    test('★ 玩家指定姓名的描述（QA 案例：华强买瓜的刘华强）也带同样的约束', () {
+      final String p = buildPrompt('车一个华强买瓜里面的刘华强');
+      expect(p, contains('车一个华强买瓜里面的刘华强'));
+      expect(p, contains('★（最高优先）'),
+          reason: '★ 玩家指定了姓名时，优先级标记必须在提示词里');
+      expect(p, contains('必须原样使用玩家指定的姓名'),
+          reason: '★ 模型必须把「刘华强」原样当作角色姓名，不得另起「岳振山」');
     });
 
     test('★ JSON schema 的字段名一个都不能少（模型是照着抄结构的）', () {
@@ -184,13 +231,14 @@ void main() {
   });
 
   // ============================================================
-  // 姓名随机化（v2.39.0）：模型对姓名有顽固偏好，提示词只是缓解，
-  // 真正的兜底是本地名字池 —— 这两条纯函数必须自己站得住。
+  // 姓名兜底（v2.46.0）：本地姓名池只用于「AI 结果落地时名字为空」的兜底；
+  // 对模型给的非空姓名不再做任何纠偏（ensureFreshInvestigatorName 已删除，
+  // 相应的纠偏用例随被删除行为一起移除）。多样性改由提示词约束。
   // ============================================================
-  group('姓名随机化（本地池兜底）', () {
+  group('姓名兜底（本地池，仅空名时使用）', () {
     final RegExp cjk24 = RegExp(r'^[\u4e00-\u9fa5]{2,4}$');
 
-    test('★ randomInvestigatorName：连续 10 次 distinct ≥ 8 / 全 2-4 汉字 / 不含「沈砚清」', () {
+    test('★ randomInvestigatorName：连续 10 次 distinct ≥ 8 / 全 2-4 汉字', () {
       final List<String> names = <String>[
         for (int i = 0; i < 10; i++) randomInvestigatorName(),
       ];
@@ -198,24 +246,10 @@ void main() {
           reason: '同一轮内名字袋不许重复取用：$names');
       for (final String n in names) {
         expect(cjk24.hasMatch(n), isTrue, reason: '「$n」必须是 2-4 个汉字');
+        // 历史回归钉子：v2.39.0 之前模型口头禅「沈砚清」泛滥，
+        // 池子里也不存在这个组合 —— 万一出现说明池子被改坏了。
         expect(n, isNot('沈砚清'), reason: '★ 已知的模型口头禅名字绝不允许再出现');
       }
-    });
-
-    test('★ ensureFreshInvestigatorName：空名 / 口头禅 / 与上次相同 → 换新名', () {
-      final String replaced = ensureFreshInvestigatorName('沈砚清');
-      expect(replaced, isNot('沈砚清'), reason: '★ 口头禅必须被换掉');
-      expect(cjk24.hasMatch(replaced), isTrue);
-
-      expect(ensureFreshInvestigatorName('   ').trim(), isNotEmpty,
-          reason: '★ 空名字必须补一个真名字，不能落地空名');
-
-      // 与上一次相同 → 换新（跨调用去重）
-      expect(ensureFreshInvestigatorName('周砚青'), '周砚青',
-          reason: '模型偶尔起的好名字应原样保留');
-      final String second = ensureFreshInvestigatorName('周砚青');
-      expect(second, isNot('周砚青'), reason: '★ 连续两次同名必须第二次换掉');
-      expect(cjk24.hasMatch(second), isTrue);
     });
   });
 
