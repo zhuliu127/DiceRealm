@@ -8,6 +8,8 @@
 // ★ T-43：所有可点元素统一走 RoomTap（≥48dp 热区），禁止裸 IconButton。
 // ============================================================
 
+import 'dart:ui' as ui;
+
 import 'package:flutter/material.dart';
 
 import '../../../theme.dart' show Palette, Radii;
@@ -101,12 +103,38 @@ class SectionBox extends StatelessWidget {
       child: Stack(
         children: <Widget>[
           Positioned.fill(
-            child: Image.asset(
-              Art.panelFrameFor(Theme.of(context).brightness),
-              fit: BoxFit.fill,
-              filterQuality: FilterQuality.medium,
-              errorBuilder: (BuildContext c, Object e, StackTrace? s) =>
-                  const SizedBox.shrink(),
+            // ★ P18b 修复（重叠）：原用 `BoxFit.fill` 把方形边框图整张拉伸铺满
+            //   卡片，横屏卡片一宽，四角巴洛克花饰与细金线被横向拉扁，压到标题
+            //   / 内容 / 右侧按钮上。修法分两层：
+            //   ① 已重做「薄轮廓」素材：内金线贴近边缘、四角花饰压到 ≤7%（curl
+            //      仅约 68px / 1024），不再是原来 220px 的大花饰；
+            //   ② 用 `LayoutBuilder` 判断卡片短边：足够大（≥ 2×切分内边距）时走
+            //      `centerSlice` 九宫格——四角花饰按原尺寸固定、只拉伸直边与中央，
+            //      长宽比再大也不变形、不越界；卡片太小（dock 短格等，短边放不下
+            //      两个角）时退回 `BoxFit.fill` 整张拉伸——此时卡片本身极小，
+            //      花饰占比也小，不会压到内容。两路都不加 padding、不影响布局。
+            child: LayoutBuilder(
+              builder: (BuildContext ctx, BoxConstraints c) {
+                // 源图 1024²，薄轮廓下角部（内金线拐角 + 花饰）只占约 40-70px。
+                // 九宫格内边距取 40px：四角花饰在屏幕上约 20-25px、小巧贴角，
+                // 不会压到 10px 内边距里的标题与右侧按钮；短边 ≥ 2×40 = 80px
+                // 才走九宫格（绝大多数卡片都满足），否则退回普通整图拉伸。
+                const double kSlice = 40;
+                final bool bigEnough =
+                    c.maxWidth >= kSlice * 2 && c.maxHeight >= kSlice * 2;
+                // ★ 为什么要自己画九宫格（CustomPainter），而不用 Flutter 自带的
+                //   `Image.centerSlice` / `DecorationImage.centerSlice`：
+                //   两者在图片被「缩放」绘制时都会断言崩溃
+                //   `decoration_image.dart:572 'sourceSize == inputSize'`——
+                //   即 centerSlice 只允许 1:1 原尺寸绘制，一旦卡片尺寸 ≠ 源图
+                //   尺寸（必然发生）就挂。自绘 9 段 `drawImageRect` 完全绕开该
+                //   限制：四角花饰按固定 40px 画、四条边与中央各自拉伸，任意长
+                //   宽比都不变形、不越界、不崩。
+                return _NineSliceFrame(
+                  asset: Art.panelFrameFor(Theme.of(ctx).brightness),
+                  slice: bigEnough ? kSlice : 0,
+                );
+              },
             ),
           ),
           Padding(
@@ -182,6 +210,10 @@ class RoomButtonSkin extends StatelessWidget {
           image: AssetImage(Art.btnPlateFor(
               Palette.isDark ? Brightness.dark : Brightness.light)),
           fit: BoxFit.fill,
+          // ★ P18b：按钮底板是「细金描边圆角框 + 顶部轻高光」，描边本就极薄且
+          //   贴着边缘，直接 `BoxFit.fill` 拉伸即可（圆角在极宽按钮上略有透视，
+          //   但按钮高度都很小、观感不影响）；不再用 `centerSlice`，避免窄按钮
+          //   （<2×inset）时的负边绘制风险。
           opacity: enabled ? 0.92 : 0.28,
         ),
       );
@@ -714,4 +746,146 @@ class PlaceholderBlock extends StatelessWidget {
       child: Text(label, style: Theme.of(context).textTheme.bodySmall),
     );
   }
+}
+
+// ------------------------------------------------------------
+// ★ P18b：自绘九宫格装饰底纹（绕开 Flutter centerSlice 的 1:1 断言限制）
+// ------------------------------------------------------------
+
+/// 把一张带四角花饰的方形装饰图按「九宫格」铺满任意尺寸的卡片。
+///
+/// · [slice] > 0 且卡片短边 ≥ 2×[slice] 时：四角按固定 [slice] 像素绘制
+///   （花饰不变形、始终贴角），四条边与中央各自拉伸填满。
+/// · [slice] == 0：退回整图 `drawImageRect` 拉伸（用于极小的 dock 短格）。
+///
+/// 为什么不用 `Image.centerSlice` / `DecorationImage.centerSlice`：二者在
+/// 图片被缩放绘制时都会断言 `decoration_image.dart:572 'sourceSize == inputSize'`
+/// 崩溃（centerSlice 仅允许 1:1 原尺寸）。自绘 9 段 `drawImageRect` 无此限制。
+class _NineSliceFrame extends StatefulWidget {
+  const _NineSliceFrame({required this.asset, required this.slice});
+
+  final String asset;
+  final double slice;
+
+  @override
+  State<_NineSliceFrame> createState() => _NineSliceFrameState();
+}
+
+class _NineSliceFrameState extends State<_NineSliceFrame> {
+  ImageStream? _stream;
+  ImageStreamListener? _listener;
+  ui.Image? _image;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _resolve();
+  }
+
+  @override
+  void didUpdateWidget(_NineSliceFrame oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.asset != widget.asset) _resolve();
+  }
+
+  void _resolve() {
+    final ImageStream stream = AssetImage(widget.asset).resolve(
+      createLocalImageConfiguration(context),
+    );
+    if (_stream?.key == stream.key) return;
+    _detach();
+    _stream = stream;
+    _listener = ImageStreamListener(
+      (ImageInfo info, bool sync) {
+        if (!mounted) return;
+        setState(() => _image = info.image);
+      },
+      onError: (Object e, StackTrace? s) {
+        // 缺图：静默降级，只露出 Card 底色。
+      },
+    );
+    stream.addListener(_listener!);
+  }
+
+  void _detach() {
+    if (_stream != null && _listener != null) {
+      _stream!.removeListener(_listener!);
+    }
+    _stream = null;
+    _listener = null;
+  }
+
+  @override
+  void dispose() {
+    _detach();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final ui.Image? img = _image;
+    if (img == null) return const SizedBox.expand();
+    return CustomPaint(
+      painter: _NineSlicePainter(image: img, slice: widget.slice),
+      size: Size.infinite,
+    );
+  }
+}
+
+class _NineSlicePainter extends CustomPainter {
+  _NineSlicePainter({required this.image, required this.slice});
+
+  final ui.Image image;
+  final double slice;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final double sw = image.width.toDouble();
+    final double sh = image.height.toDouble();
+    final Paint paint = Paint()..filterQuality = FilterQuality.medium;
+    final Rect dst = Offset.zero & size;
+
+    // 无九宫格（极小卡片）：整图拉伸。
+    if (slice <= 0 || size.width < slice * 2 || size.height < slice * 2) {
+      canvas.drawImageRect(image, Rect.fromLTWH(0, 0, sw, sh), dst, paint);
+      return;
+    }
+
+    final double s = slice;
+    // 源图四角边长按同样 slice 比例取（源图边长未必等于目标 slice，
+    // 这里把 source 的角区按 slice 与自身尺寸的比例切分——因源图 1024、
+    // 角部占用 ~40-70px，取源切片 = slice 即可，比例一致）。
+    final double srcL = s, srcT = s, srcR = sw - s, srcB = sh - s;
+    final double dstR = size.width - s, dstB = size.height - s;
+
+    void tile(double sx0, double sy0, double sx1, double sy1, Rect d) {
+      if (d.width <= 0 || d.height <= 0 || sx1 <= sx0 || sy1 <= sy0) return;
+      canvas.drawImageRect(
+        image,
+        Rect.fromLTRB(sx0, sy0, sx1, sy1),
+        d,
+        paint,
+      );
+    }
+
+    // 四角（固定 slice 尺寸）
+    tile(0, 0, srcL, srcT, Rect.fromLTWH(0, 0, s, s)); // TL
+    tile(srcR, 0, sw, srcT, Rect.fromLTWH(dstR, 0, s, s)); // TR
+    tile(0, srcB, srcL, sh, Rect.fromLTWH(0, dstB, s, s)); // BL
+    tile(srcR, srcB, sw, sh, Rect.fromLTWH(dstR, dstB, s, s)); // BR
+    // 四条边（拉伸）
+    tile(srcL, 0, srcR, srcT, Rect.fromLTWH(s, 0, size.width - 2 * s, s)); // top
+    tile(srcL, srcB, srcR, sh,
+        Rect.fromLTWH(s, dstB, size.width - 2 * s, s)); // bottom
+    tile(0, srcT, srcL, srcB, Rect.fromLTWH(0, s, s, size.height - 2 * s)); // left
+    tile(srcR, srcT, sw, srcB,
+        Rect.fromLTWH(dstR, s, s, size.height - 2 * s)); // right
+    // 中央（拉伸）
+    tile(srcL, srcT, srcR, srcB,
+        Rect.fromLTWH(s, s, size.width - 2 * s, size.height - 2 * s));
+  }
+
+  @override
+  bool shouldRepaint(_NineSlicePainter old) =>
+      old.image != image || old.slice != slice;
 }
