@@ -12,10 +12,10 @@
 // ============================================================
 
 /// 语义化版本（对应 pubspec 里 `+` 之前的部分）
-const String kAppVersion = '2.48.1';
+const String kAppVersion = '2.48.2';
 
 /// 构建号（对应 pubspec 里 `+` 之后的部分）
-const int kAppBuildNumber = 120;
+const int kAppBuildNumber = 121;
 
 /// 展示用短标签：`v<版本>`
 const String kAppVersionShort = 'v$kAppVersion';

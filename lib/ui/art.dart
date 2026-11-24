@@ -197,6 +197,15 @@ class Art {
   static String panelFrameFor(Brightness b) =>
       pick(panelFrameDark, panelFrameLight, b);
 
+  /// 栏位卡片装饰双线金框的线色（暗/亮各一，取主题金）。
+  /// 暗底金 #D4A94A、亮底金 #B8873A —— 与 AppPalette 一致。
+  static const Color panelLineDark = Color(0xFFD4A94A);
+  static const Color panelLineLight = Color(0xFFB8873A);
+
+  /// 按皮肤取装饰框线色。
+  static Color frameLineColorFor(Brightness b) =>
+      b == Brightness.dark ? panelLineDark : panelLineLight;
+
   // ---- 按钮底板纹理（暗 / 亮两套，2:1 宽版，供 RoomButtonSkin 铺底）----
   // 一条细金描边内框 + 极轻的顶部高光（emboss），中央平整留给图标与文字。
   // 铺在所有 RoomTap（140+ 个可点件）的底色上，视觉与栏位边框统一为维多利亚金线。

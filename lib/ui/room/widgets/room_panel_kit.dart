@@ -8,6 +8,7 @@
 // ★ T-43：所有可点元素统一走 RoomTap（≥48dp 热区），禁止裸 IconButton。
 // ============================================================
 
+import 'dart:math' as math;
 import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
@@ -115,24 +116,16 @@ class SectionBox extends StatelessWidget {
             //      花饰占比也小，不会压到内容。两路都不加 padding、不影响布局。
             child: LayoutBuilder(
               builder: (BuildContext ctx, BoxConstraints c) {
-                // 源图 1024²，薄轮廓下角部（内金线拐角 + 花饰）只占约 40-70px。
-                // 九宫格内边距取 40px：四角花饰在屏幕上约 20-25px、小巧贴角，
-                // 不会压到 10px 内边距里的标题与右侧按钮；短边 ≥ 2×40 = 80px
-                // 才走九宫格（绝大多数卡片都满足），否则退回普通整图拉伸。
-                const double kSlice = 40;
-                final bool bigEnough =
-                    c.maxWidth >= kSlice * 2 && c.maxHeight >= kSlice * 2;
-                // ★ 为什么要自己画九宫格（CustomPainter），而不用 Flutter 自带的
-                //   `Image.centerSlice` / `DecorationImage.centerSlice`：
-                //   两者在图片被「缩放」绘制时都会断言崩溃
-                //   `decoration_image.dart:572 'sourceSize == inputSize'`——
-                //   即 centerSlice 只允许 1:1 原尺寸绘制，一旦卡片尺寸 ≠ 源图
-                //   尺寸（必然发生）就挂。自绘 9 段 `drawImageRect` 完全绕开该
-                //   限制：四角花饰按固定 40px 画、四条边与中央各自拉伸，任意长
-                //   宽比都不变形、不越界、不崩。
+                // ★ P18c：改为「贴边矢量双线金框 + 四角小卷草」，全部收在
+                //   SectionBox 的 10px 内容内边距环以内，任何卡片（含竖屏矮卡）
+                //   都不会压到标题/输入框/按钮。lineColor 取主题金，暗亮自动。
+                final ThemeData th = Theme.of(ctx);
+                final Color gold = Art.frameLineColorFor(th.brightness);
                 return _NineSliceFrame(
-                  asset: Art.panelFrameFor(Theme.of(ctx).brightness),
-                  slice: bigEnough ? kSlice : 0,
+                  asset: Art.panelFrameFor(th.brightness),
+                  slice: 0,
+                  lineColor: gold,
+                  insidePadding: 10,
                 );
               },
             ),
@@ -762,10 +755,17 @@ class PlaceholderBlock extends StatelessWidget {
 /// 图片被缩放绘制时都会断言 `decoration_image.dart:572 'sourceSize == inputSize'`
 /// 崩溃（centerSlice 仅允许 1:1 原尺寸）。自绘 9 段 `drawImageRect` 无此限制。
 class _NineSliceFrame extends StatefulWidget {
-  const _NineSliceFrame({required this.asset, required this.slice});
+  const _NineSliceFrame({
+    required this.asset,
+    required this.slice,
+    required this.lineColor,
+    required this.insidePadding,
+  });
 
   final String asset;
   final double slice;
+  final Color lineColor;
+  final double insidePadding;
 
   @override
   State<_NineSliceFrame> createState() => _NineSliceFrameState();
@@ -826,66 +826,134 @@ class _NineSliceFrameState extends State<_NineSliceFrame> {
     final ui.Image? img = _image;
     if (img == null) return const SizedBox.expand();
     return CustomPaint(
-      painter: _NineSlicePainter(image: img, slice: widget.slice),
+      painter: _NineSlicePainter(
+        image: img,
+        slice: widget.slice,
+        lineColor: widget.lineColor,
+        insidePadding: widget.insidePadding,
+      ),
       size: Size.infinite,
     );
   }
 }
 
 class _NineSlicePainter extends CustomPainter {
-  _NineSlicePainter({required this.image, required this.slice});
+  _NineSlicePainter({
+    required this.image,
+    required this.slice,
+    required this.lineColor,
+    required this.insidePadding,
+  });
 
   final ui.Image image;
   final double slice;
+  final Color lineColor;
+
+  /// 卡片内容的内边距（SectionBox 的 `Padding(all: 10)`）。装饰边框必须整体
+  /// 收在这个内边距环以内，才不会压到标题/输入框/按钮 —— 这是 P18c 的核心约束。
+  final double insidePadding;
 
   @override
   void paint(Canvas canvas, Size size) {
     final double sw = image.width.toDouble();
     final double sh = image.height.toDouble();
-    final Paint paint = Paint()..filterQuality = FilterQuality.medium;
-    final Rect dst = Offset.zero & size;
 
-    // 无九宫格（极小卡片）：整图拉伸。
-    if (slice <= 0 || size.width < slice * 2 || size.height < slice * 2) {
-      canvas.drawImageRect(image, Rect.fromLTWH(0, 0, sw, sh), dst, paint);
-      return;
-    }
+    // ★ P18c 重做：旧九宫格把源图内圈金线画在距卡边 ~29px 处，而 SectionBox
+    //   内容内边距只有 10px —— 竖屏矮卡里这条线正好穿过标题/输入框/按钮。
+    //   现改为「贴边矢量细金框 + 四角小卷草」：
+    //   ① 双线金框整体收在 padding 环内（外线距边 ~3.5px、内线 ~7px，均 < 10px），
+    //      任何卡片都不会压内容；
+    //   ② 四角卷草从源图角落裁出，缩到 ~ (padding-2) 的小尺寸贴角，只在卡片
+    //      宽高都足够（都有富余空间放得下）时绘制，进一步保证不越界；
+    //   ③ 完全没有花饰/线压到正文 —— 彻底修好竖屏矮卡的重叠问题。
+    final double pad = insidePadding; // 10
+    // 双线框几何：外线在外，内线在内，都在 pad 环内。
+    final double outerInset = 3.5;
+    final double innerInset = 7.0;
+    final double radius = math.max(2.0, RoomTheme.panelRadius - outerInset);
 
-    final double s = slice;
-    // 源图四角边长按同样 slice 比例取（源图边长未必等于目标 slice，
-    // 这里把 source 的角区按 slice 与自身尺寸的比例切分——因源图 1024、
-    // 角部占用 ~40-70px，取源切片 = slice 即可，比例一致）。
-    final double srcL = s, srcT = s, srcR = sw - s, srcB = sh - s;
-    final double dstR = size.width - s, dstB = size.height - s;
+    final Paint linePaint = Paint()
+      ..style = PaintingStyle.stroke
+      ..color = lineColor
+      ..strokeWidth = 1.1
+      ..isAntiAlias = true;
+    final Paint innerLinePaint = Paint()
+      ..style = PaintingStyle.stroke
+      ..color = lineColor.withValues(alpha: 0.55)
+      ..strokeWidth = 0.8
+      ..isAntiAlias = true;
 
-    void tile(double sx0, double sy0, double sx1, double sy1, Rect d) {
-      if (d.width <= 0 || d.height <= 0 || sx1 <= sx0 || sy1 <= sy0) return;
+    final RRect outerR = RRect.fromRectAndRadius(
+      Rect.fromLTWH(outerInset, outerInset, size.width - outerInset * 2,
+          size.height - outerInset * 2),
+      Radius.circular(radius),
+    );
+    final RRect innerR = RRect.fromRectAndRadius(
+      Rect.fromLTWH(innerInset, innerInset, size.width - innerInset * 2,
+          size.height - innerInset * 2),
+      Radius.circular(math.max(2.0, radius - (innerInset - outerInset))),
+    );
+    canvas.drawRRect(outerR, linePaint);
+    canvas.drawRRect(innerR, innerLinePaint);
+
+    // 四角装饰：仅当卡片四角都有足够空间时绘制，尺寸严格收在 padding 环内。
+    //   · 先用源图角落块（薄素材的小卷草）贴角，保留手绘质感；
+    //   · 再叠一道清晰的「L 形金角括号」矢量描边 —— 任意尺寸都锐利，给出明确的
+    //     “装框” 观感，同时完全不越出 padding 环、不压正文。
+    final double cornerSize = pad - 1.5; // ≈8.5px，收在 10px padding 内
+    final bool roomForCorners =
+        size.width > cornerSize * 6 && size.height > cornerSize * 6;
+    if (!roomForCorners) return;
+
+    final Paint imgPaint = Paint()
+      ..filterQuality = FilterQuality.medium
+      ..isAntiAlias = true;
+    // 源图角落块（取源图左上角 90×90 作为卷草母版）。
+    const double cs = 90.0;
+    void corner(double sx, double sy, double dx, double dy) {
       canvas.drawImageRect(
         image,
-        Rect.fromLTRB(sx0, sy0, sx1, sy1),
-        d,
-        paint,
+        Rect.fromLTWH(sx, sy, cs, cs),
+        Rect.fromLTWH(dx, dy, cornerSize, cornerSize),
+        imgPaint,
       );
     }
 
-    // 四角（固定 slice 尺寸）
-    tile(0, 0, srcL, srcT, Rect.fromLTWH(0, 0, s, s)); // TL
-    tile(srcR, 0, sw, srcT, Rect.fromLTWH(dstR, 0, s, s)); // TR
-    tile(0, srcB, srcL, sh, Rect.fromLTWH(0, dstB, s, s)); // BL
-    tile(srcR, srcB, sw, sh, Rect.fromLTWH(dstR, dstB, s, s)); // BR
-    // 四条边（拉伸）
-    tile(srcL, 0, srcR, srcT, Rect.fromLTWH(s, 0, size.width - 2 * s, s)); // top
-    tile(srcL, srcB, srcR, sh,
-        Rect.fromLTWH(s, dstB, size.width - 2 * s, s)); // bottom
-    tile(0, srcT, srcL, srcB, Rect.fromLTWH(0, s, s, size.height - 2 * s)); // left
-    tile(srcR, srcT, sw, srcB,
-        Rect.fromLTWH(dstR, s, s, size.height - 2 * s)); // right
-    // 中央（拉伸）
-    tile(srcL, srcT, srcR, srcB,
-        Rect.fromLTWH(s, s, size.width - 2 * s, size.height - 2 * s));
+    // 贴角绘制（在 padding 环内，往里收 1.5px）。
+    final double m = 1.5;
+    corner(0, 0, m, m); // TL
+    corner(sw - cs, 0, size.width - m - cornerSize, m); // TR
+    corner(0, sh - cs, m, size.height - m - cornerSize); // BL
+    corner(sw - cs, sh - cs, size.width - m - cornerSize,
+        size.height - m - cornerSize); // BR
+
+    // L 形金角括号：每角两条短线（贴外线内侧），清晰明确、尺寸固定 ~7px。
+    final Paint bracketPaint = Paint()
+      ..style = PaintingStyle.stroke
+      ..color = lineColor
+      ..strokeWidth = 1.6
+      ..strokeCap = StrokeCap.round
+      ..isAntiAlias = true;
+    final double arm = 7.0; // 每条臂长
+    final double e = outerInset + 1.0; // 括号到卡边的距离（落在外线内）
+    final double w = size.width;
+    final double h = size.height;
+    void bracket(double cx, double cy, double sx, double sy) {
+      // 角点 (cx,cy)，sx/sy=±1 指示往内延伸方向
+      canvas.drawLine(Offset(cx, cy), Offset(cx + sx * arm, cy), bracketPaint);
+      canvas.drawLine(Offset(cx, cy), Offset(cx, cy + sy * arm), bracketPaint);
+    }
+
+    bracket(e, e, 1, 1); // TL
+    bracket(w - e, e, -1, 1); // TR
+    bracket(e, h - e, 1, -1); // BL
+    bracket(w - e, h - e, -1, -1); // BR
   }
 
   @override
   bool shouldRepaint(_NineSlicePainter old) =>
-      old.image != image || old.slice != slice;
+      old.image != image ||
+      old.slice != slice ||
+      old.lineColor != lineColor ||
+      old.insidePadding != insidePadding;
 }
