@@ -86,42 +86,62 @@ class SectionBox extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // ★ 栏位美化：在卡片内容**下方**铺一张暗/亮双主题的装饰边框纹理
+    //   （`Art.panelFrameFor`）。用 `Stack` + `Positioned.fill` 把图垫在
+    //   `Padding/Column` 下方 —— 尺寸仍由 `Padding/Column` 决定，几何逐像素
+    //   不变（P10 的 200+ 条几何断言因此不受影响）。`Card.clipBehavior` 让图
+    //   随圆角裁切；图仅绘制、不占尺寸。
+    //   `Art` 缺图时 `Image.asset` 走 errorBuilder 静默降级，只露出 Card 底色。
     return Card(
       margin: const EdgeInsets.all(RoomTheme.panelGap / 2),
+      clipBehavior: Clip.antiAlias,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(RoomTheme.panelRadius),
       ),
-      child: Padding(
-        padding: const EdgeInsets.all(10),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          mainAxisSize: expand ? MainAxisSize.max : MainAxisSize.min,
-          children: <Widget>[
-            Row(
+      child: Stack(
+        children: <Widget>[
+          Positioned.fill(
+            child: Image.asset(
+              Art.panelFrameFor(Theme.of(context).brightness),
+              fit: BoxFit.fill,
+              filterQuality: FilterQuality.medium,
+              errorBuilder: (BuildContext c, Object e, StackTrace? s) =>
+                  const SizedBox.shrink(),
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.all(10),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              mainAxisSize: expand ? MainAxisSize.max : MainAxisSize.min,
               children: <Widget>[
-                Expanded(
-                  // ★ P10 第 7 期：栏位标题色必须**跟随主题**。
-                  //   `_textTheme()` 并未定义 `titleSmall`，它回落到默认
-                  //   DefaultTextStyle，亮色皮肤下会与卡片浅底混成「白字看不见」。
-                  //   这里显式取 `colorScheme.onSurface`（亮=深墨、暗=浅墨），
-                  //   与 Card 底色构成 ≥4.5:1 对比，亮暗两套皮肤都可读。
-                  child: Text(
-                    title,
-                    style: (Theme.of(context).textTheme.titleSmall ??
-                            Theme.of(context).textTheme.titleMedium)
-                        ?.copyWith(
-                            color: Theme.of(context).colorScheme.onSurface),
-                  ),
+                Row(
+                  children: <Widget>[
+                    Expanded(
+                      // ★ P10 第 7 期：栏位标题色必须**跟随主题**。
+                      //   `_textTheme()` 并未定义 `titleSmall`，它回落到默认
+                      //   DefaultTextStyle，亮色皮肤下会与卡片浅底混成「白字看不见」。
+                      //   这里显式取 `colorScheme.onSurface`（亮=深墨、暗=浅墨），
+                      //   与 Card 底色构成 ≥4.5:1 对比，亮暗两套皮肤都可读。
+                      child: Text(
+                        title,
+                        style: (Theme.of(context).textTheme.titleSmall ??
+                                Theme.of(context).textTheme.titleMedium)
+                            ?.copyWith(
+                                color: Theme.of(context).colorScheme.onSurface),
+                      ),
+                    ),
+                    ?trailing,
+                  ],
                 ),
-                ?trailing,
+                const SizedBox(height: 8),
+                // ★ P20 需求 3⑦：`expand` 时把剩余高度真正交给 child
+                //   （理由见 [expand] 的注释：非 flex 子级拿不到有界高度）。
+                expand ? Expanded(child: child) : child,
               ],
             ),
-            const SizedBox(height: 8),
-            // ★ P20 需求 3⑦：`expand` 时把剩余高度真正交给 child
-            //   （理由见 [expand] 的注释：非 flex 子级拿不到有界高度）。
-            expand ? Expanded(child: child) : child,
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
@@ -146,11 +166,24 @@ class RoomButtonSkin extends StatelessWidget {
   /// 与 ChipTheme / InputDecoration 同一套「可点控件」口径：面板底是
   /// `Palette.surface`，控件再亮一档（`surface2`）才看得出边界；用 `surface`
   /// 会与所在卡片同色、只剩一根几乎看不见的描边，等于没补。
+  ///
+  /// ★ 按钮美化（2026-11）：在底色之上再铺一张「细金描边 + 极轻顶部高光」的
+  ///   底板纹理（暗/亮两套，`Art.btnPlateFor`），与栏位边框的维多利亚金线统一。
+  ///   **零布局影响**：`DecorationImage` 只绘制、不占尺寸，按钮的 48×48 热区与
+  ///   `minSize` 口径一字不动。`color` 仍为 `surface2`（既有底色断言不变），
+  ///   纹理按其自身 `opacity` 叠在上面 —— 可用态 0.92、禁用态 0.30（更淡，
+  ///   一眼看出不可点，且与 `color.a=0.45` 叠加后整体更灰）。
   static BoxDecoration decorationFor(bool enabled) => BoxDecoration(
         color: enabled
             ? Palette.surface2
             : Palette.surface2.withValues(alpha: 0.45),
         borderRadius: BorderRadius.circular(Radii.md),
+        image: DecorationImage(
+          image: AssetImage(Art.btnPlateFor(
+              Palette.isDark ? Brightness.dark : Brightness.light)),
+          fit: BoxFit.fill,
+          opacity: enabled ? 0.92 : 0.28,
+        ),
       );
 
   /// ★ P12：描边走 `foregroundDecoration`。`BoxDecoration.border` 会**参与布局**

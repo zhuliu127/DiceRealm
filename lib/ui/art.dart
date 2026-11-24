@@ -184,6 +184,33 @@ class Art {
   static const String toolbar = 'assets/images/e_game/e16_toolbar_8x1.webp';
   static const String sceneCheck = 'assets/images/e_game/e17_scene_check_3x2.webp';
 
+  // ---- 栏位面板装饰边框（暗 / 亮两套，1:1 方形，供 SectionBox 铺底）----
+  // 用于跑团房间所有栏位卡片（KP + 玩家视角、各弹层 SectionBox 共用）。
+  // 用 `BoxFit.fill` 拉伸铺满卡片：四角花饰固定在四角，中央为平静渐变，
+  // 因此任意长宽比都不丢边框、也不喧宾夺主（中央留白给正文）。
+  static const String panelFrameDark =
+      'assets/images/e_game/e19_panel_frame_dark_1x1.webp';
+  static const String panelFrameLight =
+      'assets/images/e_game/e19_panel_frame_light_1x1.webp';
+
+  /// 栏位卡片底纹（按当前皮肤取；缺亮色版则回退暗色）。
+  static String panelFrameFor(Brightness b) =>
+      pick(panelFrameDark, panelFrameLight, b);
+
+  // ---- 按钮底板纹理（暗 / 亮两套，2:1 宽版，供 RoomButtonSkin 铺底）----
+  // 一条细金描边内框 + 极轻的顶部高光（emboss），中央平整留给图标与文字。
+  // 铺在所有 RoomTap（140+ 个可点件）的底色上，视觉与栏位边框统一为维多利亚金线。
+  static const String btnPlateDark =
+      'assets/images/e_game/e20_btn_dark_2x1.webp';
+  static const String btnPlateLight =
+      'assets/images/e_game/e20_btn_light_2x1.webp';
+
+  /// 按钮底板纹理（按当前皮肤取；缺亮色版则回退暗色）。
+  static String btnPlateFor(Brightness b) =>
+      pick(btnPlateDark, btnPlateLight, b);
+
+
+
   // ---- P20 需求 2：5 类关键事件横幅的 16:9 底图 ----
   // 文字**由 App 生成并画在图下方**（不烘焙进图里），所以这 5 张只出画面。
   // ★ 纯 Dart 的 `critical_event_tracker.dart` 里有一份逐字相同的镜像
