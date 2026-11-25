@@ -30,6 +30,7 @@ import 'card_transfer_io.dart';
 import 'create/rule_pick_page.dart';
 import 'responsive.dart';
 import 'roster_page.dart';
+import 'update_sheet.dart';
 import 'widgets.dart';
 
 class HomePage extends StatelessWidget {
@@ -572,6 +573,7 @@ class _HomeHeader extends StatelessWidget {
                 onSelected: (v) {
                   if (v == 'export_all') _exportAll(context);
                   if (v == 'import') _import(context);
+                  if (v == 'check_update') showUpdateSheet(context);
                   if (v == 'settings') {
                     Navigator.of(context).pushNamed(AppRoutes.settings);
                   }
@@ -612,6 +614,22 @@ class _HomeHeader extends StatelessWidget {
                     ),
                   ),
                   const PopupMenuDivider(),
+                  PopupMenuItem<String>(
+                    key: const Key('menu_check_update'),
+                    value: 'check_update',
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: <Widget>[
+                        Icon(
+                          Icons.system_update_alt,
+                          size: 16,
+                          color: Palette.textDim,
+                        ),
+                        const SizedBox(width: 8),
+                        const Text('检查更新'),
+                      ],
+                    ),
+                  ),
                   PopupMenuItem<String>(
                     key: const Key('menu_settings'),
                     value: 'settings',

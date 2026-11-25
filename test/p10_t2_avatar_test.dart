@@ -385,6 +385,60 @@ void main() {
       ));
       expect(got, isNull);
     });
+
+    testWidgets('★ 同路径覆盖写：bump revision 后强制重载（「更换」要生效）',
+        (WidgetTester tester) async {
+      // 复现 bug：更换时写回同一个 avatars/c1.png，路径不变 →
+      //   仅靠 relPath 比较不会重新 _reload，且 FileImage 以路径为缓存键会吐旧图。
+      // 修法：AvatarThumb 新增 revision，变化即 evict + 重载。
+      final dir = Directory.systemTemp.createTempSync('p10_t2_replace_');
+      addTearDown(() => dir.deleteSync(recursive: true));
+      final avatars = Directory('${dir.path}/avatars')
+        ..createSync(recursive: true);
+      File('${avatars.path}/c1.png').writeAsBytesSync(kTinyPng);
+      avatarStore.rootOverride = dir.path;
+      addTearDown(() => avatarStore.rootOverride = null);
+
+      Widget build(int rev) => MaterialApp(
+            home: Center(
+              child: AvatarThumb(
+                relPath: 'avatars/c1.png',
+                size: 40,
+                name: '沈',
+                revision: rev,
+              ),
+            ),
+          );
+
+      await tester.pumpWidget(build(0));
+      await tester.pump();
+      final img0 = tester.widget<Image>(find.byType(Image));
+      final prov0 = img0.image;
+      expect(prov0, isA<FileImage>());
+      final path0 = (prov0 as FileImage).file.path;
+
+      // 模拟「更换」：同一个文件被覆盖写入新字节（这里内容无所谓，关键是代次）。
+      File('${avatars.path}/c1.png')
+          .writeAsBytesSync(<int>[137, 80, 78, 71, 1, 2, 3]); // 伪字节，仅换 mtime
+
+      // 代次不变 → 不重载，provider 实例同一（证明我们没瞎重建）
+      await tester.pumpWidget(build(0));
+      await tester.pump();
+      final imgSame = tester.widget<Image>(find.byType(Image));
+      expect(identical(imgSame.image, prov0), isTrue,
+          reason: 'revision 未变时不应重建 provider');
+
+      // 代次 +1（模拟成功导入后的 bump）→ 必须重载成新的 FileImage 实例
+      await tester.pumpWidget(build(1));
+      await tester.pump();
+      final img1 = tester.widget<Image>(find.byType(Image));
+      expect(img1.image, isA<FileImage>());
+      expect(identical(img1.image, prov0), isFalse,
+          reason: 'revision 变化必须重载，换出新的 provider');
+      // 路径仍是同一个（写回同文件），但旧缓存已被 evict → 不会命中旧字节
+      expect((img1.image as FileImage).file.path, path0,
+          reason: '覆盖写仍写回同一个文件路径');
+    });
   });
 
   // ==========================================================

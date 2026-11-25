@@ -15,12 +15,16 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+import 'dart:async';
+
 import '../../domain/character.dart';
 import '../../domain/js_compat.dart';
+import '../../repo/avatar_store.dart';
 import '../../theme.dart';
 import '../create/chargen_logic.dart';
 import '../create/steps/step_basics.dart';
 import '../widgets.dart';
+import '../widgets/avatar_picker.dart';
 
 class BasicsEditor extends StatefulWidget {
   const BasicsEditor({super.key, required this.card, required this.onChanged});
@@ -40,11 +44,16 @@ class _BasicsEditorState extends State<BasicsEditor> {
   late final TextEditingController _residence;
   late final TextEditingController _birthplace;
 
+  /// 当前头像相对路径（编辑态）；null = 没有头像。
+  String? _avatar;
+
   Character get _c => widget.card;
 
   @override
   void initState() {
     super.initState();
+    // 直接传原始值、不过 jsStr：jsStr(null) 是字符串 'null'，会被当成相对路径。
+    _avatar = localAvatarRel(_c.raw['avatar']);
     _name = TextEditingController(text: _c.characterName);
     _player = TextEditingController(text: _c.playerName);
     _age = TextEditingController(text: jsStr(_c.basicInfo['age'] ?? ''));
@@ -70,8 +79,18 @@ class _BasicsEditorState extends State<BasicsEditor> {
     super.dispose();
   }
 
-  Future<void> _pickOccupation() async {
-    final picked = await showOccupationPicker(context, _c.occupationId);
+  /// 换/清头像：写回 `raw['avatar']`，旧图若无引用则删掉（避免存档目录堆积）。
+  void _setAvatar(String? rel) {
+    final old = _avatar;
+    _c.raw['avatar'] = rel ?? '';
+    setState(() => _avatar = rel);
+    widget.onChanged();
+    if (old != null && old != rel) {
+      unawaited(avatarStore.remove(old).catchError((Object _) {}));
+    }
+  }
+
+  Future<void> _pickOccupation() async {    final picked = await showOccupationPicker(context, _c.occupationId);
     if (picked == null) return;
     _c.raw['occupationId'] = jsStr(picked['id']);
     _c.basicInfo['occupationName'] = jsStr(picked['name']);
@@ -90,6 +109,15 @@ class _BasicsEditorState extends State<BasicsEditor> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: <Widget>[
+          // ---------- 头像（编辑态可换） ----------
+          AvatarPicker(
+            keyPrefix: 'edit_avatar',
+            value: _avatar,
+            name: _c.characterName,
+            cardId: _c.id,
+            onChanged: _setAvatar,
+          ),
+          const SizedBox(height: 12),
            FieldLabel('角色姓名', required: true),
           TextField(
             key: const Key('edit_field_name'),

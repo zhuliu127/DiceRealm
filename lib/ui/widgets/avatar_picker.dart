@@ -114,6 +114,7 @@ class AvatarThumb extends StatefulWidget {
     this.name = '',
     this.fallback,
     this.border = true,
+    this.revision = 0,
   });
 
   /// 头像值：本机相对路径（`avatars/xxx.png`）或跨设备缩略 dataURI。
@@ -130,6 +131,11 @@ class AvatarThumb extends StatefulWidget {
 
   /// 是否画一圈avatar 边框
   final bool border;
+
+  /// 刷新代次：路径不变但**内容被替换**（如「更换」上传了新图，仍写回同一个
+  /// `avatars/<cardId>.png`）时，靠这个递增让缩略图强制重载 —— 仅比 relPath
+  /// 变化就会漏刷新，且 FileImage 以路径为缓存键，不 evict 会读到旧字节。
+  final int revision;
 
   @override
   State<AvatarThumb> createState() => _AvatarThumbState();
@@ -148,11 +154,20 @@ class _AvatarThumbState extends State<AvatarThumb> {
   @override
   void didUpdateWidget(covariant AvatarThumb oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (oldWidget.relPath != widget.relPath) _reload();
+    if (oldWidget.relPath != widget.relPath ||
+        oldWidget.revision != widget.revision) {
+      _reload();
+    }
   }
 
   void _reload() {
     final token = ++_token;
+    // ★ 换了图 / 同路径覆盖写：先把旧 provider 从 ImageCache 里摘掉，
+    //   否则 FileImage 以「路径」为缓存键，会继续吐旧字节。
+    final old = _provider;
+    if (old is FileImage) {
+      imageCache.evict(old);
+    }
     // ② dataURI：同步解字节，fake-async 下也立刻可用。
     final inline = avatarDataUriBytes(widget.relPath);
     if (inline != null) {
@@ -283,6 +298,10 @@ class AvatarPicker extends StatefulWidget {
 class _AvatarPickerState extends State<AvatarPicker> {
   bool _busy = false;
 
+  /// 每次成功导入新图都 +1：即便写回同一个 `avatars/<cardId>.png`（路径不
+  /// 变），也要让 [AvatarThumb] 重载并 evict 旧缓存，否则「更换」不生效。
+  int _thumbRevision = 0;
+
   String? get _rel => localAvatarRel(widget.value);
 
   Future<void> _pick() async {
@@ -305,6 +324,8 @@ class _AvatarPickerState extends State<AvatarPicker> {
         _toast('这张图读不出来（可能不是常见图片格式），换一张试试');
         return;
       }
+      // 路径可能与旧值相同（更换时写回同一个文件）—— 仍要 bump 代次，强制刷新。
+      setState(() => _thumbRevision++);
       widget.onChanged(rel);
     } finally {
       if (mounted) setState(() => _busy = false);
@@ -336,6 +357,7 @@ class _AvatarPickerState extends State<AvatarPicker> {
             relPath: _rel,
             size: widget.size,
             name: widget.name,
+            revision: _thumbRevision,
           ),
           const SizedBox(width: 14),
           Expanded(
