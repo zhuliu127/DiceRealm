@@ -214,7 +214,6 @@ class _SettingsPageState extends State<SettingsPage> {
   Widget _themeCard() {
     return SectionCard(
       title: '外观 · 皮肤',
-      subtitle: '两套皮肤各配一整套美术素材（全站背景 + 四个入口横幅）。切换立即生效，选择记在本机。',
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[

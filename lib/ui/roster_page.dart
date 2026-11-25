@@ -120,7 +120,6 @@ class RosterPage extends StatelessWidget {
                     title: '已保存的角色卡',
                     count: alive.length,
                     accent: Palette.gold,
-                    hint: alive.isEmpty ? null : '点卡片查看详情',
                   ),
                   const SizedBox(height: 10),
                   if (alive.isEmpty)
@@ -144,7 +143,6 @@ class RosterPage extends StatelessWidget {
                     title: '英灵殿',
                     count: fallen.length,
                     accent: Palette.danger,
-                    hint: '身体死亡 / 永久疯狂的角色长眠于此',
                   ),
                   const SizedBox(height: 10),
                   if (fallen.isEmpty)

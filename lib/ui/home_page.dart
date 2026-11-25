@@ -149,7 +149,6 @@ class _AdventureSection extends StatelessWidget {
         children: <Widget>[
           SectionBanner(
             title: '开始冒险',
-            hint: '四个入口都在这',
             art: Art.sectionAdventureFor(Palette.brightness),
           ),
           Row(
@@ -301,11 +300,6 @@ class _RosterEntry extends StatelessWidget {
             accent: Palette.danger,
             semanticLabel: '英灵殿',
             onTap: () => open(RosterScope.fallen),
-          ),
-          const SizedBox(height: 6),
-          Text(
-            '点上面任何一张，进名册看卡片',
-            style: TextStyle(fontSize: 11, color: Palette.textMute),
           ),
         ],
       ),

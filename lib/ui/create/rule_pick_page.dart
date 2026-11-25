@@ -125,17 +125,7 @@ class RulePickPage extends StatelessWidget {
               children: <Widget>[
                 SectionBanner(
                   title: '规则系统',
-                  hint: '选一套，再进 ${next.label}',
                   art: Art.sectionAdventureFor(Palette.brightness),
-                ),
-                Text(
-                  '属性、技能、检定与派生数值都由规则系统决定，建卡后不可更改。'
-                  '未开放的规则如实标注、不可选 —— 规则层实现后会自动出现在这里。',
-                  style: TextStyle(
-                    fontSize: 12.5,
-                    color: Palette.textMute,
-                    height: 1.75,
-                  ),
                 ),
                 const SizedBox(height: 14),
                 // ★ 遍历注册表：以后加规则不用改本页。
@@ -148,10 +138,6 @@ class RulePickPage extends StatelessWidget {
                   ),
                   const SizedBox(height: 12),
                 ],
-                Text(
-                  '更多规则系统正在开发中，敬请期待。',
-                  style: TextStyle(fontSize: 11, color: Palette.textMute),
-                ),
               ],
             ),
           ),
@@ -320,23 +306,6 @@ class RulePickCard extends StatelessWidget {
                             ),
                           ),
                         ],
-                      ),
-                      const SizedBox(height: 6),
-                      Text(
-                        rule.available
-                            ? '可选 · 点这张卡进入${rule.name}'
-                            : '未开放 · 规则层尚未实现，敬请期待',
-                        key: Key('rule_status_${rule.id}'),
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
-                          fontSize: 11.5,
-                          color: rule.available
-                              ? Palette.text
-                              : Palette.textMute,
-                          height: 1.45,
-                          shadows: _halo(),
-                        ),
                       ),
                     ],
                   ),
