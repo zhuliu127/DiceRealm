@@ -317,7 +317,7 @@ class _CreateFlowPageState extends State<CreateFlowPage> {
               Padding(
                 padding: const EdgeInsets.fromLTRB(16, 16, 16, 6),
                 child: Text(
-                  '跳到第几步（可以直接跳，不会被校验拦住）',
+                  '跳到第几步',
                   style: TextStyle(fontSize: 13, color: Palette.textMute),
                 ),
               ),

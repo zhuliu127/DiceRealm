@@ -45,7 +45,11 @@ const int kConfirmTtlMs = 120000;
 /// `rules.parseExpr` 在 `opposedAttackResolve` 里判（D2：非法则报错不结算）。
 /// 白名单 = 数字 + `D`/`d` + `+`/`-` + 空白，与 `parseExpr` 支持的
 /// `NdM`、纯数字、加减组合一一对应，拦掉明显脏数据但不越权解析。
-final RegExp _reCounterDamage = RegExp(r'^[0-9Dd+\-\s]+$');
+/// ★ 同时放行全角变体（`＋－０-９Ｄｄ` 与破折号 `−—–～`）：用户在中文输入法
+///   下常敲出全角符号，`rules.parseExpr` 已做全角→半角归一化，这里若仍按
+///   半角白名单拒绝就会在到达解析器前先被丢掉（KP 输入的反击伤害式失效）。
+final RegExp _reCounterDamage =
+    RegExp(r'^[0-9Dd+\-\s\uFF0B\uFF0D\uFF10-\uFF19\uFF24\uFF44\u2212\u2014\u2013\uFF5E]+$');
 
 /// 公开信息栏优先角色名，其次昵称；KP 座位回落 meta.kpName / 'KP'。
 String _nickOf(RoomHost h, Map<String, Object?>? m, String seat) {

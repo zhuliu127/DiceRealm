@@ -217,7 +217,6 @@ class _StepBasicsState extends State<StepBasics> {
         // ---------- 头像（P10） ----------
         SectionCard(
           title: '头像',
-          subtitle: '选一张图当这个调查员的脸；跑团时 KP 和队友靠它认人',
           child: AvatarPicker(
             keyPrefix: 'basics_avatar',
             value: _avatar,

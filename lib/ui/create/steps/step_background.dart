@@ -13,7 +13,6 @@
 import 'package:flutter/material.dart';
 
 import '../../../domain/character.dart';
-import '../../../theme.dart';
 import '../../card_edit/background_editor.dart';
 
 class StepBackground extends StatefulWidget {
@@ -37,33 +36,6 @@ class _StepBackgroundState extends State<StepBackground> {
       padding: const EdgeInsets.fromLTRB(16, 4, 16, 24),
       children: <Widget>[
         BackgroundEditor(card: widget.draft, onChanged: widget.onChanged),
-        const SizedBox(height: 12),
-        Container(
-          padding: const EdgeInsets.all(12),
-          decoration: BoxDecoration(
-            color: Palette.surface2,
-            borderRadius: BorderRadius.circular(Radii.md),
-            border: Border.all(color: Palette.border),
-          ),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: <Widget>[
-              Icon(Icons.info_outline, size: 15, color: Palette.textMute),
-              SizedBox(width: 8),
-              Expanded(
-                child: Text(
-                  '背景不影响任何规则数值，可以留空。从「疯狂表」选中的症状会同时写进'
-                  '「疯狂症状」文本与状态里的结构化症状，之后在角色卡详情里能逐条管理。',
-                  style: TextStyle(
-                    fontSize: 11.5,
-                    color: Palette.textMute,
-                    height: 1.55,
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
       ],
     );
   }

@@ -594,7 +594,6 @@ class _StepAttrsState extends State<StepAttrs> {
         const SizedBox(height: 12),
         SectionCard(
           title: '属性',
-          subtitle: '原始值不因年龄改动；年龄扣减只作用于「生效值」，在概要与角色卡里看得到',
           child: Column(
             children: <Widget>[
               for (final k in keys) ...<Widget>[

@@ -26,7 +26,6 @@ import '../../domain/character.dart';
 import '../../domain/js_compat.dart';
 import '../../domain/madness.dart' as mad;
 import '../../theme.dart';
-import '../status_ops.dart';
 import '../widgets.dart';
 import 'background_history.dart';
 import 'background_mythos.dart';
@@ -354,16 +353,6 @@ class _BackgroundEditorState extends State<BackgroundEditor> {
                   onPressed: _openMadnessTable,
                   icon: const Icon(Icons.casino_outlined, size: 16),
                   label: const Text('打开疯狂表 / 随机生成'),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  '选中症状会同时写进「疯狂症状」文本与状态里的结构化症状（${madnessCount(_c)} 条）。'
-                  '「疯狂发作」是即时/总结症状（1-8），恐惧症 / 狂躁症来自 100 条子表。',
-                  style: TextStyle(
-                    fontSize: 11.5,
-                    color: Palette.textMute,
-                    height: 1.5,
-                  ),
                 ),
               ],
             ],

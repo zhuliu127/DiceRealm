@@ -322,15 +322,6 @@ class _AvatarPickerState extends State<AvatarPicker> {
                     color: Palette.text,
                   ),
                 ),
-                const SizedBox(height: 3),
-                Text(
-                  widget.hint,
-                  style: TextStyle(
-                    fontSize: 11,
-                    color: Palette.textMute,
-                    height: 1.5,
-                  ),
-                ),
                 const SizedBox(height: 7),
                 Wrap(
                   spacing: 8,

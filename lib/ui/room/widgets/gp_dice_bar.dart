@@ -60,7 +60,7 @@
 import 'package:flutter/material.dart';
 
 import '../../art.dart';
-import '../../../theme.dart' show Palette;
+import '../../../theme.dart' show Palette, Radii;
 
 import '../../../domain/room_types.dart';
 import '../room_keys.dart';
@@ -358,24 +358,13 @@ class _GpDiceBarState extends State<GpDiceBar> {
         minSize: RoomBtnSize.diceTile,
         onTap: () => _openOtherDice(context, canRoll),
       ),
-      SizedBox(
-        width: 68,
-        child: TextField(
-          key: GpDiceBarKeys.customExpr,
-          controller: _custom,
-          enabled: canRoll,
-          style: theme.textTheme.bodySmall,
-          decoration: const InputDecoration(
-            isDense: true,
-            hintText: '3D6+1',
-            border: OutlineInputBorder(),
-          ),
-          onSubmitted: (String v) => _roll(v),
-          // ★ P16 C-2：点击输入框外部即失焦（控件级，不吞兄弟按钮点击、
-          //   不影响 tester.enterText；禁止页面级 FocusNode / GestureDetector）。
-          onTapOutside: (_) => FocusScope.of(context).unfocus(),
-        ),
-      ),
+      // ★ 2.49.1（P21）：自定义骰式「输入框 + 掷」视觉上读作**一套**分段控件。
+      //   关键：**仍是 2 个独立条目**（customExpr 输入框 + rollCustom 按钮），
+      //   条目数保持 8+1=9、各项宽度不变 —— 切行算术（diceBalancedRowSizes(9,per)）
+      //   与各尺寸断言（rollCustom=90×40 等）一字不动。
+      //   视觉衔接靠装饰层而非改布局几何：输入框「左圆右直」、按钮「左直右圆」，
+      //   两者底板同色，Wrap 的 3dp 缝隙读作分段控件的分隔线。
+      _customExprField(canRoll: canRoll, theme: theme, onSubmit: _roll),
       RoomTap(
         key: GpDiceBarKeys.rollCustom,
         icon: Icons.casino,
@@ -541,6 +530,86 @@ class _GpDiceBarState extends State<GpDiceBar> {
                 ),
         );
       },
+    );
+  }
+
+  /// P21（2.49.1）：自定义骰式**输入框**——「分段控件左半」。
+  ///
+  /// 目标：让用户一眼看出「这里是填骰式的地方，旁边这个就是掷它的按钮」是
+  /// **一套**。只动观感、不动任何布局契约：
+  ///   · **仍是独立条目**（不与他人合并），条目数与各项宽度不变，切行算术
+  ///     `diceBalancedRowSizes(9, per)` 与尺寸断言全部不受影响；
+  ///   · 底板同 `RoomButtonSkin.decorationFor`（与右侧按钮同色同材质）；
+  ///   · 只画「左圆右直」的描边（左边 + 顶 + 底，右边不画）—— 与右侧按钮的
+  ///     「左直右圆」拼起来读作一个分段控件，Wrap 的 3dp 缝隙即分段分隔线；
+  ///   · `customExpr` key 原样保留。
+  ///
+  /// 宽度 68、高度由父 Row 拉齐到按钮高度（与 `diceTile` 高 40 对齐）。
+  Widget _customExprField({
+    required bool canRoll,
+    required ThemeData theme,
+    required ValueChanged<String> onSubmit,
+  }) {
+    // 布局槽位仍是 68dp（Wrap 计宽不变 → 9 项切行算术不动）。
+    // 视觉衔接：底板（RoomButtonSkin）铺满 68，另用 Stack 在右缘再叠一条 3dp 同色
+    // 填充条（Positioned right:-3，clipBehavior none 只绘制不占布局），
+    // 盖住 Wrap 的 3dp 缝隙，与右侧按钮同色相接 → 读作一个分段控件。
+    return SizedBox(
+      width: 68,
+      height: RoomBtnSize.diceTile.height,
+      child: Stack(
+        clipBehavior: Clip.none,
+        children: <Widget>[
+          // 右缘补缝条（先画，压在底板下面也没关系，同色）。
+          Positioned(
+            top: 0,
+            bottom: 0,
+            right: -3,
+            width: 3,
+            child: DecoratedBox(
+              decoration: RoomButtonSkin.decorationFor(canRoll),
+            ),
+          ),
+          Positioned.fill(
+            child: Container(
+              decoration: BoxDecoration(
+                color: RoomButtonSkin.decorationFor(canRoll).color,
+                image: RoomButtonSkin.decorationFor(canRoll).image,
+                borderRadius: const BorderRadius.only(
+                  topLeft: Radius.circular(Radii.md),
+                  bottomLeft: Radius.circular(Radii.md),
+                ),
+                border: Border(
+                  left: BorderSide(color: Palette.border),
+                  top: BorderSide(color: Palette.border),
+                  bottom: BorderSide(color: Palette.border),
+                ),
+              ),
+              child: TextField(
+                key: GpDiceBarKeys.customExpr,
+                controller: _custom,
+                enabled: canRoll,
+                style: theme.textTheme.bodySmall,
+                textAlignVertical: TextAlignVertical.center,
+                decoration: const InputDecoration(
+                  isDense: true,
+                  contentPadding:
+                      EdgeInsets.symmetric(horizontal: 8, vertical: 0),
+                  hintText: '3D6+1',
+                  border: InputBorder.none,
+                  enabledBorder: InputBorder.none,
+                  focusedBorder: InputBorder.none,
+                  disabledBorder: InputBorder.none,
+                ),
+                onSubmitted: onSubmit,
+                // ★ P16 C-2：点击输入框外部即失焦（控件级，不吞兄弟按钮点击、
+                //   不影响 tester.enterText；禁止页面级 FocusNode / GestureDetector）。
+                onTapOutside: (_) => FocusScope.of(context).unfocus(),
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 

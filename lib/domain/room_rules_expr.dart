@@ -19,6 +19,31 @@ final RegExp _rePureInt = RegExp(r'^\d+$');
 final RegExp _reDashOnly = RegExp(r'^[-—–~～\s]+$');
 final RegExp _reRevolver = RegExp(r'左轮|转轮|revolver', caseSensitive: false);
 
+/// 全角 → 半角归一化（骰式输入容错）。
+///
+/// 用户常在中/英输入法下敲出全角符号：`Ｄ` `ｄ`、全角数字 `０-９`、
+/// `＋`（U+FF0B）、`－`（U+FF0D）、`＊` 等。旧实现只在开头 `toUpperCase`，
+/// 而分词正则 `[+-]?[^+-]+` 只认半角 `+`/`-`，于是 `D6＋D10` 的 `＋`
+/// 不被当作分隔符，整串被当成一个 token → 「骰式里有无法识别的片段」。
+/// 这里把常见全角字符统一映射到半角，再交给原有解析逻辑，等价于「用户敲
+/// 全角也照样能掷」。只做字符映射，不改任何解析语义。
+String _normalizeExprInput(String s) {
+  final StringBuffer b = StringBuffer();
+  for (final int cu in s.codeUnits) {
+    int out = cu;
+    if (cu >= 0xFF01 && cu <= 0xFF5E) {
+      // 全角 ASCII 可见字符区：整体平移到半角。
+      out = cu - 0xFEE0;
+    } else if (cu == 0x3000) {
+      // 全角空格 → 半角空格。
+      out = 0x20;
+    }
+    b.writeCharCode(out);
+  }
+  // 中文输入法常见的破折号/连字符变体统一成 `-`（减号语义）。
+  return b.toString().replaceAll(RegExp(r'[—–−－~～]'), '-');
+}
+
 /// 解析并校验骰式：支持 `NdM`、纯数字，以及它们的加减组合（`1D6+1`、`2D10-1`）。
 /// 不支持乘除与括号 —— 本项目用不到，少支持一种语法就少一个注入面。
 Map<String, Object?> _parseExpr(Object? expr) {
@@ -26,7 +51,7 @@ Map<String, Object?> _parseExpr(Object? expr) {
   if (rawSrc.isEmpty) {
     return <String, Object?>{'ok': false, 'reason': '骰式为空', 'expr': ''};
   }
-  final s = rawSrc.replaceAll(_reSpaces, '').toUpperCase();
+  final s = _normalizeExprInput(rawSrc).replaceAll(_reSpaces, '').toUpperCase();
   final matches = _reTokens.allMatches(s).toList();
   if (matches.isEmpty) {
     return <String, Object?>{
