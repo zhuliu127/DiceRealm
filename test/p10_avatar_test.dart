@@ -100,15 +100,23 @@ class _FakeImporter {
 }
 
 /// 装一套假选图 + 假落盘（用例结束自动还原全局实例）
+///
+/// ★ P21 起「选图 → 落盘」之间多了圆形裁切（`avatarCropper`）。widget 测试跑在
+///   fake-async 区域里，真裁切要做引擎解码，Future 永不完成 —— 这里把它换成
+///   **恒等裁切**（原样返回字节），从而专测「选完之后字段变了」这条数据流；
+///   裁切的几何 / 输出由 `p21_avatar_crop_test.dart` 的纯函数用例覆盖。
 void _useFakePick(Uint8List bytes, String rel) {
   final fakeImporter = _FakeImporter()..result = rel;
   final prevPicker = avatarPicker;
   final prevImporter = avatarImageImporter;
+  final prevCropper = avatarCropper;
   avatarPicker = _FakeAvatarPicker(bytes);
   avatarImageImporter = fakeImporter.call;
+  avatarCropper = (BuildContext _, Uint8List b) async => b; // 恒等裁切
   addTearDown(() {
     avatarPicker = prevPicker;
     avatarImageImporter = prevImporter;
+    avatarCropper = prevCropper;
   });
 }
 
@@ -284,11 +292,14 @@ void main() {
       final fakeImporter = _FakeImporter();
       final prevPicker = avatarPicker;
       final prevImporter = avatarImageImporter;
+      final prevCropper = avatarCropper;
       avatarPicker = fakePicker;
       avatarImageImporter = fakeImporter.call;
+      avatarCropper = (BuildContext _, Uint8List b) async => b; // 恒等裁切
       addTearDown(() {
         avatarPicker = prevPicker;
         avatarImageImporter = prevImporter;
+        avatarCropper = prevCropper;
       });
 
       final draft = _card('card0001', '阿米蒂奇');
@@ -307,8 +318,13 @@ void main() {
     testWidgets('取消选图：字段一个字节都不改', (tester) async {
       final fakePicker = _FakeAvatarPicker(null);
       final prevPicker = avatarPicker;
+      final prevCropper = avatarCropper;
       avatarPicker = fakePicker;
-      addTearDown(() => avatarPicker = prevPicker);
+      avatarCropper = (BuildContext _, Uint8List b) async => b; // 不会走到，保险
+      addTearDown(() {
+        avatarPicker = prevPicker;
+        avatarCropper = prevCropper;
+      });
 
       final draft = _card('card0001', '阿米蒂奇');
       await pumpStep(tester, draft);
@@ -318,6 +334,34 @@ void main() {
 
       expect(fakePicker.calls, 1);
       expect(draft.raw['avatar'], isEmpty);
+    });
+
+    testWidgets('选图后取消裁切：不落盘、字段不变（P21）', (tester) async {
+      final fakePicker = _FakeAvatarPicker(srcPng);
+      final fakeImporter = _FakeImporter();
+      final prevPicker = avatarPicker;
+      final prevImporter = avatarImageImporter;
+      final prevCropper = avatarCropper;
+      avatarPicker = fakePicker;
+      avatarImageImporter = fakeImporter.call;
+      avatarCropper = (BuildContext _, Uint8List b) async => null; // 用户取消裁切
+      addTearDown(() {
+        avatarPicker = prevPicker;
+        avatarImageImporter = prevImporter;
+        avatarCropper = prevCropper;
+      });
+
+      final draft = _card('card0001', '阿米蒂奇');
+      await pumpStep(tester, draft);
+
+      await tester.tap(find.byKey(const Key('basics_avatar_pick')));
+      await tester.pump();
+
+      expect(fakePicker.calls, 1, reason: '选了图');
+      expect(fakeImporter.cardIds, isEmpty,
+          reason: '取消裁切就不该进落盘，避免写入半成品');
+      expect(draft.raw['avatar'], isEmpty);
+      expect(find.byKey(const Key('basics_avatar_clear')), findsNothing);
     });
 
     testWidgets('已有头像 → 按路径渲染图片；移除 → 字段清空并回到占位', (tester) async {

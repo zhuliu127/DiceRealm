@@ -28,11 +28,36 @@ import '../../repo/avatar_store.dart';
 import '../../repo/avatar_thumb.dart' show avatarDataUriBytes;
 import '../../repo/repo_scope.dart' show RepoScope;
 import '../../theme.dart';
+import 'avatar_cropper.dart';
 
 /// 选图端口（返回原始字节；用户取消返回 null）。
 abstract class AvatarPickerPort {
   Future<Uint8List?> pickImageBytes({String? title, int maxBytes});
 }
+
+/// 裁切端口：拿到原始字节后，弹裁切界面，返回裁切后的 PNG 字节
+/// （用户取消返回 null）。抽成端口是为了 widget 测试能换成「直接返回原字节」
+/// 的假实现 —— 真裁切要做引擎解码，fake-async 区域里 Future 不会完成。
+typedef AvatarCropperPort = Future<Uint8List?> Function(
+  BuildContext context,
+  Uint8List bytes,
+);
+
+/// 默认裁切实现：打开全屏圆形裁切界面（[AvatarCropScreen]）。
+Future<Uint8List?> defaultAvatarCropper(
+  BuildContext context,
+  Uint8List bytes,
+) {
+  return Navigator.of(context).push<Uint8List>(
+    MaterialPageRoute<Uint8List>(
+      fullscreenDialog: true,
+      builder: (BuildContext _) => AvatarCropScreen(srcBytes: bytes),
+    ),
+  );
+}
+
+/// 全局可替换裁切实例（测试用完在 tearDown 还原）。
+AvatarCropperPort avatarCropper = defaultAvatarCropper;
 
 /// 全局可替换实例（测试用完在 tearDown 还原）。
 AvatarPickerPort avatarPicker = const FilePickerAvatarPicker();
@@ -267,8 +292,12 @@ class _AvatarPickerState extends State<AvatarPicker> {
       final bytes = await avatarPicker.pickImageBytes(title: '选择${widget.label}图片');
       if (!mounted) return;
       if (bytes == null) return; // 用户取消：什么都不改
+      // ★ 选图后先裁切（圆形缩放 / 拖动），用户取消裁切 = 放弃本次，不落盘。
+      final cropped = await avatarCropper(context, bytes);
+      if (!mounted) return;
+      if (cropped == null) return;
       final rel = await avatarImageImporter(
-        bytes,
+        cropped,
         widget.cardId ?? widget.keyPrefix,
       );
       if (!mounted) return;
@@ -314,15 +343,6 @@ class _AvatarPickerState extends State<AvatarPicker> {
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisSize: MainAxisSize.min,
               children: <Widget>[
-                Text(
-                  widget.label,
-                  style: TextStyle(
-                    fontSize: 12.5,
-                    fontWeight: FontWeight.w600,
-                    color: Palette.text,
-                  ),
-                ),
-                const SizedBox(height: 7),
                 Wrap(
                   spacing: 8,
                   runSpacing: 6,
